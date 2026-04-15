@@ -1,0 +1,52 @@
+import React from "react";
+import Table from "../ui/Table";
+
+const getStatus = (status) => {
+  if (status === "AKTIF") return { label: "AKTIF", color: "#1BC58D", bg: "#E6FFF3" };
+  return { label: "NONAKTIF", color: "#B0B0B0", bg: "#F3F6F9" };
+};
+
+const columns = [
+  {
+    header: "NAMA SUPPLIER",
+    accessor: "nama",
+    width: 180,
+    render: (row) => (
+      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ background: "#FCE7F3", color: "#E91E63", fontWeight: 700, borderRadius: "50%", width: 32, height: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{row.inisial}</span>
+        <span style={{ fontWeight: 700 }}>{row.nama}</span>
+      </span>
+    )
+  },
+  { header: "PENANGGUNG JAWAB", accessor: "penanggungJawab", width: 120 },
+  { header: "NO. TELEPON", accessor: "telepon", width: 120 },
+  { header: "ALAMAT", accessor: "alamat", width: 180 },
+  {
+    header: "STATUS",
+    accessor: "status",
+    width: 80,
+    render: (row) => {
+      const s = getStatus(row.status);
+      return <span style={{ background: s.bg, color: s.color, fontWeight: 700, fontSize: 13, borderRadius: 8, padding: "2px 12px" }}>{s.label}</span>;
+    }
+  },
+  {
+    header: "AKSI",
+    accessor: "aksi",
+    width: 80,
+    render: (row) => (
+      <>
+        <span style={{ cursor: "pointer", marginRight: 8, color: "#B0B0B0" }} title="Edit" onClick={() => row.onEdit && row.onEdit(row)}>✏️</span>
+        <span style={{ cursor: "pointer", color: "#B0B0B0" }} title="Hapus" onClick={() => row.onDelete && row.onDelete(row.id)}>🗑️</span>
+      </>
+    )
+  }
+];
+
+const SupplierTable = ({ data, onEdit, onDelete }) => {
+  // inject handler ke row
+  const tableData = data.map((row) => ({ ...row, onEdit, onDelete }));
+  return <Table columns={columns} data={tableData} />;
+};
+
+export default SupplierTable;
