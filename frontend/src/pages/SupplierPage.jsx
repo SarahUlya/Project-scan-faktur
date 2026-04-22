@@ -18,12 +18,10 @@ const SupplierPage = () => {
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
 
-	// Pagination logic
 	const total = supplier.length;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 	const pagedSupplier = supplier.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-	// Handler CRUD
 	const handleAdd = (item) => {
 		add({ ...item, id: getNewId(supplier, "SUP") });
 		setModal({ open: false, mode: "add", data: null });
@@ -76,7 +74,6 @@ const SupplierPage = () => {
 					))}
 				</div>
 			</div>
-			{/* Modal Tambah/Edit Supplier */}
 			<Modal open={modal.open} onClose={() => setModal({ open: false, mode: "add", data: null })} width={460}>
 				<SupplierForm
 					mode={modal.mode}
@@ -86,7 +83,6 @@ const SupplierPage = () => {
 				/>
 			</Modal>
 
-			{/* Modal Konfirmasi Hapus */}
 			<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
 				<HapusSupplierConfirm
 					open={hapus.open}

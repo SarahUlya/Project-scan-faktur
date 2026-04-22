@@ -1,9 +1,18 @@
 import React from "react";
 import Table from "../ui/Table";
+import useProdukDb from "../../hooks/useProdukDb";
 
-const getColumns = (onEdit, onDelete) => [
+const getColumns = (onEdit, onDelete, getNamaKategori) => [
 	{ header: "NAMA PRODUK", accessor: "nama", width: 220, bold: true },
-	{ header: "KATEGORI OBAT", accessor: "kategori", width: 120 },
+	{
+		header: "KATEGORI OBAT",
+		accessor: "id_kategori",
+		width: 120,
+		render: (row) => {
+			console.log("Isi row di render:", row);
+			return getNamaKategori(row.id_kategori || row.kategori);
+		}
+	},
 	{ header: "SATUAN DASAR", accessor: "satuan", width: 100 },
 	{ header: "STOK MINIMUM", accessor: "stokMinimum", width: 100, align: "center" },
 	{
@@ -42,9 +51,12 @@ const getColumns = (onEdit, onDelete) => [
 	}
 ];
 
-const ProdukTable = ({ data, onEdit, onDelete }) => {
+const ProdukTable = ({ data, onEdit, onDelete, getNamaKategori }) => {
+	console.log("DATA TABLE:", data);
+	console.log("ROW PERTAMA:", data?.[0]);
 	return (
-		<Table columns={getColumns(onEdit, onDelete)} data={data} />
+		<Table columns={getColumns(onEdit, onDelete, getNamaKategori)}
+			data={data} />
 	);
 };
 

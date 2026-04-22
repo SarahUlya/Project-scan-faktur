@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
 import Button from "../ui/Button";
 
-const kategoriList = [
-  "Obat",
-  "Suplemen",
-  "Alat Kesehatan",
-  "Vitamin",
-  "Herbal"
-];
+// const kategoriList = [
+//   "Obat",
+//   "Suplemen",
+//   "Alat Kesehatan",
+//   "Vitamin",
+//   "Herbal"
+// ];
 const satuanList = ["Strip", "Botol", "Box", "Tablet", "Pcs"];
 
 const initialState = {
   nama: "",
-  kategori: "",
+  id_kategori: "",
   satuan: "",
   stokMinimum: 10,
   status: true,
 };
 
-const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData }) => {
+const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData, kategori }) => {
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState({});
 
@@ -26,7 +26,7 @@ const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData }) => {
     if (mode === "edit" && initialData) {
       setForm({
         nama: initialData.nama || "",
-        kategori: initialData.kategori || "",
+        id_kategori: initialData.kategori || "",
         satuan: initialData.satuan || "",
         stokMinimum: initialData.stokMinimum || 10,
         status: initialData.status === "AKTIF",
@@ -48,7 +48,7 @@ const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData }) => {
   const validate = () => {
     const err = {};
     if (!form.nama.trim()) err.nama = "Nama produk wajib diisi";
-    if (!form.kategori) err.kategori = "Kategori wajib dipilih";
+    if (!form.id_kategori) err.kategori = "Kategori wajib dipilih";
     if (!form.satuan) err.satuan = "Satuan wajib diisi";
     if (!form.stokMinimum || isNaN(form.stokMinimum)) err.stokMinimum = "Stok minimum wajib diisi";
     setError(err);
@@ -60,7 +60,10 @@ const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData }) => {
     if (!validate()) return;
     const data = {
       ...initialData,
-      ...form,
+      nama: form.nama,
+      id_kategori: form.id_kategori,
+      satuan: form.satuan,
+      stokMinimum: Number(form.stokMinimum),
       status: form.status ? "AKTIF" : "NON-AKTIF",
     };
     onSubmit(data);
@@ -106,14 +109,15 @@ const ProdukForm = ({ open, onClose, onSubmit, mode = "add", initialData }) => {
         <div style={{ flex: 1 }}>
           <label style={{ fontWeight: 700, fontSize: 13, color: "#B0B0B0" }}>KATEGORI OBAT</label>
           <select
-            name="kategori"
-            value={form.kategori}
+            name="id_kategori"
+            value={form.id_kategori}
             onChange={handleChange}
-            style={{ width: "100%", border: error.kategori ? "1.5px solid #F87171" : "1.5px solid #F3F6F9", borderRadius: 8, padding: 10, marginTop: 2, fontWeight: 700 }}
           >
             <option value="">Pilih Kategori</option>
-            {kategoriList.map((k) => (
-              <option key={k} value={k}>{k}</option>
+            {kategori?.map((k) => (
+              <option key={k.id_kategori} value={k.id_kategori}>
+                {k.nama_kategori}
+              </option>
             ))}
           </select>
           {error.kategori && <div style={{ color: "#F87171", fontSize: 12, marginTop: 2 }}>{error.kategori}</div>}

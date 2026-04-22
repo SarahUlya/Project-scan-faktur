@@ -5,12 +5,10 @@ import useProdukDb from "../hooks/useProdukDb";
 import { Box } from "@mui/material";
 import Button from "../components/ui/Button";
 
-// Komponen modal detail batch (Detail Kartu Stok Otomatis)
 const DetailBatchModal = ({ batch, onClose }) => {
   if (!batch) return null;
   return (
     <div style={{ width: 800, padding: 0 }}>
-      {/* Modal Header */}
       <div style={{ padding: '24px 32px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 48, height: 48, background: '#FDF2F8', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
@@ -32,7 +30,6 @@ const DetailBatchModal = ({ batch, onClose }) => {
       </div>
 
       <div style={{ padding: '32px' }}>
-        {/* Kop Surat Apotek */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, borderBottom: '1px dashed #E2E8F0', paddingBottom: 24 }}>
           <div style={{ display: 'flex', gap: 16 }}>
              <div style={{ width: 56, height: 56, background: '#FDF2F8', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
@@ -52,7 +49,6 @@ const DetailBatchModal = ({ batch, onClose }) => {
           </div>
         </div>
 
-        {/* Info Produk */}
         <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 24, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>Nama Produk</div>
@@ -165,7 +161,6 @@ const StokBatchPage = () => {
 
   return (
     <Box>
-      {/* Header & Subjudul */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontWeight: 800, fontSize: 28, color: '#1E293B' }}>Monitoring Stok & Batch FEFO</h2>

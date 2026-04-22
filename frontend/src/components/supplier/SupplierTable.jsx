@@ -44,7 +44,6 @@ const columns = [
 ];
 
 const SupplierTable = ({ data, onEdit, onDelete }) => {
-  // inject handler ke row
   const tableData = data.map((row) => ({ ...row, onEdit, onDelete }));
   return <Table columns={columns} data={tableData} />;
 };

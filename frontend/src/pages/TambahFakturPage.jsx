@@ -26,7 +26,6 @@ const TambahFakturPage = () => {
     setItems(items.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
-        // Recalculate total
         if (field === 'qty' || field === 'harga_satuan') {
            updated.total = updated.qty * updated.harga_satuan;
         }

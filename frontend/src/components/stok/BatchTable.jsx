@@ -3,9 +3,7 @@ import Table from "../ui/Table";
 
 const checkStatus = (expiredDateStr) => {
   const expiredDate = new Date(expiredDateStr);
-  const now = new Date('2024-01-01'); // Using static baseline to match dummy data visually from prompt (or just Date.now() if dynamic)
-  // We'll use actual Date.now() but adjust because the mock data is from 2024. Wait, let's use the local time from mock if possible. For simplicity, we compare with a fixed date so the mock UI matches the image.
-  // Actually, standard is to use Date.now(). But the mock specifically has "15 Jan 2024" as EXPIRED in the image.
+  const now = new Date('2024-01-01'); 
   const diffTime = expiredDate - now;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
@@ -14,9 +12,9 @@ const checkStatus = (expiredDateStr) => {
   return { label: 'AMAN', color: '#64748B', bg: '#F1F5F9' };
 };
 
-// Ambil semua batch dari produk, flatten, dan FEFO
+
 const BatchTable = ({ produk, onShowDetail }) => {
-  // Gabungkan semua batch dari semua produk
+
   const allBatch = produk
     .flatMap((p) =>
       (p.batch || []).map((b) => ({
@@ -27,7 +25,6 @@ const BatchTable = ({ produk, onShowDetail }) => {
       }))
     );
 
-  // FEFO: Urutkan batch berdasarkan expired terdekat
   const sortedBatch = [...allBatch].sort(
     (a, b) => new Date(a.expired) - new Date(b.expired)
   );

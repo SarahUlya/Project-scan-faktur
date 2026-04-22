@@ -15,10 +15,8 @@ export default function usePembelianDb() {
   const pembelian = useLiveQuery(async () => {
     if (loading) return [];
     
-    // Assembling relational Pembelian data
     const allPembelian = await db.pembelian.toArray();
     
-    // Join with supplier to get supplier names
     const joinedPembelian = await Promise.all(allPembelian.map(async (p) => {
       const supplier = await db.supplier.get(p.supplier_id);
       return {
@@ -30,11 +28,9 @@ export default function usePembelianDb() {
     return joinedPembelian;
   }, [loading], []);
 
-  // Fungsi relational: Tambah Faktur -> nambah Detail, Batch, LogStok
   const addPembelian = async (fakturData, detailItems) => {
     return await db.transaction('rw', db.pembelian, db.pembelianDetail, db.batchProduk, db.logStok, db.produk, async () => {
       
-      // 1. Tambah Faktur Utama
       const newFakturId = `INV/${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2, '0')}/${Math.floor(Math.random()*1000).toString().padStart(3, '0')}`;
       
       await db.pembelian.add({
@@ -48,10 +44,8 @@ export default function usePembelianDb() {
         supplierType: 'Baru'
       });
 
-      // 2. Iterasi Daftar Barang
       for (const item of detailItems) {
         
-        // Simpan Detail Pembelian
         const detailId = await db.pembelianDetail.add({
           pembelian_id: fakturData.no_faktur || newFakturId,
           produk_id: item.produk_id,
@@ -60,7 +54,6 @@ export default function usePembelianDb() {
           subtotal: item.total
         });
 
-        // Simpan Batch Baru
         const batchIdStr = `BTH-${Date.now()}-${Math.floor(Math.random()*100)}`;
         await db.batchProduk.add({
           id: batchIdStr,
@@ -72,7 +65,6 @@ export default function usePembelianDb() {
           hargaBeli: item.harga_satuan
         });
 
-        // Simpan Log Stok (MASUK)
         await db.logStok.add({
           produk_id: item.produk_id,
           batch_id: batchIdStr,
@@ -83,10 +75,9 @@ export default function usePembelianDb() {
           referensi: fakturData.supplier_name,
           masuk: parseInt(item.qty),
           keluar: 0,
-          saldoAkhir: parseInt(item.qty) // simplifikasi untuk demo, di real db harus kalkulasi
+          saldoAkhir: parseInt(item.qty) 
         });
         
-        // (Opsional) Update stok total di tabel master produk jika ada kolom qty total
       }
     });
   };

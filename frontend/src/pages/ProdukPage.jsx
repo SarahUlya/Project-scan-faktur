@@ -13,17 +13,15 @@ const PAGE_SIZE = 10;
 
 
 const ProdukPage = () => {
-	const { produk, loading, add, update, remove } = useProdukDb();
+	const { produk, kategori, getNamaKategori, loading, add, update, remove } = useProdukDb();
 	const [page, setPage] = useState(1);
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
 
-	// Pagination logic
 	const total = produk.length;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 	const pagedProduk = produk.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-	// Handler CRUD
 	const handleAdd = (item) => {
 		add({ ...item, id: getNewId(produk, "PRD") });
 		setModal({ open: false, mode: "add", data: null });
@@ -52,7 +50,8 @@ const ProdukPage = () => {
 				</Button>
 			</div>
 			<div style={{ background: "#fff", borderRadius: 16, padding: 0, boxShadow: "0 2px 8px #f3f6f9", overflow: "hidden" }}>
-				<ProdukTable data={pagedProduk} onEdit={handleEdit} onDelete={handleDelete} />
+				<ProdukTable data={pagedProduk} 
+				getNamaKategori={getNamaKategori} onEdit={handleEdit} onDelete={handleDelete} />
 			</div>
 			<div style={{ marginTop: 16, color: "#B0B0B0", fontSize: 14 }}>
 				Menampilkan {pagedProduk.length} dari {total} produk
@@ -72,17 +71,16 @@ const ProdukPage = () => {
 					))}
 				</div>
 			</div>
-			{/* Modal Tambah/Edit Produk */}
 			<Modal open={modal.open} onClose={() => setModal({ open: false, mode: "add", data: null })} width={460}>
 				<ProdukForm
 					mode={modal.mode}
 					initialData={modal.data}
+					kategori={kategori}
 					onClose={() => setModal({ open: false, mode: "add", data: null })}
 					onSubmit={modal.mode === "add" ? handleAdd : handleEditSubmit}
 				/>
 			</Modal>
 
-			{/* Modal Konfirmasi Hapus */}
 			<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
 				<HapusProdukConfirm
 					open={hapus.open}

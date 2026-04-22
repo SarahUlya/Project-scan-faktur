@@ -1,5 +1,3 @@
-// Semua data dummy untuk kebutuhan dashboard dan seeding
-
 const productNames = [
   "Paracetamol 500mg",
   "Amoxicillin Syrup 60ml",
@@ -90,11 +88,12 @@ const supplierOwners = [
 // Produk
 export const produkData = Array.from({ length: 25 }, (_, i) => {
   const idx = i + 1;
+  
   return {
     kodeItem: `BRG${String(idx).padStart(3, "0")}`,
     namaItem: productNames[i],
     barcode: `899${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-    kategori: productCategories[i % productCategories.length],
+    kategoriId: String(Math.floor(Math.random() * 53) + 1),
     satuan: productUnits[i % productUnits.length],
     hargaJual: 1000 * (idx + 2),
     stokMinimum: Math.floor(Math.random() * 20) + 1,
