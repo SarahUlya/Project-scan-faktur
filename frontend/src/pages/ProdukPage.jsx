@@ -10,17 +10,28 @@ import { getNewId } from "../utils/helpers";
 
 const PAGE_SIZE = 10;
 
-
-
 const ProdukPage = () => {
-	const { produk, kategori, getNamaKategori, loading, add, update, remove } = useProdukDb();
-	const [page, setPage] = useState(1);
+	const {
+		produk,
+		kategori,
+		getNamaKategori,
+		loading,
+		add,
+		update,
+		remove,
+		search,
+		setSearch,
+		pagedProduk,
+		page,
+		setPage
+	} = useProdukDb(); 
+	
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
 
 	const total = produk.length;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
-	const pagedProduk = produk.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
 
 	const handleAdd = (item) => {
 		add({ ...item, id: getNewId(produk, "PRD") });
@@ -44,14 +55,30 @@ const ProdukPage = () => {
 
 	return (
 		<Box>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-				<Button color="pink" sx={{ fontWeight: 700, fontSize: 15, borderRadius: 2, px: 3, py: 1.5 }} onClick={() => setModal({ open: true, mode: "add", data: null })}>
+			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 15 }}>
+				<input
+					type="text"
+					placeholder="🔍 Cari produk (nama / kode / kategori)..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					style={{
+						flex: 1,
+						padding: "10px 14px",
+						borderRadius: 10,
+						border: "1px solid #ddd",
+						outline: "none",
+						fontSize: 14
+					}}
+				/>
+				<Button color="pink" sx={{ fontWeight: 700, fontSize: 15, borderRadius: 2, px: 3, py: 1.5 }}
+					onClick={() => setModal({ open: true, mode: "add", data: null })}>
 					+ Input Produk
 				</Button>
 			</div>
+
 			<div style={{ background: "#fff", borderRadius: 16, padding: 0, boxShadow: "0 2px 8px #f3f6f9", overflow: "hidden" }}>
-				<ProdukTable data={pagedProduk} 
-				getNamaKategori={getNamaKategori} onEdit={handleEdit} onDelete={handleDelete} />
+				<ProdukTable data={pagedProduk}
+					getNamaKategori={getNamaKategori} onEdit={handleEdit} onDelete={handleDelete} />
 			</div>
 			<div style={{ marginTop: 16, color: "#B0B0B0", fontSize: 14 }}>
 				Menampilkan {pagedProduk.length} dari {total} produk

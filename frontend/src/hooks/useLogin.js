@@ -37,13 +37,10 @@ export const useLogin = () => {
 
       console.log("ME RESPONSE:", me.data);
 
-      // 🔹 3. simpan user
       localStorage.setItem("user", JSON.stringify(me.data.user));
 
-      // 🔥 DEBUG TAMBAHAN
       console.log("USER DISIMPAN:", localStorage.getItem("user"));
 
-      // 🔹 4. redirect + refresh
       navigate("/");
       window.location.reload();
 

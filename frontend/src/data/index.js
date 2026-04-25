@@ -1,4 +1,11 @@
-const productNames = [
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
+import { Height } from "@mui/icons-material";
+
+
+export const productNames = [
   "Paracetamol 500mg",
   "Amoxicillin Syrup 60ml",
   "Vitamin C 1000mg",
@@ -26,10 +33,10 @@ const productNames = [
   "Folic Acid 400mcg"
 ];
 
-const productCategories = ["Obat", "Suplemen", "Alat Kesehatan", "Vitamin", "Herbal"];
-const productUnits = ["Strip", "Botol", "Box", "Tablet", "Pcs"];
+export const productCategories = ["Obat", "Suplemen", "Alat Kesehatan", "Vitamin", "Herbal"];
+export const productUnits = ["Strip", "Botol", "Box", "Tablet", "Pcs"];
 
-const supplierNames = [
+export const supplierNames = [
   "Kimia Farma Trading",
   "Apotek Sehat Mandiri",
   "CV. Medika Farma",
@@ -57,7 +64,7 @@ const supplierNames = [
   "CV. Sehat Sentosa"
 ];
 
-const supplierOwners = [
+export const supplierOwners = [
   "Budi Santoso",
   "Siti Aminah",
   "Andi Pratama",
@@ -85,79 +92,13 @@ const supplierOwners = [
   "Yusuf Ramadhan"
 ];
 
-// Produk
-export const produkData = Array.from({ length: 25 }, (_, i) => {
-  const idx = i + 1;
-  
-  return {
-    kodeItem: `BRG${String(idx).padStart(3, "0")}`,
-    namaItem: productNames[i],
-    barcode: `899${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-    kategoriId: String(Math.floor(Math.random() * 53) + 1),
-    satuan: productUnits[i % productUnits.length],
-    hargaJual: 1000 * (idx + 2),
-    stokMinimum: Math.floor(Math.random() * 20) + 1,
-    status: idx % 2 === 0 ? "AKTIF" : "NONAKTIF",
-    batch: [
-      {
-        id: `BATCH-${String(idx).padStart(3, "0")}`,
-        kodeBatch: `BTH-2026-${String(idx).padStart(4, "0")}`,
-        expired: `2027-12-${String((idx % 28) + 1).padStart(2, "0")}`,
-        stok: Math.floor(Math.random() * 500) + 10,
-        hargaBeli: 1000 * (idx + 1),
-        history: []
-      }
-    ]
-  };
-});
 
-// Supplier
-export const supplierData = Array.from({ length: 25 }, (_, i) => {
-  const idx = i + 1;
-  const nama = supplierNames[i];
-  const penanggungJawab = supplierOwners[i];
+export const laporanMenu = [
+        { title: "laporan-penjualan", desc: "Rekap transaksi dan omzet", icon: AssessmentIcon },
+        { title: "Produk Terlaris", desc: "analisis performa produk", icon: TrendingUpIcon },
+        { title: "Barang Tidak Laku", desc: "Dead stock & slow moving", icon: WarningAmberIcon },
+        { title: "Stok Expired", desc: "Status gudang dan kadaluarsa", icon: Inventory2Icon },
+    ];
 
-  return {
-    id: `SUP-${String(idx).padStart(3, "0")}`,
-    nama,
-    penanggungJawab,
-    telepon: `08${Math.floor(1100000000 + Math.random() * 8900000000)}`,
-    alamat: `Jl. Sehat No. ${idx}, Jakarta`,
-    status: idx % 2 === 0 ? "AKTIF" : "NONAKTIF",
-    inisial: nama
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .substring(0, 3)
-      .toUpperCase()
-  };
-});
 
-// Faktur
-export const fakturData = Array.from({ length: 25 }, (_, i) => {
-  const idx = i + 1;
-  return {
-    id: `INV/202401${String(idx).padStart(2, "0")}/${String(idx).padStart(3, "0")}`,
-    supplier: supplierNames[i],
-    supplierType: ["Distributor Farmasi", "PBF Nasional", "Distributor Medis", "Supplier Lokal", "Manufaktur Farmasi"][idx % 5],
-    tanggal: `2024-01-${String((idx % 28) + 1).padStart(2, "0")}`,
-    total: 1000000 * idx,
-    status: idx % 2 === 0 ? "LUNAS" : "BELUM BAYAR"
-  };
-});
 
-// Dashboard dummy
-export const DUMMY_DASHBOARD = {
-  revenue: 128940000,
-  profit: 32235000,
-  notSold: 14,
-  expired: 8,
-  minStock: 23,
-  bestProducts: [
-    { name: "Paracetamol 500mg", category: "Analgesik", sold: 1248, stock: 456, type: "Obat Bebas • Tablet" },
-    { name: "Amoxicillin Syrup", category: "Antibiotik", sold: 856, stock: 12, type: "Antibiotik • Liquid" },
-    { name: "Vitamin C 1000mg", category: "Suplemen", sold: 720, stock: 310, type: "Suplemen • Effervescent" },
-    { name: "Betadine Solution", category: "Antiseptik", sold: 412, stock: 85, type: "Obat Luar • Topical" },
-    { name: "Ibuprofen 400mg", category: "Analgesik", sold: 389, stock: 102, type: "Obat Keras • Tablet" },
-  ],
-};

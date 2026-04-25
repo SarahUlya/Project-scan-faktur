@@ -24,7 +24,7 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
           <Button type="button" variant="outlined" color="pink" sx={{ flex: 1, fontWeight: 700, fontSize: 15 }} onClick={onClose}>
             Batal
           </Button>
-          <Button type="button" color="pink" sx={{ flex: 1, fontWeight: 700, fontSize: 15 }} onClick={onDelete}>
+          <Button type="button" color="pink" sx={{ flex: 1, fontWeight: 700, fontSize: 15 }} onClick={() => onDelete && onDelete(row.id)}>
             Hapus Produk
           </Button>
         </div>

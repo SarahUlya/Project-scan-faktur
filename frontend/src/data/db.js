@@ -1,9 +1,12 @@
+import { produkData } from './produkData';
+import { supplierData } from './supplierData';
+import { fakturData } from './fakturData';
+
 export const resetDatabase = async () => {
   await db.delete();
   window.location.reload();
 };
 import Dexie from 'dexie';
-import { produkData, supplierData, fakturData } from './index';
 
 export const db = new Dexie('ApotekSystemDB');
 

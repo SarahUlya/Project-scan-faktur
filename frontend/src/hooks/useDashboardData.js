@@ -1,4 +1,4 @@
-import { DUMMY_DASHBOARD } from "../data/index";
+import { DUMMY_DASHBOARD } from "../data/dashboardData";
 import useLocalStorage from "./useLocalStorage";
 
 export default function useDashboardData() {

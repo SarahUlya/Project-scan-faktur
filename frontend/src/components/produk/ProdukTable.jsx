@@ -6,11 +6,11 @@ const getColumns = (onEdit, onDelete, getNamaKategori) => [
 	{ header: "NAMA PRODUK", accessor: "nama", width: 220, bold: true },
 	{
 		header: "KATEGORI OBAT",
-		accessor: "id_kategori",
+		accessor: "kategoriId",
 		width: 120,
 		render: (row) => {
 			console.log("Isi row di render:", row);
-			return getNamaKategori(row.id_kategori || row.kategori);
+			return getNamaKategori(row.kategoriId || row.id_kategori);
 		}
 	},
 	{ header: "SATUAN DASAR", accessor: "satuan", width: 100 },
@@ -52,8 +52,9 @@ const getColumns = (onEdit, onDelete, getNamaKategori) => [
 ];
 
 const ProdukTable = ({ data, onEdit, onDelete, getNamaKategori }) => {
-	console.log("DATA TABLE:", data);
-	console.log("ROW PERTAMA:", data?.[0]);
+	console.log("TEST NAMA:", data?.[0]?.nama);
+	console.log("TEST NAMA ITEM:", data?.[0]?.namaItem);
+	
 	return (
 		<Table columns={getColumns(onEdit, onDelete, getNamaKategori)}
 			data={data} />

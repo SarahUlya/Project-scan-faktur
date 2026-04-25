@@ -21,7 +21,26 @@ const NAVBAR_MAP = {
     desc: "Manajemen data supplier.",
     showPeriod: false,
   },
-
+  "/stok-batch": {
+    title: "Monitoring Stok & Batch FEFO",
+    desc: "First-Expired-First-Out (FEFO) Inventory Management.",
+    showPeriod: false,
+  },
+  "/laporan": {
+    title: "Laporan & Rekapitulasi",
+    desc: "Analisa data performa Apotek Ampuh Tayu.",
+    showPeriod: true,
+  },
+  "/riwayat": {
+    title: "Riwayat Transaksi",
+    desc: "Daftar rekaman transaksi penjualan Apotek Ampuh Tayu.",
+    showPeriod: true,
+  },
+  "/user-management": {
+    title: "Manajemen User",
+    desc: "Kelola data pengguna dan hak akses sistem.",
+    showPeriod: true,
+  },
 };
 
 const Navbar = () => {

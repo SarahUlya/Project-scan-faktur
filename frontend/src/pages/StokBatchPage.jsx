@@ -161,13 +161,7 @@ const StokBatchPage = () => {
 
   return (
     <Box>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ margin: 0, fontWeight: 800, fontSize: 28, color: '#1E293B' }}>Monitoring Stok & Batch FEFO</h2>
-          <div style={{ color: '#64748B', fontWeight: 500, fontSize: 15, marginTop: 4 }}>
-            First-Expired-First-Out (FEFO) Inventory Management
-          </div>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24 }}>
         <button style={{ padding: '12px 24px', borderRadius: 12, background: '#fff', border: '1px solid #FCE7F3', color: '#EC4899', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 2px 8px rgba(236, 72, 153, 0.1)' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
           Cetak Laporan Stok

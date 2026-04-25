@@ -10,9 +10,13 @@ import StokBatchPage from "../pages/StokBatchPage";
 import PembelianPage from "../pages/PembelianPage";
 import TambahFakturPage from "../pages/TambahFakturPage";
 import LoginPage from "../pages/LoginPage";
+import LaporanPage from "../pages/LaporanPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { ROLE } from "../auth/auth";
 import Unauthorized from "../pages/Unauthorized";
+import RiwayatPage from "../pages/RiwayatPage";
+import UserManagementPage from "../pages/UserManagementPage";
+
 
 const AppRouter = () => {
   return (
@@ -54,7 +58,22 @@ const AppRouter = () => {
             <TambahFakturPage />
           </ProtectedRoute>
         } />
-      
+        <Route path="/laporan" element={
+          <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+            <LaporanPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/riwayat" element={
+          <ProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.STAFF, ROLE.KASIR]}>
+            <RiwayatPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/user-management" element={
+          <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+            <UserManagementPage />
+          </ProtectedRoute>
+         } />
+       
       </Route>
       </Routes>
     </BrowserRouter >
