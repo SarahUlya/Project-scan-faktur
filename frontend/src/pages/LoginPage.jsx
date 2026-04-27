@@ -78,21 +78,6 @@ export default function LoginPage() {
             }}
           />
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  sx={{ color: "#ec407a", "&.Mui-checked": { color: "#ec407a" } }}
-                />
-              }
-              label={<Typography sx={{ fontSize: 13 }}>Ingat saya</Typography>}
-            />
-            <Typography sx={styles.accentText}>Lupa Password?</Typography>
-          </Box>
-
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
           )}
