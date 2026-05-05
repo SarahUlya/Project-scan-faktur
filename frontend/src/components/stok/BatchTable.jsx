@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import Table from "../ui/Table";
+import { IconButton } from "@mui/material";
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 const checkStatus = (expiredDateStr) => {
   const expiredDate = new Date(expiredDateStr);
@@ -84,9 +86,19 @@ const BatchTable = ({ produk, onShowDetail }) => {
       accessor: "aksi",
       align: "center",
       render: (row) => (
-        <button style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 8, borderRadius: 8, transition: 'all 0.2s', display: 'inline-flex' }} onMouseEnter={e => e.currentTarget.style.color='#EC4899'} onMouseLeave={e => e.currentTarget.style.color='#94A3B8'} onClick={() => onShowDetail(row)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
+        <IconButton
+          size="small"
+          onClick={() => onShowDetail(row)}
+          title="Lihat detail batch"
+          sx={{
+            color: "#64748B",
+            border: "1px solid #F3F6F9",
+            bgcolor: "#fff",
+            '&:hover': { bgcolor: "#f8f4f8" },
+          }}
+        >
+          <VisibilityOutlinedIcon fontSize="small" />
+        </IconButton>
       ),
     },
   ];

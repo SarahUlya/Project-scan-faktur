@@ -1,9 +1,12 @@
-import React, { useState } from "react";
-import { Box } from "@mui/material";
+import React, { useState, useRef, useEffect } from "react";
+import { Box, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import usePembelianDb from "../hooks/usePembelianDb";
 import useProdukDb from "../hooks/useProdukDb";
 import useSupplierDb from "../hooks/useSupplierDb";
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SaveIcon from '@mui/icons-material/Save';
 
 const TambahFakturPage = () => {
   const navigate = useNavigate();
@@ -13,13 +16,53 @@ const TambahFakturPage = () => {
   
   const [fakturInfo, setFakturInfo] = useState({ supplier_id: '', supplier_name: '', no_faktur: '', tanggal: '' });
   const [items, setItems] = useState([{ id: 1, produk_id: '', no_batch: '', exp_date: '', qty: 0, harga_satuan: 0, total: 0 }]);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const barcodeInputRef = useRef(null);
+
+  // Fokuskan input barcode secara otomatis saat pertama kali dibuka
+  useEffect(() => {
+    if (barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  }, []);
+
+  const handleBarcodeScan = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const code = barcodeInput.trim();
+      if (!code) return;
+
+      const foundProduct = produk.find(p => p.barcode === code || p.id === code);
+      if (foundProduct) {
+        // Jika ada baris kosong pertama, gunakan baris itu, jika tidak tambahkan baris baru
+        const emptyRowIndex = items.findIndex(item => !item.produk_id);
+        
+        if (emptyRowIndex !== -1) {
+          const newItems = [...items];
+          newItems[emptyRowIndex] = { ...newItems[emptyRowIndex], produk_id: foundProduct.id };
+          setItems(newItems);
+        } else {
+          setItems([...items, { id: Date.now(), produk_id: foundProduct.id, no_batch: '', exp_date: '', qty: 0, harga_satuan: 0, total: 0 }]);
+        }
+        // Kosongkan input setelah sukses
+        setBarcodeInput("");
+      } else {
+        alert(`Produk dengan barcode ${code} tidak ditemukan di master data!`);
+        setBarcodeInput("");
+      }
+    }
+  };
 
   const handleTambahBaris = () => {
     setItems([...items, { id: Date.now(), produk_id: '', no_batch: '', exp_date: '', qty: 0, harga_satuan: 0, total: 0 }]);
   };
 
   const handleHapusBaris = (id) => {
-    setItems(items.filter(item => item.id !== id));
+    if (items.length > 1) {
+      setItems(items.filter(item => item.id !== id));
+    } else {
+      setItems([{ id: Date.now(), produk_id: '', no_batch: '', exp_date: '', qty: 0, harga_satuan: 0, total: 0 }]);
+    }
   };
 
   const updateItem = (id, field, value) => {
@@ -92,16 +135,35 @@ const TambahFakturPage = () => {
       <div style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
           <div style={{ width: 64, height: 64, background: '#FDF2F8', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
-             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 7 19 7"/><path d="M14 21v-4"/><path d="M6 14v7"/><circle cx="10" cy="14" r="2"/></svg>
+             <QrCodeScannerIcon fontSize="large" />
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#1E293B', marginBottom: 4 }}>Scan Data Faktur (OCR)</div>
-            <div style={{ color: '#64748B', fontSize: 15 }}>Otomatiskan input data dengan mengambil foto faktur. Sistem akan mendeteksi supplier, nomor faktur, dan daftar item secara otomatis.</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#1E293B', marginBottom: 4 }}>Scan Barcode Produk</div>
+            <div style={{ color: '#64748B', fontSize: 15, maxWidth: 600 }}>Otomatiskan input data dengan menggunakan pemindai barcode untuk mendeteksi produk dengan cepat tanpa input manual.</div>
           </div>
         </div>
-        <button style={{ padding: '14px 24px', borderRadius: 12, background: '#EC4899', color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-           Mulai Scan OCR
-        </button>
+        <div>
+          <input 
+            ref={barcodeInputRef}
+            type="text" 
+            placeholder="Arahkan scanner ke sini..." 
+            value={barcodeInput}
+            onChange={(e) => setBarcodeInput(e.target.value)}
+            onKeyDown={handleBarcodeScan}
+            style={{ 
+              padding: '14px 24px', 
+              borderRadius: 12, 
+              border: '2px solid #FCE7F3', 
+              background: '#FFF1F2', 
+              color: '#E91E63', 
+              fontWeight: 700, 
+              fontSize: 15, 
+              outline: 'none',
+              width: 250,
+              textAlign: 'center'
+            }} 
+          />
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: 24 }}>
@@ -139,7 +201,7 @@ const TambahFakturPage = () => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E11D48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1E293B' }}>Daftar Item Barang</h3>
           </div>
-          <button onClick={handleTambahBaris} style={{ padding: '8px 16px', borderRadius: 8, background: '#FDF2F8', color: '#EC4899', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={handleTambahBaris} style={{ padding: '8px 16px', borderRadius: 8, background: 'rgb(233, 30, 99)', color: 'rgb(255, 255, 255)', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
              TAMBAH BARIS
           </button>
@@ -162,8 +224,8 @@ const TambahFakturPage = () => {
               {items.map((item, index) => (
                 <tr key={item.id} style={{ borderBottom: index === items.length - 1 ? 'none' : '1px solid #F1F5F9' }}>
                   <td style={{ padding: '12px' }}>
-                     <select onChange={e => updateItem(item.id, 'produk_id', e.target.value)} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E2E8F0', color: '#64748B', outline: 'none' }}>
-                        <option value="">Cari produk...</option>
+                     <select value={item.produk_id} onChange={e => updateItem(item.id, 'produk_id', e.target.value)} style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid #E2E8F0', color: item.produk_id ? '#1E293B' : '#94A3B8', outline: 'none', fontWeight: item.produk_id ? 600 : 400 }}>
+                        <option value="" disabled>Cari atau pilih produk...</option>
                         {produk.map(p => (
                           <option key={p.id} value={p.id}>{p.nama}</option>
                         ))}
@@ -185,8 +247,8 @@ const TambahFakturPage = () => {
                     {item.total.toLocaleString('id-ID')}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <button onClick={() => handleHapusBaris(item.id)} style={{ background: 'none', border: 'none', color: '#CBD5E1', cursor: 'pointer', padding: 8 }} onMouseEnter={e => e.currentTarget.style.color='#EF4444'} onMouseLeave={e => e.currentTarget.style.color='#CBD5E1'}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    <button onClick={() => handleHapusBaris(item.id)} style={{ background: '#FFF1F2', borderRadius: 8, border: 'none', color: '#E11D48', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <DeleteOutlineIcon fontSize="small" />
                     </button>
                   </td>
                 </tr>

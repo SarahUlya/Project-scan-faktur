@@ -1,6 +1,5 @@
 import { Box } from "@mui/material";
 import Sidebar from "../components/navigation/Sidebar";
-import Navbar from "../components/navigation/Navbar";
 import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
@@ -10,7 +9,6 @@ const DashboardLayout = () => {
       <Sidebar />
 
       <Box sx={{ flexGrow: 1, background: '#FFF5F8', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Navbar />
         <Box sx={{ p: { xs: 2, md: 4 }, flexGrow: 1, maxWidth: 1600, mx: "auto", w: "100%", width: "100%" }}>
           <Outlet />
         </Box>

@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import ProdukTable from "../components/produk/ProdukTable";
-import Button from "../components/ui/Button";
+import ProdukDetailModal from "../components/produk/ProdukDetailModal";
+import PaginationControls from "../components/ui/PaginationControls";
 import useProdukDb from "../hooks/useProdukDb";
 import Modal from "../components/ui/Modal";
 import ProdukForm from "../components/produk/ProdukForm";
 import HapusProdukConfirm from "../components/produk/HapusProdukConfirm";
-import { Box } from "@mui/material";
-import { getNewId } from "../utils/helpers";
+import { Box, Typography, TextField, InputAdornment, Button } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 
 const ProdukPage = () => {
 	const {
@@ -28,14 +31,32 @@ const ProdukPage = () => {
 	
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
+	const [detail, setDetail] = useState(null);
+	const [searchParams, setSearchParams] = useSearchParams();
 
 	const total = produk.length;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 
+	useEffect(() => {
+		const query = searchParams.get("search") || "";
+		setSearch(query);
+		setPage(1);
+
+		if (searchParams.get("add") === "true") {
+			setModal({ open: true, mode: "add", data: null });
+		}
+	}, [searchParams]);
+
+	const clearAddParam = () => {
+		const params = new URLSearchParams(searchParams);
+		params.delete("add");
+		setSearchParams(params);
+	};
 
 	const handleAdd = (item) => {
-		add({ ...item, id: getNewId(produk, "PRD") });
+		add(item);
 		setModal({ open: false, mode: "add", data: null });
+		clearAddParam();
 	};
 	const handleEdit = (item) => {
 		setModal({ open: true, mode: "edit", data: item });
@@ -44,66 +65,124 @@ const ProdukPage = () => {
 		update(item);
 		setModal({ open: false, mode: "edit", data: null });
 	};
+	const handleSearch = (value) => {
+		setSearch(value);
+		setPage(1);
+	};
 	const handleDelete = (id) => {
 		const data = produk.find((p) => p.id === id);
 		setHapus({ open: true, data });
 	};
+
+	const handleDetail = (item) => {
+		setDetail(item);
+	};
+
 	const handleDeleteConfirm = () => {
 		if (hapus.data) remove(hapus.data.id);
 		setHapus({ open: false, data: null });
 	};
 
+	const handleCloseModal = () => {
+		setModal({ open: false, mode: "add", data: null });
+		clearAddParam();
+	};
+
+	const handleOpenAdd = () => {
+		setModal({ open: true, mode: "add", data: null });
+		const params = new URLSearchParams(searchParams);
+		params.set("add", "true");
+		setSearchParams(params);
+	};
+
 	return (
 		<Box>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 15 }}>
-				<input
-					type="text"
-					placeholder="🔍 Cari produk (nama / kode / kategori)..."
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					style={{
-						flex: 1,
-						padding: "10px 14px",
-						borderRadius: 10,
-						border: "1px solid #ddd",
-						outline: "none",
-						fontSize: 14
-					}}
-				/>
-				<Button color="pink" sx={{ fontWeight: 700, fontSize: 15, borderRadius: 2, px: 3, py: 1.5 }}
-					onClick={() => setModal({ open: true, mode: "add", data: null })}>
-					+ Input Produk
-				</Button>
-			</div>
+			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", p: 3, mb: 3 }}>
+				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 3, flexWrap: "wrap" }}>
+					<Box sx={{ flex: 1, minWidth: 280 }}>
+						<Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
+							Master Data Produk
+						</Typography>
+						<Typography sx={{ color: "#64748B", mt: 1 }}>
+							Manajemen katalog obat dan perlengkapan medis.
+						</Typography>
+					</Box>
 
-			<div style={{ background: "#fff", borderRadius: 16, padding: 0, boxShadow: "0 2px 8px #f3f6f9", overflow: "hidden" }}>
-				<ProdukTable data={pagedProduk}
-					getNamaKategori={getNamaKategori} onEdit={handleEdit} onDelete={handleDelete} />
-			</div>
-			<div style={{ marginTop: 16, color: "#B0B0B0", fontSize: 14 }}>
-				Menampilkan {pagedProduk.length} dari {total} produk
-			</div>
-			<div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-				<div style={{ display: "flex", gap: 8 }}>
-					{Array.from({ length: totalPages }, (_, i) => (
+					<Box sx={{ display: "flex", gap: 2, alignItems: "center", minWidth: 480 }}>
+						<TextField
+							size="small"
+							variant="outlined"
+							placeholder="Cari produk..."
+							value={search}
+							onChange={(e) => {
+								const query = e.target.value;
+								setSearch(query);
+								const params = new URLSearchParams(searchParams);
+								if (query) {
+									params.set("search", query);
+								} else {
+									params.delete("search");
+								}
+								setSearchParams(params);
+								setPage(1);
+							}}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon sx={{ color: "#94A3B8" }} />
+									</InputAdornment>
+								),
+								sx: {
+									borderRadius: 3,
+									background: "#F8F8FB",
+									height: 44,
+								},
+							}}
+							sx={{ flex: 1, minWidth: 240 }}
+						/>
 						<Button
-							key={i + 1}
-							color="pink"
-							variant={page === i + 1 ? "contained" : "outlined"}
-							sx={{ minWidth: 36, px: 0, borderRadius: 8, fontWeight: 700, fontSize: 15 }}
-							onClick={() => setPage(i + 1)}
+							variant="contained"
+							startIcon={<AddIcon />}
+							sx={{
+								textTransform: "none",
+								borderRadius: 3,
+								height: 44,
+								px: 3,
+								fontWeight: 700,
+								backgroundColor: "rgb(233, 30, 99)",
+								color: "rgb(255, 255, 255)",
+								boxShadow: "0 20px 40px rgba(233, 30, 99, 0.2)",
+								'&:hover': {
+									backgroundColor: "#d81b60",
+								},
+							}}
+							onClick={handleOpenAdd}
 						>
-							{i + 1}
+							Input Produk
 						</Button>
-					))}
+					</Box>
+				</Box>
+			</Box>
+
+			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
+				<ProdukTable
+					data={pagedProduk}
+					getNamaKategori={getNamaKategori}
+					onViewDetail={handleDetail}
+					onEdit={handleEdit}
+					onDelete={handleDelete}
+				/>
+				<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<div>Menampilkan {pagedProduk.length} dari {total} produk</div>
+					<PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
 				</div>
-			</div>
-			<Modal open={modal.open} onClose={() => setModal({ open: false, mode: "add", data: null })} width={460}>
+			</Box>
+			<Modal open={modal.open} onClose={handleCloseModal} width={460}>
 				<ProdukForm
 					mode={modal.mode}
 					initialData={modal.data}
 					kategori={kategori}
-					onClose={() => setModal({ open: false, mode: "add", data: null })}
+					onClose={handleCloseModal}
 					onSubmit={modal.mode === "add" ? handleAdd : handleEditSubmit}
 				/>
 			</Modal>
@@ -114,6 +193,14 @@ const ProdukPage = () => {
 					onClose={() => setHapus({ open: false, data: null })}
 					onDelete={handleDeleteConfirm}
 					produk={hapus.data}
+				/>
+			</Modal>
+
+			<Modal open={!!detail} onClose={() => setDetail(null)} width={760}>
+				<ProdukDetailModal
+					product={detail}
+					getNamaKategori={getNamaKategori}
+					onClose={() => setDetail(null)}
 				/>
 			</Modal>
 		</Box>

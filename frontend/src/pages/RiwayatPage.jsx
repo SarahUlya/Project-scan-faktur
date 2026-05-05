@@ -3,9 +3,17 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Table from "../components/ui/Table";
 import useRiwayat from "../hooks/useRiwayat";
+import PaginationControls from "../components/ui/PaginationControls";
+import { useState } from "react";
+
+const PAGE_SIZE = 25;
 
 const RiwayatPage = () => {
     const { data } = useRiwayat();
+    const [page, setPage] = useState(1);
+
+    const totalPages = Math.ceil(data.length / PAGE_SIZE);
+    const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const columns = [
         { header: "NO", accessor: "no" },
@@ -71,8 +79,15 @@ const RiwayatPage = () => {
     return (
         <Box sx={{ p: 3, width: "100%" }}>
 
-            <Card sx={{ p: 3, borderRadius: 4 }}>
-                <Table columns={columns} data={data} />
+            <Card sx={{ p: 0, borderRadius: 4, overflow: 'hidden' }}>
+                <Box sx={{ p: 3, borderBottom: '1px solid #F1F5F9' }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#1E293B' }}>Riwayat Transaksi POS</Typography>
+                </Box>
+                <Table columns={columns} data={pagedData} />
+                <div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>Menampilkan {pagedData.length} dari {data.length} transaksi</div>
+                    <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
+                </div>
             </Card>
         </Box>
     );

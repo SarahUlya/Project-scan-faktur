@@ -1,17 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import FakturTable from "../components/pembelian/FakturTable";
 import { Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import usePembelianDb from "../hooks/usePembelianDb";
+import PaginationControls from "../components/ui/PaginationControls";
+
+const PAGE_SIZE = 25;
 
 const PembelianPage = () => {
   const navigate = useNavigate();
   const { pembelian, loading } = usePembelianDb();
+  const [page, setPage] = useState(1);
 
   const totalFaktur = pembelian.length;
   const totalPembelian = pembelian.reduce((acc, curr) => acc + (curr.total || 0), 0);
   const lunas = pembelian.filter(p => p.status === 'LUNAS').length;
   const belumBayar = pembelian.filter(p => p.status !== 'LUNAS').length;
+
+  const totalPages = Math.ceil(pembelian.length / PAGE_SIZE);
+  const pagedPembelian = pembelian.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <Box>
@@ -29,7 +36,7 @@ const PembelianPage = () => {
             </div>
             <input type="text" placeholder="Cari faktur..." style={{ width: 260, padding: '14px 16px 14px 44px', borderRadius: 14, border: 'none', background: '#fff', fontSize: 15, outline: 'none', color: '#1E293B', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }} />
           </div>
-          <button onClick={() => navigate('/pembelian/tambah')} style={{ padding: '14px 24px', borderRadius: 14, background: '#EC4899', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(236, 72, 153, 0.2)' }}>
+          <button onClick={() => navigate('/pembelian/tambah')} style={{ padding: '14px 24px', borderRadius: 14, background: 'rgb(233, 30, 99)', color: 'rgb(255, 255, 255)', border: 'none', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(233, 30, 99, 0.2)' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Tambah Data Faktur
           </button>
@@ -55,7 +62,13 @@ const PembelianPage = () => {
         </div>
       </div>
 
-      <FakturTable data={pembelian} loading={loading} />
+      <Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
+        <FakturTable data={pagedPembelian} loading={loading} />
+        <div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>Menampilkan {pagedPembelian.length} dari {pembelian.length} faktur</div>
+          <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
+        </div>
+      </Box>
     </Box>
   );
 };

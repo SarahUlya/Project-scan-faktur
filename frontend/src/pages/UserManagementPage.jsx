@@ -1,8 +1,7 @@
 import { Box, Typography, IconButton, Chip } from "@mui/material";
 import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
 import Table from "../components/ui/Table";
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import CrudPageHeader from "../components/ui/CrudPageHeader";
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import useManajemenUser from "../hooks/useManajemenUser";
@@ -71,16 +70,13 @@ const ManajemenUserPage = () => {
 
   return (
     <Box sx={{ p: 3, width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 }}>
-        <Button 
-          variant="contained" 
-          startIcon={<PersonAddAlt1Icon />}
-          onClick={handleTambah}
-          sx={{ color: "white", bgcolor: "#E91E63", borderRadius: 3, "&:hover": { bgcolor: "#C2185B" } }}
-        >
-          Tambah User
-        </Button>
-      </Box>
+      <CrudPageHeader
+        title="Manajemen User"
+        description="Kelola pengguna dan hak akses sistem dengan cepat."
+        actionLabel="Tambah User"
+        onAction={handleTambah}
+        hideSearch
+      />
 
       <Card sx={{ p: 0, borderRadius: 3, overflow: "hidden" }}>
         <Table columns={columns} data={users} />

@@ -48,29 +48,35 @@ const Table = ({ columns, data, highlightRows = [] }) => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.map((row, idx) => (
-            <TableRow
-
-            >
-              {columns.map((col, cidx) => (
-                <TableCell
-                  key={cidx}
-                  sx={{
-                    fontWeight: col.bold ? 700 : 500,
-                    color: col.bold && col.color ? col.color : "#222",
-                    fontSize: 15,
-                    borderBottom:
-                      idx === data.length - 1 ? "none" : "1px solid #F3F6F9",
-                    px: 2,
-                    py: 1.5,
-                    textAlign: col.align || "left",
-                  }}
-                >
-                  {col.render ? col.render(row, idx) : row[col.accessor]}
-                </TableCell>
-              ))}
+          {data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} sx={{ textAlign: "center", color: "#94A3B8", py: 8, fontSize: 15 }}>
+                Tidak ada data untuk ditampilkan.
+              </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            data.map((row, idx) => (
+              <TableRow key={row.id || idx}>
+                {columns.map((col, cidx) => (
+                  <TableCell
+                    key={cidx}
+                    sx={{
+                      fontWeight: col.bold ? 700 : 500,
+                      color: col.bold && col.color ? col.color : "#222",
+                      fontSize: 15,
+                      borderBottom:
+                        idx === data.length - 1 ? "none" : "1px solid #F3F6F9",
+                      px: 2,
+                      py: 1.5,
+                      textAlign: col.align || "left",
+                    }}
+                  >
+                    {col.render ? col.render(row, idx) : row[col.accessor]}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </MuiTable>
     </TableContainer>

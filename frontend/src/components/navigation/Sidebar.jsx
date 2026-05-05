@@ -1,6 +1,14 @@
 import {
-  Drawer, List, ListItemButton, ListItemIcon, ListItemText,
-  Box, Typography, Avatar
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Box,
+  Typography,
+  Avatar,
+  Divider,
+  IconButton,
 } from "@mui/material";
 
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -12,6 +20,7 @@ import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import HistoryIcon from "@mui/icons-material/History";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import useSidebarMenu from "../../hooks/useSidebarMenu";
@@ -47,6 +56,13 @@ const Sidebar = () => {
   const menu = useSidebarMenu();
   const user = getUser();
 
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("isLogin");
+    localStorage.removeItem("rememberedUsername");
+    navigate("/login");
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -58,6 +74,7 @@ const Sidebar = () => {
           boxSizing: "border-box",
           background: "#FFFFFF",
           borderRight: "none",
+          boxShadow: "2px 0 20px rgba(15, 23, 42, 0.05)",
         },
       }}
     >
@@ -75,7 +92,7 @@ const Sidebar = () => {
         </Box>
 
         {/* MENU */}
-        <List sx={{ flexGrow: 1 }}>
+        <List sx={{ flexGrow: 1, px: 1 }}>
           {menu.map((item, index) => {
             const selected = location.pathname === item.path;
 
@@ -84,15 +101,19 @@ const Sidebar = () => {
                 key={index}
                 onClick={() => navigate(item.path)}
                 sx={{
-                  mx: 1,
-                  my: 1,
-                  borderRadius: 2,
-                  background: selected ? "#E91E63" : "none",
+                  mx: 0,
+                  my: 0.5,
+                  borderRadius: 3,
+                  background: selected ? "#E91E63" : "transparent",
                   color: selected ? "#fff" : "#64748B",
-                  pl: 3,
+                  pl: 2.5,
+                  py: 1.25,
+                  '&:hover': {
+                    background: selected ? "#E91E63" : "rgba(233, 30, 99, 0.08)",
+                  },
                 }}
               >
-                <ListItemIcon sx={{ color: selected ? "#fff" : "#94A3B8" }}>
+                <ListItemIcon sx={{ color: selected ? "#fff" : "#94A3B8", minWidth: 40 }}>
                   {iconMap[item.icon]}
                 </ListItemIcon>
 
@@ -100,6 +121,8 @@ const Sidebar = () => {
                   primary={item.text}
                   primaryTypographyProps={{
                     fontWeight: selected ? 700 : 600,
+                    fontSize: 14,
+                    color: selected ? "#fff" : "#64748B",
                   }}
                 />
               </ListItemButton>
@@ -113,29 +136,29 @@ const Sidebar = () => {
             sx={{
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               gap: 2,
               background: "#FDF2F8",
               borderRadius: 2,
               p: 2,
             }}
           >
-            <Avatar sx={{ bgcolor: "#E91E63", width: 48, height: 48 }}>
-              {getInitials(user?.name || user?.username)}
-            </Avatar>
-
-            <Box>
-              <Typography fontWeight="bold">
-                {user?.name || user?.username || "Unknown User"}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                {user?.email || "tidak ada email"}
-              </Typography>
-
-              <Typography variant="caption" color="primary">
-                {user?.role || "-"}
-              </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Avatar sx={{ bgcolor: "#E91E63", width: 48, height: 48 }}>
+                {getInitials(user?.name || user?.username)}
+              </Avatar>
+              <Box>
+                <Typography fontWeight="bold" sx={{ fontSize: 14 }}>
+                  {user?.name || user?.username || "Unknown User"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                  {user?.email || "tidak ada email"}
+                </Typography>
+              </Box>
             </Box>
+            <IconButton onClick={handleLogout} sx={{ color: "#E91E63" }} aria-label="Logout">
+              <ExitToAppIcon />
+            </IconButton>
           </Box>
         </Box>
 

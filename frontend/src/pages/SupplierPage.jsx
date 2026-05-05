@@ -1,26 +1,38 @@
 import React, { useState } from "react";
 import SupplierTable from "../components/supplier/SupplierTable";
-import Button from "../components/ui/Button";
+import PaginationControls from "../components/ui/PaginationControls";
 import useSupplierDb from "../hooks/useSupplierDb";
 import Modal from "../components/ui/Modal";
 import SupplierForm from "../components/supplier/SupplierForm";
 import HapusSupplierConfirm from "../components/supplier/HapusSupplierConfirm";
-import { Box } from "@mui/material";
+import { Box, Typography, TextField, InputAdornment, Button } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
 import { getNewId } from "../utils/helpers";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 
 
 
 const SupplierPage = () => {
 	const { supplier, loading, add, update, remove } = useSupplierDb();
+	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
 
-	const total = supplier.length;
+	const filteredSupplier = supplier.filter((item) => {
+		const query = search.toLowerCase();
+		return (
+			(item.namaSupplier || "").toLowerCase().includes(query) ||
+			(item.alamat || "").toLowerCase().includes(query) ||
+			(item.telepon || "").toLowerCase().includes(query)
+		);
+	});
+
+	const total = filteredSupplier.length;
 	const totalPages = Math.ceil(total / PAGE_SIZE);
-	const pagedSupplier = supplier.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+	const pagedSupplier = filteredSupplier.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
 	const handleAdd = (item) => {
 		add({ ...item, id: getNewId(supplier, "SUP") });
@@ -37,6 +49,10 @@ const SupplierPage = () => {
 		const data = supplier.find((s) => s.id === id);
 		setHapus({ open: true, data });
 	};
+	const handleSearch = (value) => {
+		setSearch(value);
+		setPage(1);
+	};
 	const handleDeleteConfirm = () => {
 		if (hapus.data) remove(hapus.data.id);
 		setHapus({ open: false, data: null });
@@ -44,36 +60,69 @@ const SupplierPage = () => {
 
 	return (
 		<Box>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-				<div>
-					<h2 style={{ margin: 0, fontWeight: 800, fontSize: 24 }}>Manajemen Data Supplier</h2>
-					<div style={{ color: "#B0B0B0", fontSize: 15, marginTop: 4 }}>Kelola informasi mitra pemasok obat dan alkes.</div>
-				</div>
-				<Button color="pink" sx={{ fontWeight: 700, fontSize: 15, borderRadius: 2, px: 3, py: 1.5 }} onClick={() => setModal({ open: true, mode: "add", data: null })}>
-					+ Tambah Supplier
-				</Button>
-			</div>
-			<div style={{ background: "#fff", borderRadius: 16, padding: 0, boxShadow: "0 2px 8px #f3f6f9", overflow: "hidden" }}>
-				<SupplierTable data={pagedSupplier} onEdit={handleEdit} onDelete={handleDelete} />
-			</div>
-			<div style={{ marginTop: 16, color: "#B0B0B0", fontSize: 14 }}>
-				Menampilkan {pagedSupplier.length} dari {total} supplier
-			</div>
-			<div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-				<div style={{ display: "flex", gap: 8 }}>
-					{Array.from({ length: totalPages }, (_, i) => (
+			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", p: 3, mb: 3 }}>
+				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 3, flexWrap: "wrap" }}>
+					<Box sx={{ flex: 1, minWidth: 280 }}>
+						<Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
+							Data Supplier
+						</Typography>
+						<Typography sx={{ color: "#64748B", mt: 1 }}>
+							Kelola informasi mitra pemasok obat dan alkes.
+						</Typography>
+					</Box>
+
+					<Box sx={{ display: "flex", gap: 2, alignItems: "center", minWidth: 480 }}>
+						<TextField
+							size="small"
+							variant="outlined"
+							placeholder="Cari supplier, alamat, atau telepon..."
+							value={search}
+							onChange={(e) => handleSearch(e.target.value)}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon sx={{ color: "#94A3B8" }} />
+									</InputAdornment>
+								),
+								sx: {
+									borderRadius: 3,
+									background: "#F8F8FB",
+									height: 44,
+								},
+							}}
+							sx={{ flex: 1, minWidth: 240 }}
+						/>
 						<Button
-							key={i + 1}
-							color="pink"
-							variant={page === i + 1 ? "contained" : "outlined"}
-							sx={{ minWidth: 36, px: 0, borderRadius: 8, fontWeight: 700, fontSize: 15 }}
-							onClick={() => setPage(i + 1)}
+							variant="contained"
+							startIcon={<AddIcon />}
+							sx={{
+								textTransform: "none",
+								borderRadius: 3,
+								height: 44,
+								px: 3,
+								fontWeight: 700,
+								backgroundColor: "rgb(233, 30, 99)",
+								color: "rgb(255, 255, 255)",
+								boxShadow: "0 20px 40px rgba(233, 30, 99, 0.2)",
+								'&:hover': {
+									backgroundColor: "#d81b60",
+								},
+							}}
+							onClick={() => setModal({ open: true, mode: "add", data: null })}
 						>
-							{i + 1}
+							Tambah Supplier
 						</Button>
-					))}
+					</Box>
+				</Box>
+			</Box>
+
+			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
+				<SupplierTable data={pagedSupplier} onEdit={handleEdit} onDelete={handleDelete} />
+				<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+					<div>Menampilkan {pagedSupplier.length} dari {total} supplier</div>
+					<PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
 				</div>
-			</div>
+			</Box>
 			<Modal open={modal.open} onClose={() => setModal({ open: false, mode: "add", data: null })} width={460}>
 				<SupplierForm
 					mode={modal.mode}

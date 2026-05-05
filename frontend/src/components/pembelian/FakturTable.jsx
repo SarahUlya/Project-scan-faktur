@@ -1,5 +1,8 @@
 import React from "react";
 import formatCurrency from "../../utils/formatCurrency";
+import { IconButton, Box } from "@mui/material";
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 
 const statusStyle = {
   LUNAS: { background: '#D1FAE5', color: '#10B981' },
@@ -51,28 +54,37 @@ const FakturTable = ({ data = [], loading }) => {
                   }}>{row.status}</span>
                 </td>
                 <td style={{ padding: '20px 20px', textAlign: 'center' }}>
-                  <button style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 8, display: 'inline-flex', verticalAlign: 'middle', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color='#EC4899'} onMouseLeave={e => e.currentTarget.style.color='#94A3B8'}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
-                  <button style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 8, display: 'inline-flex', verticalAlign: 'middle', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color='#EC4899'} onMouseLeave={e => e.currentTarget.style.color='#94A3B8'}>
-                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-                  </button>
+                  <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+                    <IconButton
+                      size="small"
+                      title="Lihat detail faktur"
+                      sx={{
+                        color: "#64748B",
+                        border: "1px solid #F3F6F9",
+                        bgcolor: "#fff",
+                        '&:hover': { bgcolor: "#f8f4f8" },
+                      }}
+                    >
+                      <VisibilityOutlinedIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      title="Cetak faktur"
+                      sx={{
+                        color: "#64748B",
+                        border: "1px solid #F3F6F9",
+                        bgcolor: "#fff",
+                        '&:hover': { bgcolor: "#f8f4f8" },
+                      }}
+                    >
+                      <PrintOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-      <div style={{ padding: '20px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>Menampilkan {data.length > 0 ? 1 : 0} - {data.length} dari {data.length} data</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ padding: '8px 12px', background: '#F1F5F9', border: 'none', borderRadius: 8, color: '#94A3B8', cursor: 'pointer', fontWeight: 600 }}>&lt;</button>
-          <button style={{ padding: '8px 14px', background: '#EC4899', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontWeight: 700 }}>1</button>
-          <button style={{ padding: '8px 12px', background: '#F8FAFC', border: 'none', borderRadius: 8, color: '#64748B', cursor: 'pointer', fontWeight: 600 }}>&gt;</button>
-        </div>
-      </div>
-      <div style={{ textAlign: 'center', color: '#94A3B8', fontSize: 13, marginTop: 16 }}>
-         &copy; 2024 Apotek Ampuh Tayu Management System • Versi 1.0.0-PRO
       </div>
     </div>
   );

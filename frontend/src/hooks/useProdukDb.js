@@ -15,20 +15,17 @@ export default function useProdukDb() {
     return found ? found.nama_kategori : "-";
   };
 
-  const itemsPerpage = 10;
+  const itemsPerpage = 25;
   const startIndex = (page - 1) * itemsPerpage;
 
   useEffect(() => {
     (async () => {
       await seedDatabase();
-      console.log("TOKEN:", localStorage.getItem("token"));
       const kategoriData = await getKategori(1, 100);
-      console.log("KATEGORI DATA:", kategoriData);
       setKategori(kategoriData.data);
-
       setLoading(false);
     })();
-  }, [page]);
+  }, []);
 
   const produk = useLiveQuery(async () => {
     if (loading) return [];
@@ -36,7 +33,6 @@ export default function useProdukDb() {
     const allProduk = await db.produk.toArray();
 
     const joinedProduk = await Promise.all(allProduk.map(async (p) => {
-      console.log("Raw Product from DB:", p)
       const batches = await db.batchProduk.where({ produk_id: p.id }).toArray();
 
       const batchesWithHistory = await Promise.all(batches.map(async (b) => {
@@ -44,11 +40,23 @@ export default function useProdukDb() {
         return { ...b, history };
       }));
 
-      return {
+      const normalizedProduct = {
         ...p,
-        id_kategori: p.id_kategori || p.kategori || "",
+        id: p.id,
+        kodeItem: p.id,
+        nama: p.nama || p.namaItem || "",
+        namaItem: p.nama || p.namaItem || "",
+        id_kategori: p.id_kategori || p.kategoriId || p.kategori || "",
+        kategoriId: p.id_kategori || p.kategoriId || p.kategori || "",
+        satuan: p.satuan || "",
+        stokMinimum: p.stokMinimum || 0,
+        status: p.status || "NONAKTIF",
+        barcode: p.barcode || "",
+        hargaJual: p.hargaJual || 0,
         batch: batchesWithHistory
       };
+
+      return normalizedProduct;
     }));
 
     return joinedProduk;
@@ -58,7 +66,7 @@ export default function useProdukDb() {
     const keyword = search.toLowerCase();
 
     const nama = (item.nama || item.namaItem || "").toLowerCase();
-    const kodeProduk = (item.kodeItem || item.kode || "").toLowerCase();
+    const kodeProduk = (item.kodeItem || item.id || item.kode || "").toLowerCase();
 
     return (
       nama.includes(keyword) ||
@@ -76,30 +84,38 @@ export default function useProdukDb() {
 
     const generateCode = (data) => {
       const max = data.reduce((acc, p) => {
-        if (!p.kodeItem) return acc;
-        const num = parseInt(p.kodeItem.replace("BRG", ""), 10);
-        return num > acc ? num : acc;
+        const idValue = p.id || p.kodeItem || "";
+        const num = parseInt(idValue.replace("BRG", ""), 10);
+        return Number.isNaN(num) ? acc : Math.max(acc, num);
       }, 0);
       return `BRG${String(max + 1).padStart(3, "0")}`;
     };
 
     const newProduk = {
-      kodeItem: generateCode(allProduk),
-      namaItem: item.nama,
-      kategoriId: item.id_kategori,
+      id: item.kodeItem || generateCode(allProduk),
+      nama: item.nama,
+      id_kategori: item.id_kategori,
       satuan: item.satuan,
       stokMinimum: item.stokMinimum,
       status: item.status,
       barcode: item.barcode || "",
       hargaJual: item.hargaJual || 0,
     };
-    console.log("DATA MASUK:", newProduk);
+
     await db.produk.add(newProduk);
   };
 
   const update = async (item) => {
-    console.log("UPDATE ITEM:", item);
-    await db.produk.put(item);
+    await db.produk.put({
+      id: item.id || item.kodeItem,
+      nama: item.nama,
+      id_kategori: item.id_kategori,
+      satuan: item.satuan,
+      stokMinimum: item.stokMinimum,
+      status: item.status,
+      barcode: item.barcode || "",
+      hargaJual: item.hargaJual || 0,
+    });
   };
 
   const remove = async (id) => {
