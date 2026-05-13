@@ -16,26 +16,29 @@ const PAGE_SIZE = 25;
 const ProdukPage = () => {
 	const {
 		produk,
-		kategori,
-		getNamaKategori,
+		addProduk,
+		updateProduk,
+		setProduk,
 		loading,
-		add,
-		update,
-		remove,
+		getNamaKategori,
+		getNamaSatuan,
 		search,
 		setSearch,
-		pagedProduk,
+		kategori,
 		page,
-		setPage
-	} = useProdukDb(); 
-	
+		setPage,
+		total,
+		totalPages,
+		satuanList,
+		deleteProduk,
+		fetchProduk,
+	} = useProdukDb();
+
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [hapus, setHapus] = useState({ open: false, data: null });
 	const [detail, setDetail] = useState(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 
-	const total = produk.length;
-	const totalPages = Math.ceil(total / PAGE_SIZE);
 
 	useEffect(() => {
 		const query = searchParams.get("search") || "";
@@ -47,164 +50,207 @@ const ProdukPage = () => {
 		}
 	}, [searchParams]);
 
+	const update = (item) => {
+		setProduk(prev =>
+			prev.map(p =>
+				p.id_produk === item.id_produk ? { ...p, ...item } : p
+			)
+		);
+	};
+
 	const clearAddParam = () => {
 		const params = new URLSearchParams(searchParams);
 		params.delete("add");
 		setSearchParams(params);
 	};
 
-	const handleAdd = (item) => {
-		add(item);
-		setModal({ open: false, mode: "add", data: null });
+	const handleAdd = async (item) => {
+		await addProduk(item);
+
+		setModal({
+			open: false,
+			mode: "add",
+			data: null
+		});
+
 		clearAddParam();
 	};
 	const handleEdit = (item) => {
 		setModal({ open: true, mode: "edit", data: item });
 	};
-	const handleEditSubmit = (item) => {
-		update(item);
-		setModal({ open: false, mode: "edit", data: null });
+	const handleEditSubmit = async (item) => {
+		try {
+			await updateProduk(item.id_produk, item);
+
+			setModal({
+				open: false,
+				mode: "edit",
+				data: null,
+			});
+
+		} catch (err) {
+			console.error(err);
+			alert("Gagal update produk");
+		}
 	};
 	const handleSearch = (value) => {
 		setSearch(value);
 		setPage(1);
 	};
-	const handleDelete = (id) => {
-		const data = produk.find((p) => p.id === id);
-		setHapus({ open: true, data });
+	const handleDelete = (item) => {
+		setHapus({
+			open: true,
+			data: item,
+		});
 	};
 
 	const handleDetail = (item) => {
 		setDetail(item);
 	};
 
-	const handleDeleteConfirm = () => {
-		if (hapus.data) remove(hapus.data.id);
-		setHapus({ open: false, data: null });
+	const handleDeleteConfirm = async () => {
+		try {
+			if (hapus.data) {
+				await deleteProduk(
+					hapus.data.id_produk || hapus.data.id
+				);
+			}
+
+			setHapus({
+				open: false,
+				data: null,
+			});
+		} catch (err) {
+			console.error(err);
+			alert("Gagal nonaktifkan produk");
+		}
 	};
 
-	const handleCloseModal = () => {
-		setModal({ open: false, mode: "add", data: null });
-		clearAddParam();
-	};
+const handleCloseModal = () => {
+	setModal({ open: false, mode: "add", data: null });
+	clearAddParam();
+};
 
-	const handleOpenAdd = () => {
-		setModal({ open: true, mode: "add", data: null });
-		const params = new URLSearchParams(searchParams);
-		params.set("add", "true");
-		setSearchParams(params);
-	};
+const handleOpenAdd = () => {
+	setModal({ open: true, mode: "add", data: null });
+	const params = new URLSearchParams(searchParams);
+	params.set("add", "true");
+	setSearchParams(params);
+};
 
-	return (
-		<Box>
-			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", p: 3, mb: 3 }}>
-				<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 3, flexWrap: "wrap" }}>
-					<Box sx={{ flex: 1, minWidth: 280 }}>
-						<Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
-							Master Data Produk
-						</Typography>
-						<Typography sx={{ color: "#64748B", mt: 1 }}>
-							Manajemen katalog obat dan perlengkapan medis.
-						</Typography>
-					</Box>
+return (
+	<Box>
+		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", p: 3, mb: 3 }}>
+			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 3, flexWrap: "wrap" }}>
+				<Box sx={{ flex: 1, minWidth: 280 }}>
+					<Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
+						Master Data Produk
+					</Typography>
+					<Typography sx={{ color: "#64748B", mt: 1 }}>
+						Manajemen katalog obat dan perlengkapan medis.
+					</Typography>
+				</Box>
 
-					<Box sx={{ display: "flex", gap: 2, alignItems: "center", minWidth: 480 }}>
-						<TextField
-							size="small"
-							variant="outlined"
-							placeholder="Cari produk..."
-							value={search}
-							onChange={(e) => {
-								const query = e.target.value;
-								setSearch(query);
-								const params = new URLSearchParams(searchParams);
-								if (query) {
-									params.set("search", query);
-								} else {
-									params.delete("search");
-								}
-								setSearchParams(params);
-								setPage(1);
-							}}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: "#94A3B8" }} />
-									</InputAdornment>
-								),
-								sx: {
-									borderRadius: 3,
-									background: "#F8F8FB",
-									height: 44,
-								},
-							}}
-							sx={{ flex: 1, minWidth: 240 }}
-						/>
-						<Button
-							variant="contained"
-							startIcon={<AddIcon />}
-							sx={{
-								textTransform: "none",
+				<Box sx={{ display: "flex", gap: 2, alignItems: "center", minWidth: 480 }}>
+					<TextField
+						size="small"
+						variant="outlined"
+						placeholder="Cari produk..."
+						value={search}
+						onChange={(e) => {
+							const query = e.target.value;
+							setSearch(query);
+							const params = new URLSearchParams(searchParams);
+							if (query) {
+								params.set("search", query);
+							} else {
+								params.delete("search");
+							}
+							setSearchParams(params);
+							setPage(1);
+						}}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon sx={{ color: "#94A3B8" }} />
+								</InputAdornment>
+							),
+							sx: {
 								borderRadius: 3,
+								background: "#F8F8FB",
 								height: 44,
-								px: 3,
-								fontWeight: 700,
-								backgroundColor: "rgb(233, 30, 99)",
-								color: "rgb(255, 255, 255)",
-								boxShadow: "0 20px 40px rgba(233, 30, 99, 0.2)",
-								'&:hover': {
-									backgroundColor: "#d81b60",
-								},
-							}}
-							onClick={handleOpenAdd}
-						>
-							Input Produk
-						</Button>
-					</Box>
+							},
+						}}
+						sx={{ flex: 1, minWidth: 240 }}
+					/>
+					<Button
+						variant="contained"
+						startIcon={<AddIcon />}
+						sx={{
+							textTransform: "none",
+							borderRadius: 3,
+							height: 44,
+							px: 3,
+							fontWeight: 700,
+							backgroundColor: "rgb(233, 30, 99)",
+							color: "rgb(255, 255, 255)",
+							boxShadow: "0 20px 40px rgba(233, 30, 99, 0.2)",
+							'&:hover': {
+								backgroundColor: "#d81b60",
+							},
+						}}
+						onClick={handleOpenAdd}
+					>
+						Input Produk
+					</Button>
 				</Box>
 			</Box>
-
-			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
-				<ProdukTable
-					data={pagedProduk}
-					getNamaKategori={getNamaKategori}
-					onViewDetail={handleDetail}
-					onEdit={handleEdit}
-					onDelete={handleDelete}
-				/>
-				<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-					<div>Menampilkan {pagedProduk.length} dari {total} produk</div>
-					<PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
-				</div>
-			</Box>
-			<Modal open={modal.open} onClose={handleCloseModal} width={460}>
-				<ProdukForm
-					mode={modal.mode}
-					initialData={modal.data}
-					kategori={kategori}
-					onClose={handleCloseModal}
-					onSubmit={modal.mode === "add" ? handleAdd : handleEditSubmit}
-				/>
-			</Modal>
-
-			<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
-				<HapusProdukConfirm
-					open={hapus.open}
-					onClose={() => setHapus({ open: false, data: null })}
-					onDelete={handleDeleteConfirm}
-					produk={hapus.data}
-				/>
-			</Modal>
-
-			<Modal open={!!detail} onClose={() => setDetail(null)} width={760}>
-				<ProdukDetailModal
-					product={detail}
-					getNamaKategori={getNamaKategori}
-					onClose={() => setDetail(null)}
-				/>
-			</Modal>
 		</Box>
-	);
+
+
+		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
+			<ProdukTable
+				data={produk}
+				getNamaKategori={getNamaKategori}
+				getNamaSatuan={getNamaSatuan}
+				onViewDetail={handleDetail}
+				onEdit={handleEdit}
+				onDelete={handleDelete}
+			/>
+			<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<div>Menampilkan {produk.length} dari {total} produk</div>
+				<PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
+			</div>
+		</Box>
+		<Modal open={modal.open} onClose={handleCloseModal} width={460}>
+			<ProdukForm
+				mode={modal.mode}
+				initialData={modal.data}
+				kategori={kategori}
+				satuanList={satuanList}
+				onClose={handleCloseModal}
+				onSubmit={modal.mode === "add" ? handleAdd : handleEditSubmit}
+			/>
+		</Modal>
+
+		<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
+			<HapusProdukConfirm
+				open={hapus.open}
+				onClose={() => setHapus({ open: false, data: null })}
+				onDelete={handleDeleteConfirm}
+				produk={hapus.data}
+			/>
+		</Modal>
+
+		<Modal open={!!detail} onClose={() => setDetail(null)} width={760}>
+			<ProdukDetailModal
+				product={detail}
+				getNamaKategori={getNamaKategori}
+				onClose={() => setDetail(null)}
+			/>
+		</Modal>
+	</Box>
+);
 };
 
 export default ProdukPage;

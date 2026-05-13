@@ -9,37 +9,37 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
   return (
     <Box sx={{ minWidth: 340, maxWidth: 420, textAlign: 'center' }}>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-        <Box sx={{ 
-          background: "#FDF2F8", 
-          borderRadius: "50%", 
-          width: 72, 
-          height: 72, 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
+        <Box sx={{
+          background: "#FDF2F8",
+          borderRadius: "50%",
+          width: 72,
+          height: 72,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           mb: 1,
           border: '8px solid #FCE7F3'
         }}>
           <DeleteOutlineIcon sx={{ fontSize: 32, color: "#E91E63" }} />
         </Box>
-        
+
         <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', m: 0 }}>
           Konfirmasi Hapus Produk
         </Typography>
-        
+
         <Typography sx={{ color: "#64748B", fontSize: 14, px: 2, lineHeight: 1.6 }}>
           Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.
         </Typography>
 
-        <Box sx={{ 
-          background: "#F8FAFC", 
+        <Box sx={{
+          background: "#F8FAFC",
           border: '1px solid #F1F5F9',
-          borderRadius: 3, 
-          p: 2, 
-          width: "100%", 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 2, 
+          borderRadius: 3,
+          p: 2,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
           mt: 2,
           mb: 3
         }}>
@@ -56,7 +56,11 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
           <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: '#1E293B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
             Batal
           </Button>
-          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#D81B60' }, boxShadow: '0 4px 14px rgba(233,30,99,0.3)' }} onClick={() => onDelete && onDelete(produk.id)}>
+          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#D81B60' }, boxShadow: '0 4px 14px rgba(233,30,99,0.3)' }}
+            onClick={() => onDelete &&
+              onDelete(
+                produk?.id_produk || produk?.id
+              )}>
             Hapus Produk
           </Button>
         </Box>

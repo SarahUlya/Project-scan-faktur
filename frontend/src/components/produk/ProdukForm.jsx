@@ -4,32 +4,37 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import Button from "../ui/Button";
 
-const satuanList = ["Strip", "Botol", "Box", "Tablet", "Pcs"];
-
 const initialState = {
-  nama: "",
+  nama_produk: "",
   id_kategori: "",
-  satuan: "",
-  stokMinimum: 10,
-  status: true,
+  satuan_id: "",
+  stok_minimum: 0,
+  is_active: true,
   barcode: "",
-  hargaJual: 0,
+  harga_jual: 0,
 };
 
-const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) => {
+const ProdukForm = ({
+  onClose,
+  onSubmit,
+  mode = "add",
+  initialData,
+  kategori,
+  satuanList
+}) => {
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState({});
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setForm({
-        nama: initialData.nama || initialData.namaItem || "",
-        id_kategori: initialData.id_kategori || initialData.kategoriId || initialData.kategori || "",
-        satuan: initialData.satuan || "",
-        stokMinimum: initialData.stokMinimum || 10,
-        status: (initialData.status || "NONAKTIF") === "AKTIF",
+        nama_produk: initialData.nama_produk || "",
+        id_kategori: Number(initialData.id_kategori) || "",
+        satuan_id: Number(initialData.satuan_id) || "",
+        stok_minimum: initialData.stok_minimum || 0,
+        is_active: initialData.is_active ?? true,
         barcode: initialData.barcode || "",
-        hargaJual: initialData.hargaJual || 0,
+        harga_jual: initialData.harga_jual || 0,
       });
     } else {
       setForm(initialState);
@@ -43,30 +48,33 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
 
   const validate = () => {
     const err = {};
-    if (!form.nama.trim()) err.nama = "Nama produk wajib diisi";
+    if (!form.nama_produk.trim()) err.nama_produk = "Nama produk wajib diisi";
     if (!form.id_kategori) err.id_kategori = "Kategori wajib dipilih";
-    if (!form.satuan.trim()) err.satuan = "Satuan wajib diisi";
-    if (!form.stokMinimum || isNaN(form.stokMinimum)) err.stokMinimum = "Stok minimum wajib diisi";
+    if (!form.satuan_id) err.satuan_id = "Satuan wajib diisi";
+    if (form.stok_minimum === "" || isNaN(form.stok_minimum)) err.stok_minimum = "Stok minimum wajib diisi";
     setError(err);
     return Object.keys(err).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("SUBMIT KE-TRIGGER", form);
+
+
     if (!validate()) return;
+
     const data = {
-      ...initialData,
-      id: initialData?.id,
-      nama: form.nama,
-      id_kategori: form.id_kategori,
-      satuan: form.satuan,
-      stokMinimum: Number(form.stokMinimum),
-      status: form.status ? "AKTIF" : "NONAKTIF",
-      barcode: form.barcode,
-      hargaJual: Number(form.hargaJual || 0),
+      id_produk: initialData?.id_produk,
+      ...form,
     };
+
+    console.log("DATA DIKIRIM:", data);
+
     onSubmit(data);
   };
+  console.log("KATEGORI:", kategori);
+  console.log("SATUAN:", satuanList);
+  console.log("FORM:", form);
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ minWidth: 340, maxWidth: 520 }}>
@@ -93,7 +101,7 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           <Box sx={{ flex: 1 }}>
             <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700 }}>ID PRODUK</Typography>
             <TextField
-              value={initialData.id}
+              value={initialData.id_produk}
               disabled
               fullWidth
               size="small"
@@ -103,14 +111,26 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           <Box sx={{ flex: 1 }}>
             <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700 }}>STATUS PRODUK</Typography>
             <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-              <Select
-                name="status"
-                value={form.status ? "AKTIF" : "NONAKTIF"}
-                onChange={(e) => handleChange("status", e.target.value === "AKTIF")}
-              >
-                <MenuItem value="AKTIF">Aktif (Tersedia)</MenuItem>
-                <MenuItem value="NONAKTIF">Non-Aktif</MenuItem>
-              </Select>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={form.satuan_id || ""}
+                  onChange={(e) =>
+                    handleChange(
+                      "satuan_id",
+                      Number(e.target.value)
+                    )
+                  }
+                >
+                  {satuanList?.map((s) => (
+                    <MenuItem
+                      key={s.id_satuan}
+                      value={s.id_satuan}
+                    >
+                      {s.nama_satuan}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </FormControl>
           </Box>
         </Box>
@@ -118,16 +138,16 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-          NAMA PRODUK <span style={{color: '#EF4444'}}>*</span>
+          NAMA PRODUK <span style={{ color: '#EF4444' }}>*</span>
         </Typography>
         <TextField
           placeholder="Contoh: Paracetamol 500mg"
-          value={form.nama}
-          onChange={(e) => handleChange("nama", e.target.value)}
+          value={form.nama_produk}
+          onChange={(e) => handleChange("nama_produk", e.target.value)}
           fullWidth
           size="small"
-          error={!!error.nama}
-          helperText={error.nama ? <span style={{color: '#EF4444', fontWeight: 600}}>{error.nama}</span> : ""}
+          error={!!error.nama_produk}
+          helperText={error.nama_produk ? <span style={{ color: '#EF4444', fontWeight: 600 }}>{error.nama_produk}</span> : ""}
           sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
         />
       </Box>
@@ -139,21 +159,42 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           </Typography>
           <FormControl fullWidth size="small">
             <Select
-              name="id_kategori"
-              value={form.id_kategori}
+              value={form.id_kategori || ""}
+              onChange={(e) =>
+                handleChange(
+                  "id_kategori",
+                  e.target.value === ""
+                    ? ""
+                    : Number(e.target.value)
+                )
+              }
               displayEmpty
-              onChange={(e) => handleChange("id_kategori", e.target.value)}
-              sx={{ borderRadius: 2, color: form.id_kategori ? 'inherit' : '#94A3B8' }}
             >
-              <MenuItem value="" disabled>Pilih Kategori</MenuItem>
+              <MenuItem value="">
+                Pilih Kategori
+              </MenuItem>
+
               {kategori?.map((k) => (
-                <MenuItem key={k.id_kategori} value={k.id_kategori}>
+                <MenuItem
+                  key={k.id_kategori}
+                  value={k.id_kategori}
+                >
                   {k.nama_kategori}
                 </MenuItem>
               ))}
             </Select>
+
             {error.id_kategori && (
-              <Typography variant="caption" sx={{ color: "#EF4444", fontWeight: 600, mt: 0.5 }}>{error.id_kategori}</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#EF4444",
+                  fontWeight: 600,
+                  mt: 0.5
+                }}
+              >
+                {error.id_kategori}
+              </Typography>
             )}
           </FormControl>
         </Box>
@@ -162,16 +203,33 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
             SATUAN DASAR
           </Typography>
-          <TextField
-            placeholder="Strip, Tablet, Botol..."
-            value={form.satuan}
-            onChange={(e) => handleChange("satuan", e.target.value)}
-            fullWidth
-            size="small"
-            error={!!error.satuan}
-            helperText={error.satuan ? <span style={{color: '#EF4444', fontWeight: 600}}>{error.satuan}</span> : ""}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <FormControl fullWidth size="small">
+            <Select
+              value={form.satuan_id || ""}
+              onChange={(e) =>
+                handleChange(
+                  "satuan_id",
+                  e.target.value === ""
+                    ? ""
+                    : Number(e.target.value)
+                )
+              }
+              displayEmpty
+            >
+              <MenuItem value="">
+                Pilih Satuan
+              </MenuItem>
+
+              {satuanList?.map((s) => (
+                <MenuItem
+                  key={s.id}
+                  value={s.id}
+                >
+                  {s.nama}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
       </Box>
 
@@ -182,12 +240,12 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           </Typography>
           <TextField
             type="number"
-            value={form.stokMinimum}
-            onChange={(e) => handleChange("stokMinimum", e.target.value)}
+            value={form.stok_minimum}
+            onChange={(e) => handleChange("stok_minimum", e.target.value)}
             fullWidth
             size="small"
-            error={!!error.stokMinimum}
-            helperText={error.stokMinimum ? <span style={{color: '#EF4444', fontWeight: 600}}>{error.stokMinimum}</span> : ""}
+            error={!!error.stok_minimum}
+            helperText={error.stok_minimum ? <span style={{ color: '#EF4444', fontWeight: 600 }}>{error.stok_minimum}</span> : ""}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             InputProps={{
               endAdornment: <Typography sx={{ color: '#94A3B8', fontSize: 14, fontWeight: 600 }}>Unit</Typography>
@@ -201,15 +259,15 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', height: 40, gap: 1 }}>
               <Switch
-                checked={form.status}
-                onChange={(e) => handleChange("status", e.target.checked)}
+                checked={form.is_active}
+                onChange={(e) => handleChange("is_active", e.target.checked)}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': { color: '#E91E63' },
                   '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#E91E63' }
                 }}
               />
-              <Typography sx={{ fontWeight: 700, color: form.status ? '#E91E63' : '#94A3B8' }}>
-                {form.status ? 'AKTIF' : 'NON-AKTIF'}
+              <Typography sx={{ fontWeight: 700, color: form.is_active ? '#E91E63' : '#94A3B8' }}>
+                {form.is_active ? 'AKTIF' : 'NON-AKTIF'}
               </Typography>
             </Box>
           </Box>
@@ -223,8 +281,8 @@ const ProdukForm = ({ onClose, onSubmit, mode = "add", initialData, kategori }) 
           </Typography>
           <TextField
             type="number"
-            value={form.hargaJual}
-            onChange={(e) => handleChange("hargaJual", e.target.value)}
+            value={form.harga_jual}
+            onChange={(e) => handleChange("harga_jual", e.target.value)}
             fullWidth
             size="small"
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}

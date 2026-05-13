@@ -41,11 +41,11 @@ const ProdukDetailModal = ({ product, getNamaKategori, onClose }) => {
             <Typography variant="subtitle2" sx={{ color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.8, mb: 1 }}>
               Informasi Produk
             </Typography>
-            <Typography sx={{ fontWeight: 700, fontSize: 20, color: "#1E293B" }}>{product.nama || product.namaItem}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: 20, color: "#1E293B" }}>{product.nama || product.nama_produk}</Typography>
             <Typography sx={{ color: "#64748B", mt: 0.5 }}>{product.id || product.kodeItem}</Typography>
             <Chip
-              label={product.status === "AKTIF" ? "Aktif" : "Non-Aktif"}
-              color={product.status === "AKTIF" ? "success" : "default"}
+              label={product.is_active === true ? "Aktif" : "Non-Aktif"}
+              color={product.is_active === true ? "success" : "default"}
               sx={{ mt: 2, fontWeight: 700, borderRadius: 2 }}
             />
           </Grid>
@@ -77,9 +77,9 @@ const ProdukDetailModal = ({ product, getNamaKategori, onClose }) => {
             <Typography sx={{ fontWeight: 700, color: "#1E293B" }}>Kategori</Typography>
             <Typography sx={{ color: "#64748B", mb: 2 }}>{getNamaKategori(product.id_kategori || product.kategoriId)}</Typography>
             <Typography sx={{ fontWeight: 700, color: "#1E293B" }}>Satuan Dasar</Typography>
-            <Typography sx={{ color: "#64748B", mb: 2 }}>{product.satuan || "-"}</Typography>
+            <Typography sx={{ color: "#64748B", mb: 2 }}>{product.satuan_id || "-"}</Typography>
             <Typography sx={{ fontWeight: 700, color: "#1E293B" }}>Harga Jual</Typography>
-            <Typography sx={{ color: "#64748B", mb: 2 }}>{formatCurrency(product.hargaJual)}</Typography>
+            <Typography sx={{ color: "#64748B", mb: 2 }}>{formatCurrency(product.harga_jual || product.hargaJual || 0)}</Typography>
           </Grid>
 
           <Grid item xs={12} md={6}>

@@ -16,6 +16,7 @@ import { ROLE } from "../auth/auth";
 import Unauthorized from "../pages/Unauthorized";
 import RiwayatPage from "../pages/RiwayatPage";
 import UserManagementPage from "../pages/UserManagementPage";
+import KasirPage from "../pages/KasirPage";
 
 
 const AppRouter = () => {
@@ -73,6 +74,13 @@ const AppRouter = () => {
             <UserManagementPage />
           </ProtectedRoute>
          } />
+        <Route path="/kasir" element={
+          <ProtectedRoute allowedRoles={[ROLE.KASIR, ROLE.ADMIN]}>
+            <KasirPage />
+          </ProtectedRoute>
+        } />
+
+
        
       </Route>
       </Routes>

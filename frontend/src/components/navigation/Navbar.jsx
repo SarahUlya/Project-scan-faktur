@@ -43,6 +43,11 @@ const NAVBAR_MAP = {
     desc: "Kelola data pengguna dan hak akses sistem.",
     showPeriod: true,
   },
+  "/kasir": {
+    title: "Kasir POS",
+    desc: "Sistem Point of Sale untuk transaksi penjualan.",
+    showPeriod: true,
+  },
 };
 
 const Navbar = () => {
