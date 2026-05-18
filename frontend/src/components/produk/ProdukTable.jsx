@@ -4,7 +4,6 @@ import IconButton from "@mui/material/IconButton";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 const getColumns = (
   onViewDetail,
@@ -189,24 +188,6 @@ const getColumns = (
             }}
           >
             <EditOutlinedIcon fontSize="small" />
-          </IconButton>
-
-          <IconButton
-            size="small"
-            onClick={() =>
-              onDelete && onDelete(row)
-            }
-            title="Nonaktifkan produk"
-            sx={{
-              color: "#EF4444",
-              border: "1px solid #F3F6F9",
-              bgcolor: "#fff",
-              "&:hover": {
-                bgcolor: "#fee9ee",
-              },
-            }}
-          >
-            <DeleteOutlineIcon fontSize="small" />
           </IconButton>
         </Box>
       ),

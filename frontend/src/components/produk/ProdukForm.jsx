@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Box, TextField, FormControl, Select, MenuItem, Switch, Typography, Divider, IconButton } from "@mui/material";
+import { Box, TextField, FormControl, Select, MenuItem, Switch, Typography, Divider } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import Button from "../ui/Button";
+import { SATUAN_OPTIONS } from "../../config/fakturFormConfig";
 
 const initialState = {
   nama_produk: "",
@@ -29,8 +30,8 @@ const ProdukForm = ({
     if (mode === "edit" && initialData) {
       setForm({
         nama_produk: initialData.nama_produk || "",
-        id_kategori: Number(initialData.id_kategori) || "",
-        satuan_id: Number(initialData.satuan_id) || "",
+        id_kategori: initialData.id_kategori ?? initialData.kategoriId ?? "",
+        satuan_id: initialData.satuan_id ?? initialData.satuanId ?? initialData.satuan ?? "",
         stok_minimum: initialData.stok_minimum || 0,
         is_active: initialData.is_active ?? true,
         barcode: initialData.barcode || "",
@@ -46,6 +47,15 @@ const ProdukForm = ({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const satuanOptions = satuanList?.length
+    ? satuanList
+    : SATUAN_OPTIONS.map((value) => ({ id: value, nama: value }));
+
+  const selectedSatuan = satuanOptions?.find(
+    (s) => String(s.id) === String(form.satuan_id)
+  );
+  const stokUnitLabel = selectedSatuan?.nama || "Unit";
+
   const validate = () => {
     const err = {};
     if (!form.nama_produk.trim()) err.nama_produk = "Nama produk wajib diisi";
@@ -58,8 +68,6 @@ const ProdukForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("SUBMIT KE-TRIGGER", form);
-
 
     if (!validate()) return;
 
@@ -68,13 +76,8 @@ const ProdukForm = ({
       ...form,
     };
 
-    console.log("DATA DIKIRIM:", data);
-
     onSubmit(data);
   };
-  console.log("KATEGORI:", kategori);
-  console.log("SATUAN:", satuanList);
-  console.log("FORM:", form);
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ minWidth: 340, maxWidth: 520 }}>
@@ -99,38 +102,30 @@ const ProdukForm = ({
       {mode === "edit" && initialData && (
         <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700 }}>ID PRODUK</Typography>
+            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+              ID PRODUK
+            </Typography>
             <TextField
               value={initialData.id_produk}
               disabled
               fullWidth
               size="small"
-              sx={{ mt: 1, bgcolor: "#F8FAFC" }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, mt: 1, bgcolor: "#F8FAFC" }}
             />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700 }}>STATUS PRODUK</Typography>
+            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+              STATUS PRODUK
+            </Typography>
             <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-              <FormControl fullWidth size="small">
-                <Select
-                  value={form.satuan_id || ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "satuan_id",
-                      Number(e.target.value)
-                    )
-                  }
-                >
-                  {satuanList?.map((s) => (
-                    <MenuItem
-                      key={s.id_satuan}
-                      value={s.id_satuan}
-                    >
-                      {s.nama_satuan}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Select
+                value={form.is_active ? "AKTIF" : "NONAKTIF"}
+                onChange={(e) => handleChange("is_active", e.target.value === "AKTIF")}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="AKTIF">Aktif</MenuItem>
+                <MenuItem value="NONAKTIF">Non-Aktif</MenuItem>
+              </Select>
             </FormControl>
           </Box>
         </Box>
@@ -206,21 +201,14 @@ const ProdukForm = ({
           <FormControl fullWidth size="small">
             <Select
               value={form.satuan_id || ""}
-              onChange={(e) =>
-                handleChange(
-                  "satuan_id",
-                  e.target.value === ""
-                    ? ""
-                    : Number(e.target.value)
-                )
-              }
+              onChange={(e) => handleChange("satuan_id", e.target.value)}
               displayEmpty
             >
               <MenuItem value="">
                 Pilih Satuan
               </MenuItem>
 
-              {satuanList?.map((s) => (
+              {satuanOptions?.map((s) => (
                 <MenuItem
                   key={s.id}
                   value={s.id}
@@ -248,7 +236,7 @@ const ProdukForm = ({
             helperText={error.stok_minimum ? <span style={{ color: '#EF4444', fontWeight: 600 }}>{error.stok_minimum}</span> : ""}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             InputProps={{
-              endAdornment: <Typography sx={{ color: '#94A3B8', fontSize: 14, fontWeight: 600 }}>Unit</Typography>
+              endAdornment: <Typography sx={{ color: '#94A3B8', fontSize: 14, fontWeight: 600 }}>{stokUnitLabel}</Typography>
             }}
           />
         </Box>

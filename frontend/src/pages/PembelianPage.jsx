@@ -63,7 +63,12 @@ const PembelianPage = () => {
       </div>
 
       <Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
-        <FakturTable data={pagedPembelian} loading={loading} />
+        <FakturTable
+          data={pagedPembelian}
+          loading={loading}
+          startIndex={(page - 1) * PAGE_SIZE}
+          onView={(row) => navigate(`/pembelian/lihat/${encodeURIComponent(row.id)}`)}
+        />
         <div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>Menampilkan {pagedPembelian.length} dari {pembelian.length} faktur</div>
           <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />

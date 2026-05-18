@@ -1,76 +1,111 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
+import useLaporanTransaksi from "../../hooks/useLaporanTransaksi";
+import { db } from "../../data/db";
 
 const PAGE_SIZE = 25;
 
-// Mock Data
-const mockPenjualan = [
-  { id: 1, tanggal: "2024-01-31", noFaktur: "INV/20240131/042", itemTerjual: "Paracetamol (2), Vitamin C (1)", total: 45000, metode: "Tunai", status: "Sukses" },
-  { id: 2, tanggal: "2024-01-31", noFaktur: "INV/20240131/041", itemTerjual: "Amoxicillin Syrup (1)", total: 22500, metode: "QRIS", status: "Sukses" },
-  { id: 3, tanggal: "2024-01-30", noFaktur: "INV/20240130/089", itemTerjual: "Betadine (1), Masker (10)", total: 38000, metode: "Tunai", status: "Sukses" },
-  { id: 4, tanggal: "2024-01-30", noFaktur: "INV/20240130/088", itemTerjual: "Ibuprofen (3)", total: 15000, metode: "Transfer", status: "Dibatalkan" },
-  { id: 5, tanggal: "2024-01-29", noFaktur: "INV/20240129/012", itemTerjual: "Vitamin B Complex (1)", total: 12000, metode: "Tunai", status: "Sukses" },
-];
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+};
+
+const formatCurrency = (value) => {
+  const numberValue = Number(value);
+  if (Number.isNaN(numberValue)) return "Rp 0";
+  return `Rp ${numberValue.toLocaleString("id-ID")}`;
+};
 
 const LaporanPenjualan = () => {
   const [page, setPage] = useState(1);
-  const data = mockPenjualan; // Replace with actual API data hook later
-  
+  const { penjualan } = useLaporanTransaksi();
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const enriched = await Promise.all(
+          (penjualan || []).map(async (p) => {
+            const items = p.id
+              ? await db.transaksiDetail.where("transaksi_id").equals(p.id).toArray()
+              : [];
+            const itemTerjual = items
+              .map((i) => `${i.nama_produk} (${i.qty})`)
+              .join(", ");
+            return {
+              ...p,
+              itemTerjual: itemTerjual || "-",
+              metode: p.metode === "TUNAI" ? "Tunai" : p.metode || "-",
+              status: p.status || "Sukses",
+              total: typeof p.total === "number" ? p.total : Number(p.total) || 0,
+            };
+          })
+        );
+        setData(enriched);
+      } catch (error) {
+        console.warn("Gagal memuat data laporan penjualan:", error);
+        setData([]);
+      }
+    })();
+  }, [penjualan]);
+
   const totalPages = Math.ceil(data.length / PAGE_SIZE);
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const columns = [
-    { 
-      header: "TANGGAL", 
+    {
+      header: "TANGGAL",
       accessor: "tanggal",
       render: (row) => (
         <Typography sx={{ color: '#475569', fontSize: 14 }}>
-          {new Date(row.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+          {formatDate(row.tanggal)}
         </Typography>
       )
     },
-    { 
-      header: "NO. FAKTUR", 
+    {
+      header: "No Transaksi",
       accessor: "noFaktur",
       render: (row) => (
-        <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 14 }}>{row.noFaktur}</Typography>
+        <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 14 }}>{row.noFaktur || "-"}</Typography>
       )
     },
-    { 
-      header: "ITEM TERJUAL", 
+    {
+      header: "ITEM TERJUAL",
       accessor: "itemTerjual",
       render: (row) => (
-        <Typography sx={{ color: '#475569', fontSize: 14 }}>{row.itemTerjual}</Typography>
+        <Typography sx={{ color: '#475569', fontSize: 14 }}>{row.itemTerjual || "-"}</Typography>
       )
     },
-    { 
-      header: "TOTAL TRANSAKSI", 
+    {
+      header: "TOTAL TRANSAKSI",
       accessor: "total",
       render: (row) => (
         <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 14 }}>
-          Rp {row.total.toLocaleString('id-ID')}
+          {formatCurrency(row.total)}
         </Typography>
       ),
       align: 'center'
     },
-    { 
-      header: "METODE", 
+    {
+      header: "METODE",
       accessor: "metode",
       render: (row) => (
-        <Typography sx={{ color: '#64748B', fontSize: 14 }}>{row.metode}</Typography>
+        <Typography sx={{ color: '#64748B', fontSize: 14 }}>{row.metode || "-"}</Typography>
       ),
       align: 'center'
     },
-    { 
-      header: "STATUS", 
+    {
+      header: "STATUS",
       accessor: "status",
       render: (row) => {
         const isSukses = row.status === "Sukses";
         return (
-          <span style={{ 
-            background: isSukses ? '#DCFCE7' : '#FEE2E2', 
+          <span style={{
+            background: isSukses ? '#DCFCE7' : '#FEE2E2',
             color: isSukses ? '#16A34A' : '#EF4444',
             padding: '4px 12px',
             borderRadius: 16,
@@ -78,7 +113,7 @@ const LaporanPenjualan = () => {
             fontWeight: 800,
             letterSpacing: 0.5
           }}>
-            {row.status}
+            {row.status || "Sukses"}
           </span>
         )
       },

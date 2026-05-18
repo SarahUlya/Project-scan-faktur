@@ -104,13 +104,7 @@ const BatchTable = ({ produk, onShowDetail }) => {
   ];
 
   return (
-    <div style={{ background: '#fff', borderRadius: 20, padding: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-       <div style={{ padding: '20px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
-         <div style={{ fontWeight: 700, color: '#1E293B', fontSize: 16 }}>Data Batch & Expired <span style={{ color: '#64748B', fontWeight: 500 }}>(FEFO Sorted)</span></div>
-         <div style={{ background: '#FDF2F8', color: '#EC4899', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>OTOMATIS UPDATE DARI POS/PEMBELIAN</div>
-       </div>
-       <Table columns={columns} data={sortedBatch} />
-    </div>
+    <Table columns={columns} data={sortedBatch} />
   );
 };
 

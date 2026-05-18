@@ -1,0 +1,72 @@
+.faktur-preview-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.faktur-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.faktur-print-area {
+  background: #fff;
+  color: #111;
+  padding: 28px 32px;
+  border: 1px solid #d1d5db;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.faktur-print-area table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.faktur-print-area th,
+.faktur-print-area td {
+  border: 1px solid #111;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.faktur-print-area th {
+  font-weight: 700;
+  text-align: center;
+  background: #f9fafb;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .faktur-preview-page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .faktur-print-area,
+  .struk-print-area {
+    border: none;
+    padding: 0;
+    box-shadow: none !important;
+  }
+}

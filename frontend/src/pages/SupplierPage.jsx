@@ -4,7 +4,6 @@ import PaginationControls from "../components/ui/PaginationControls";
 import useSupplierDb from "../hooks/useSupplierDb";
 import Modal from "../components/ui/Modal";
 import SupplierForm from "../components/supplier/SupplierForm";
-import HapusSupplierConfirm from "../components/supplier/HapusSupplierConfirm";
 import { Box, Typography, TextField, InputAdornment, Button } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -19,7 +18,6 @@ const SupplierPage = () => {
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
-	const [hapus, setHapus] = useState({ open: false, data: null });
 
 	const filteredSupplier = supplier.filter((item) => {
 		const query = search.toLowerCase();
@@ -45,17 +43,9 @@ const SupplierPage = () => {
 		update(item);
 		setModal({ open: false, mode: "edit", data: null });
 	};
-	const handleDelete = (id) => {
-		const data = supplier.find((s) => s.id === id);
-		setHapus({ open: true, data });
-	};
 	const handleSearch = (value) => {
 		setSearch(value);
 		setPage(1);
-	};
-	const handleDeleteConfirm = () => {
-		if (hapus.data) remove(hapus.data.id);
-		setHapus({ open: false, data: null });
 	};
 
 	return (
@@ -117,7 +107,7 @@ const SupplierPage = () => {
 			</Box>
 
 			<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
-				<SupplierTable data={pagedSupplier} onEdit={handleEdit} onDelete={handleDelete} />
+				<SupplierTable data={pagedSupplier} onEdit={handleEdit} />
 				<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 					<div>Menampilkan {pagedSupplier.length} dari {total} supplier</div>
 					<PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
@@ -132,14 +122,6 @@ const SupplierPage = () => {
 				/>
 			</Modal>
 
-			<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
-				<HapusSupplierConfirm
-					open={hapus.open}
-					onClose={() => setHapus({ open: false, data: null })}
-					onDelete={handleDeleteConfirm}
-					supplier={hapus.data}
-				/>
-			</Modal>
 		</Box>
 	);
 };

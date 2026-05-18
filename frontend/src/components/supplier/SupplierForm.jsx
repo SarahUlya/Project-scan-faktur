@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, TextField, FormControl, Select, MenuItem, Switch, Typography, Divider } from "@mui/material";
+import { Box, TextField, Switch, Typography, Divider } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import Button from "../ui/Button";
@@ -95,22 +95,6 @@ const SupplierForm = ({ open, onClose, onSubmit, mode = "add", initialData }) =>
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, bgcolor: "#F8FAFC" }}
             />
           </Box>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-              STATUS SUPPLIER
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                name="status"
-                value={form.status ? "AKTIF" : "NONAKTIF"}
-                onChange={(e) => handleChange("status", e.target.value === "AKTIF")}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="AKTIF">Aktif (Bermitra)</MenuItem>
-                <MenuItem value="NONAKTIF">Non-Aktif</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
         </Box>
       )}
 
@@ -182,7 +166,7 @@ const SupplierForm = ({ open, onClose, onSubmit, mode = "add", initialData }) =>
         />
       </Box>
 
-      {mode === "add" && (
+      {(mode === "add" || mode === "edit") && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <Box>
             <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>

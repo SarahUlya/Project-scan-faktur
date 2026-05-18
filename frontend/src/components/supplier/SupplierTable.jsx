@@ -2,7 +2,6 @@ import React from "react";
 import Table from "../ui/Table";
 import { IconButton, Box } from "@mui/material";
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 const getStatus = (status) => {
   if (status === "AKTIF") return { label: "AKTIF", color: "#1BC58D", bg: "#E6FFF3" };
@@ -52,26 +51,13 @@ const columns = [
         >
           <EditOutlinedIcon fontSize="small" />
         </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => row.onDelete && row.onDelete(row.id)}
-          title="Hapus supplier"
-          sx={{
-            color: "#EF4444",
-            border: "1px solid #F3F6F9",
-            bgcolor: "#fff",
-            '&:hover': { bgcolor: "#fee9ee" },
-          }}
-        >
-          <DeleteOutlineIcon fontSize="small" />
-        </IconButton>
       </Box>
     )
   }
 ];
 
-const SupplierTable = ({ data, onEdit, onDelete }) => {
-  const tableData = data.map((row) => ({ ...row, onEdit, onDelete }));
+const SupplierTable = ({ data, onEdit }) => {
+  const tableData = data.map((row) => ({ ...row, onEdit }));
   return <Table columns={columns} data={tableData} />;
 };
 

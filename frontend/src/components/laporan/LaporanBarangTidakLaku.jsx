@@ -1,23 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
+import useLaporanTransaksi from "../../hooks/useLaporanTransaksi";
+import usePosProducts from "../../hooks/usePosProducts";
 
 const PAGE_SIZE = 25;
 
-const mockTidakLaku = [
-  { id: 1, nama: "Salep Kulit 88 5gr", kategori: "Obat Luar", stok: 45, terakhir: "2023-12-12", durasi: 50 },
-  { id: 2, nama: "Thermometer Digital Omron", kategori: "Alat Kesehatan", stok: 8, terakhir: "2023-12-20", durasi: 42 },
-  { id: 3, nama: "Bodrex Tablet 10s", kategori: "Obat Bebas", stok: 120, terakhir: "2024-01-15", durasi: 16 },
-  { id: 4, nama: "Kasa Steril Husada 16x16", kategori: "Alat Medis", stok: 24, terakhir: "2024-01-01", durasi: 30 },
-  { id: 5, nama: "Promag Tablet 12s", kategori: "Obat Bebas", stok: 65, terakhir: "2024-01-10", durasi: 21 },
-];
-
 const LaporanBarangTidakLaku = () => {
   const [page, setPage] = useState(1);
-  const data = mockTidakLaku;
+  const { getProdukTidakLaku } = useLaporanTransaksi();
+  const { produk } = usePosProducts();
+
+  const data = useMemo(() => {
+    const list = getProdukTidakLaku(produk);
+    return list.map((p, i) => {
+      const terakhir = p.terakhirTerjual === "-" ? null : new Date(p.terakhirTerjual);
+      const durasi = terakhir
+        ? Math.max(0, Math.ceil((Date.now() - terakhir.getTime()) / (1000 * 60 * 60 * 24)))
+        : "-";
+
+      return {
+        id: i + 1,
+        nama: p.nama,
+        kategori: p.kategori,
+        stok: p.stok,
+        terakhir: p.terakhirTerjual,
+        durasi,
+      };
+    });
+  }, [produk, getProdukTidakLaku]);
   
-  const totalPages = Math.ceil(data.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const columns = [
@@ -48,11 +62,16 @@ const LaporanBarangTidakLaku = () => {
     { 
       header: "PENJUALAN TERAKHIR", 
       accessor: "terakhir",
-      render: (row) => (
-        <Typography sx={{ color: '#475569', fontSize: 14 }}>
-          {new Date(row.terakhir).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </Typography>
-      ),
+      render: (row) => {
+        if (!row.terakhir || row.terakhir === "-") {
+          return <Typography sx={{ color: '#94A3B8', fontSize: 14 }}>-</Typography>;
+        }
+        return (
+          <Typography sx={{ color: '#475569', fontSize: 14 }}>
+            {new Date(row.terakhir).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </Typography>
+        );
+      },
       align: 'center'
     },
     { 
@@ -69,7 +88,7 @@ const LaporanBarangTidakLaku = () => {
           fontWeight: 800, 
           fontSize: 13 
         }}>
-          {row.durasi} Hari
+          {typeof row.durasi === 'number' ? `${row.durasi} Hari` : row.durasi}
         </Box>
       ),
       align: 'right'

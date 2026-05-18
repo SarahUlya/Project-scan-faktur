@@ -1,23 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../../data/db";
 
 const PAGE_SIZE = 25;
 
-const mockStok = [
-  { id: 1, nama: "Paracetamol 500mg", type: "Tablet • Kimia Farma", batch: "BCH-2023-012", exp: "2024-01-12", stok: 45, status: "EXPIRED" },
-  { id: 2, nama: "Amoxicillin 250mg", type: "Sirup • Dexa Medica", batch: "BCH-2023-055", exp: "2024-04-15", stok: 12, status: "PERINGATAN" },
-  { id: 3, nama: "Vitamin C 1000mg", type: "Suplemen • Sidomuncul", batch: "BCH-2024-102", exp: "2025-12-22", stok: 120, status: "AMAN" },
-  { id: 4, nama: "Ibuprofen 400mg", type: "Kapsul • Phapros", batch: "BCH-2023-098", exp: "2024-02-05", stok: 8, status: "EXPIRED" },
-  { id: 5, nama: "Betadine Solution", type: "Antiseptik • Mundipharma", batch: "BCH-2024-001", exp: "2024-06-30", stok: 32, status: "PERINGATAN" },
-];
+const computeStatus = (dateString) => {
+  if (!dateString) return "AMAN";
+  const now = new Date();
+  const exp = new Date(dateString);
+  if (isNaN(exp.getTime())) return "AMAN";
+  if (exp < now) return "EXPIRED";
+  const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays <= 30 ? "PERINGATAN" : "AMAN";
+};
 
 const LaporanStokExpired = () => {
   const [page, setPage] = useState(1);
-  const data = mockStok;
-  
-  const totalPages = Math.ceil(data.length / PAGE_SIZE);
+  const batchData = useLiveQuery(async () => {
+    const batches = await db.batchProduk.toArray();
+    return await Promise.all(
+      batches.map(async (batch) => {
+        const produk = await db.produk.get(batch.produk_id);
+        return {
+          id: batch.id,
+          nama: produk?.nama || batch.produk_id,
+          type: produk?.satuan || "-",
+          batch: batch.kodeBatch || "-",
+          exp: batch.expired || "",
+          stok: batch.stok || 0,
+          status: computeStatus(batch.expired),
+        };
+      })
+    );
+  }, [], []);
+
+  const data = useMemo(() => {
+    return (batchData || []).sort((a, b) => new Date(a.exp || 0) - new Date(b.exp || 0));
+  }, [batchData]);
+
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const columns = [
@@ -41,11 +65,16 @@ const LaporanStokExpired = () => {
     { 
       header: "TANGGAL KADALUARSA", 
       accessor: "exp",
-      render: (row) => (
-        <Typography sx={{ fontWeight: 700, color: '#475569', fontSize: 14 }}>
-          {new Date(row.exp).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </Typography>
-      )
+      render: (row) => {
+        if (!row.exp) {
+          return <Typography sx={{ fontWeight: 700, color: '#64748B', fontSize: 14 }}>-</Typography>;
+        }
+        return (
+          <Typography sx={{ fontWeight: 700, color: '#475569', fontSize: 14 }}>
+            {new Date(row.exp).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </Typography>
+        );
+      }
     },
     { 
       header: "SISA STOK", 
@@ -61,9 +90,16 @@ const LaporanStokExpired = () => {
       header: "STATUS", 
       accessor: "status",
       render: (row) => {
-        let bg = '#F1F5F9', color = '#64748B';
-        if (row.status === 'EXPIRED') { bg = '#BE185D'; color = '#FFFFFF'; }
-        if (row.status === 'PERINGATAN') { bg = '#F9A8D4'; color = '#BE185D'; } // Pink bg, dark pink text
+        let bg = '#F1F5F9';
+        let color = '#64748B';
+        if (row.status === 'EXPIRED') {
+          bg = '#BE185D';
+          color = '#FFFFFF';
+        }
+        if (row.status === 'PERINGATAN') {
+          bg = '#F9A8D4';
+          color = '#BE185D';
+        }
 
         return (
           <span style={{ 
@@ -77,7 +113,7 @@ const LaporanStokExpired = () => {
           }}>
             {row.status}
           </span>
-        )
+        );
       },
       align: 'center'
     },

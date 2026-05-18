@@ -1,4 +1,3 @@
-// Dashboard dummy
 export const DUMMY_DASHBOARD = {
   revenue: 128940000,
   profit: 32235000,

@@ -9,6 +9,7 @@ import SupplierPage from "../pages/SupplierPage";
 import StokBatchPage from "../pages/StokBatchPage";
 import PembelianPage from "../pages/PembelianPage";
 import TambahFakturPage from "../pages/TambahFakturPage";
+import LihatFakturPage from "../pages/LihatFakturPage";
 import LoginPage from "../pages/LoginPage";
 import LaporanPage from "../pages/LaporanPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -59,6 +60,11 @@ const AppRouter = () => {
             <TambahFakturPage />
           </ProtectedRoute>
         } />
+        <Route path="/pembelian/lihat/:fakturId" element={
+          <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+            <LihatFakturPage />
+          </ProtectedRoute>
+        } />
         <Route path="/laporan" element={
           <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
             <LaporanPage />
@@ -79,9 +85,11 @@ const AppRouter = () => {
             <KasirPage />
           </ProtectedRoute>
         } />
-
-
-       
+        <Route path="/pos" element={
+          <ProtectedRoute allowedRoles={[ROLE.KASIR, ROLE.ADMIN]}>
+            <KasirPage />
+          </ProtectedRoute>
+        } />
       </Route>
       </Routes>
     </BrowserRouter >

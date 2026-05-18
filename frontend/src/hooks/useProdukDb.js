@@ -24,10 +24,10 @@ export default function useProdukDb() {
 
   const getNamaSatuan = (id) => {
     const found = satuanList.find(
-      (s) => String(s.id_satuan) === String(id)
+      (s) => String(s.id) === String(id)
     );
 
-    return found ? found.nama_satuan : "-";
+    return found ? found.nama : "-";
   };
 
   const fetchProduk = async () => {
@@ -38,7 +38,20 @@ export default function useProdukDb() {
       setKategori(kategoriData.data);
 
       const satuanData = await getSatuan();
-      setSatuanList(satuanData.data);
+      const satuanRaw = Array.isArray(satuanData)
+        ? satuanData
+        : satuanData?.data || [];
+      const normalizedSatuan = satuanRaw.map((s) => {
+        if (typeof s === "string") {
+          return { id: s, nama: s };
+        }
+        return {
+          id: s.id_satuan ?? s.id,
+          nama: s.nama_satuan ?? s.nama ?? s.label ?? "",
+          raw: s,
+        };
+      });
+      setSatuanList(normalizedSatuan);
 
       const res = await axiosInstance.get("/produk", {
         params: {

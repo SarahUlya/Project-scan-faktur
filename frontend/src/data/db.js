@@ -19,6 +19,16 @@ db.version(1).stores({
   logStok: '++id, produk_id, batch_id, tipe, sumber, tanggal'
 });
 
+db.version(2).stores({
+  transaksi: 'id, no_transaksi, tanggal, kasir, metode',
+  transaksiDetail: '++id, transaksi_id, produk_id',
+});
+
+db.version(3).stores({
+  transaksi: 'id, no_transaksi, tanggal, kasir, metode, status',
+  transaksiDetail: '++id, transaksi_id, produk_id',
+});
+
 export const seedDatabase = async () => {
   const produkCount = await db.produk.count();
   const supplierCount = await db.supplier.count();

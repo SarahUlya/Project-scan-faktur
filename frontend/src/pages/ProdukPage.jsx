@@ -6,7 +6,6 @@ import PaginationControls from "../components/ui/PaginationControls";
 import useProdukDb from "../hooks/useProdukDb";
 import Modal from "../components/ui/Modal";
 import ProdukForm from "../components/produk/ProdukForm";
-import HapusProdukConfirm from "../components/produk/HapusProdukConfirm";
 import { Box, Typography, TextField, InputAdornment, Button } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -35,7 +34,6 @@ const ProdukPage = () => {
 	} = useProdukDb();
 
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
-	const [hapus, setHapus] = useState({ open: false, data: null });
 	const [detail, setDetail] = useState(null);
 	const [searchParams, setSearchParams] = useSearchParams();
 
@@ -97,34 +95,11 @@ const ProdukPage = () => {
 		setSearch(value);
 		setPage(1);
 	};
-	const handleDelete = (item) => {
-		setHapus({
-			open: true,
-			data: item,
-		});
-	};
 
 	const handleDetail = (item) => {
 		setDetail(item);
 	};
 
-	const handleDeleteConfirm = async () => {
-		try {
-			if (hapus.data) {
-				await deleteProduk(
-					hapus.data.id_produk || hapus.data.id
-				);
-			}
-
-			setHapus({
-				open: false,
-				data: null,
-			});
-		} catch (err) {
-			console.error(err);
-			alert("Gagal nonaktifkan produk");
-		}
-	};
 
 const handleCloseModal = () => {
 	setModal({ open: false, mode: "add", data: null });
@@ -215,7 +190,6 @@ return (
 				getNamaSatuan={getNamaSatuan}
 				onViewDetail={handleDetail}
 				onEdit={handleEdit}
-				onDelete={handleDelete}
 			/>
 			<div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 				<div>Menampilkan {produk.length} dari {total} produk</div>
@@ -233,14 +207,6 @@ return (
 			/>
 		</Modal>
 
-		<Modal open={hapus.open} onClose={() => setHapus({ open: false, data: null })} width={400}>
-			<HapusProdukConfirm
-				open={hapus.open}
-				onClose={() => setHapus({ open: false, data: null })}
-				onDelete={handleDeleteConfirm}
-				produk={hapus.data}
-			/>
-		</Modal>
 
 		<Modal open={!!detail} onClose={() => setDetail(null)} width={760}>
 			<ProdukDetailModal
