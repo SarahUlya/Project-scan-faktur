@@ -23,25 +23,24 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
   };
 
   return (
-    <Modal open={open} onClose={onClose} width={460}>
-      <div style={{ textAlign: "center", marginBottom: 16 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: "#FDF2F8", color: "#E91E63", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+    <Modal open={open} onClose={onClose} width={420}>
+      <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: "#FDF2F8", color: "#E91E63", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
           <QrCodeScannerIcon />
         </div>
-        <h3 style={{ margin: 0, fontWeight: 800, fontSize: 20 }}>Scan Barcode Produk</h3>
-        <p style={{ margin: "8px 0 0", color: "#64748B", fontSize: 14 }}>Produk terdeteksi. Konfirmasi sebelum masuk keranjang.</p>
+        <h3 style={{ margin: 0, fontWeight: 800, fontSize: 18, color: "#1E293B" }}>Produk Terdeteksi</h3>
+        <p style={{ margin: "6px 0 0", color: "#64748B", fontSize: 13 }}>Masukkan kuantitas untuk menambahkan ke keranjang</p>
       </div>
 
-      <div style={{ background: "#F8FAFC", borderRadius: 12, padding: 16, marginBottom: 20, border: "1px solid #E2E8F0" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 4 }}>OBAT TERDETEKSI</div>
-        <div style={{ fontWeight: 800, fontSize: 17, color: "#1E293B", marginBottom: 8 }}>{produk.nama_produk}</div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#64748B" }}>Harga unit</span>
+      <div style={{ background: "#F8FAFC", borderRadius: 10, padding: 14, marginBottom: 18, border: "1px solid #E2E8F0" }}>
+        <div style={{ fontWeight: 800, fontSize: 16, color: "#1E293B", marginBottom: 8 }}>{produk.nama_produk}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+          <span style={{ color: "#64748B" }}>Harga</span>
           <span style={{ fontWeight: 800, color: "#E91E63" }}>Rp {formatRupiahPos(produk.harga_jual)}</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 4 }}>
-          <span style={{ color: "#64748B" }}>Stok tersedia</span>
-          <span style={{ fontWeight: 700 }}>{produk.stok ?? 0}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+          <span style={{ color: "#64748B" }}>Stok Tersedia</span>
+          <span style={{ fontWeight: 700, color: "#10B981" }}>{produk.stok ?? 0}</span>
         </div>
       </div>
 
@@ -53,12 +52,12 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
         max={produk.stok || 999}
         value={qty}
         onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-        style={{ width: "100%", boxSizing: "border-box", padding: 14, borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 16, marginBottom: 20 }}
+        style={{ width: "100%", boxSizing: "border-box", padding: 12, borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 15, marginBottom: 18, fontWeight: 700, outline: "none" }}
         autoFocus
       />
 
       {noStock && (
-        <div style={{ marginBottom: 16, color: '#DC2626', fontSize: 13, textAlign: 'center' }}>
+        <div style={{ marginBottom: 16, color: '#DC2626', fontSize: 12, textAlign: 'center', fontWeight: 600 }}>
           Stok produk kosong. Silakan pilih produk lain.
         </div>
       )}
@@ -69,18 +68,19 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
         disabled={noStock}
         style={{
           width: "100%",
-          padding: 16,
-          borderRadius: 14,
+          padding: 14,
+          borderRadius: 10,
           border: "none",
           background: noStock ? "#F1F5F9" : "#E91E63",
           color: noStock ? "#94A3B8" : "#fff",
           fontWeight: 800,
-          fontSize: 15,
+          fontSize: 14,
           cursor: noStock ? "not-allowed" : "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: 8,
+          transition: "all 0.2s",
         }}
       >
         <ShoppingCartOutlinedIcon fontSize="small" />

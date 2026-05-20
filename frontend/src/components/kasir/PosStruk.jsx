@@ -6,47 +6,120 @@ const PosStruk = ({ data }) => {
   if (!data) return null;
   const { header, items = [], cetakStruk } = data;
 
+  // Format tanggal
+  const tanggal = new Date(header?.tanggal);
+  const tglStr = tanggal.toLocaleDateString("id-ID", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const jamStr = tanggal.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
   return (
-    <div className="struk-print-area" style={{ maxWidth: 320, margin: "0 auto", fontFamily: "monospace", fontSize: 12, color: "#111", padding: 16, background: "#fff", border: "1px dashed #ccc" }}>
-      <div style={{ textAlign: "center", marginBottom: 12 }}>
-        <div style={{ fontWeight: 900, fontSize: 14 }}>{APOTEK_INFO.nama.toUpperCase()}</div>
-        <div style={{ fontSize: 10 }}>{APOTEK_INFO.alamat}</div>
-        <div style={{ fontSize: 10 }}>Telp: {APOTEK_INFO.telepon}</div>
+    <div className="struk-print-area" style={{
+      maxWidth: 300,
+      margin: "0 auto",
+      fontFamily: "'Courier New', monospace",
+      fontSize: 11,
+      color: "#000",
+      padding: 0,
+      background: "#fff",
+      lineHeight: 1.3,
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+        <div style={{ fontWeight: 900, fontSize: 12, marginBottom: 2 }}>
+          {APOTEK_INFO.nama.toUpperCase()}
+        </div>
+        <div style={{ fontSize: 9 }}>{APOTEK_INFO.alamat}</div>
+        <div style={{ fontSize: 9 }}>Telp: {APOTEK_INFO.telepon}</div>
       </div>
-      <div style={{ borderTop: "1px dashed #999", borderBottom: "1px dashed #999", padding: "8px 0", marginBottom: 8 }}>
-        <div>No: {header?.no_transaksi}</div>
-        <div>{new Date(header?.tanggal).toLocaleString("id-ID")}</div>
-        <div>Kasir: {header?.kasir}</div>
+
+      {/* Nomor & Waktu */}
+      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
+          <span>No: {header?.no_transaksi}</span>
+          <span>Kasir: {header?.kasir}</span>
+        </div>
+        <div style={{ fontSize: 9, marginTop: 2 }}>
+          {tglStr} {jamStr}
+        </div>
       </div>
-      {items.map((it, i) => (
-        <div key={i} style={{ marginBottom: 6 }}>
-          <div style={{ fontWeight: 700 }}>{it.nama_produk || it.nama}</div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>{it.qty} × Rp {formatRupiahPos(it.harga)}</span>
-            <span>Rp {formatRupiahPos(it.subtotal || it.qty * it.harga)}</span>
+
+      {/* Items */}
+      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ marginBottom: 4 }}>
+            <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
+              {it.nama_produk || it.nama}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
+              <span>{it.qty} × Rp {formatRupiahPos(it.harga)}</span>
+              <span style={{ fontWeight: 700 }}>Rp {formatRupiahPos(it.subtotal || it.qty * it.harga)}</span>
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* Total */}
+      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2 }}>
+          <span>Subtotal</span>
+          <span>Rp {formatRupiahPos(header?.subtotal)}</span>
         </div>
-      ))}
-      <div style={{ borderTop: "1px dashed #999", marginTop: 8, paddingTop: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Subtotal</span><span>Rp {formatRupiahPos(header?.subtotal)}</span></div>
         {header?.diskon_nominal > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}><span>Diskon</span><span>- Rp {formatRupiahPos(header?.diskon_nominal)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2, color: "#DC2626" }}>
+            <span>Diskon</span>
+            <span>- Rp {formatRupiahPos(header?.diskon_nominal)}</span>
+          </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900, fontSize: 14, marginTop: 4 }}>
-          <span>TOTAL</span><span>Rp {formatRupiahPos(header?.total)}</span>
-        </div>
-        <div style={{ marginTop: 8, fontSize: 11 }}>
-          <div>Bayar: {header?.metode}</div>
-          {header?.metode === "TUNAI" && (
-            <>
-              <div>Diterima: Rp {formatRupiahPos(header?.uang_diterima)}</div>
-              <div>Kembali: Rp {formatRupiahPos(header?.kembalian)}</div>
-            </>
-          )}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontWeight: 900,
+          fontSize: 12,
+          borderTop: "1px dashed #000",
+          paddingTop: 4,
+        }}>
+          <span>TOTAL</span>
+          <span>Rp {formatRupiahPos(header?.total)}</span>
         </div>
       </div>
-      <div style={{ textAlign: "center", marginTop: 16, fontSize: 10 }}>Terima kasih — semoga lekas sembuh</div>
-      {!cetakStruk && <div style={{ textAlign: "center", fontSize: 9, color: "#999", marginTop: 8 }}>(Preview — cetak opsional)</div>}
+
+      {/* Pembayaran */}
+      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+        <div style={{ fontSize: 9, marginBottom: 2 }}>
+          <span style={{ fontWeight: 700 }}>Metode:</span> {header?.metode}
+        </div>
+        {header?.metode === "TUNAI" && (
+          <>
+            <div style={{ fontSize: 9, marginBottom: 2 }}>
+              <span style={{ fontWeight: 700 }}>Diterima:</span> Rp {formatRupiahPos(header?.uang_diterima)}
+            </div>
+            <div style={{ fontSize: 9, color: "#10B981", fontWeight: 700 }}>
+              <span>Kembalian:</span> Rp {formatRupiahPos(header?.kembalian)}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ textAlign: "center", marginBottom: 4, fontSize: 9 }}>
+        Terima kasih atas kunjungan Anda
+      </div>
+      <div style={{ textAlign: "center", fontSize: 8, color: "#666" }}>
+        Semoga lekas sembuh
+      </div>
+      {!cetakStruk && (
+        <div style={{ textAlign: "center", fontSize: 8, color: "#999", marginTop: 6, fontStyle: "italic" }}>
+          (Preview — cetak opsional)
+        </div>
+      )}
     </div>
   );
 };

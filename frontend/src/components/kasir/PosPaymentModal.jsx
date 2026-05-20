@@ -72,47 +72,53 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
   if (!open) return null;
 
   return (
-    <Modal open={open} onClose={onClose} width={720}>
-      <h3 style={{ margin: "0 0 20px", fontWeight: 800, fontSize: 22, color: "#1E293B" }}>Pilih Metode Pembayaran</h3>
+    <Modal open={open} onClose={onClose} width={680}>
+      <h3 style={{ margin: "0 0 18px", fontWeight: 800, fontSize: 20, color: "#1E293B" }}>Konfirmasi Pembayaran</h3>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 20 }}>
         <div>
-          <p style={{ fontWeight: 700, fontSize: 12, color: "#94A3B8", textTransform: "uppercase", marginBottom: 12 }}>Detail Pesanan</p>
-          {cart.map((item) => (
-            <div key={item.cartKey} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8, color: "#475569" }}>
-              <span>{item.nama} × {item.qty}</span>
-              <span>Rp {formatRupiahPos(item.qty * item.harga)}</span>
+          <p style={{ fontWeight: 700, fontSize: 11, color: "#94A3B8", textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>Ringkasan Pesanan</p>
+          <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: 12 }}>
+            {cart.map((item) => (
+              <div key={item.cartKey} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6, color: "#475569" }}>
+                <span>{item.nama}</span>
+                <span style={{ fontWeight: 600 }}>{item.qty} × Rp {formatRupiahPos(item.harga)}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, fontSize: 12 }}>
+              <span style={{ color: "#64748B" }}>Subtotal</span><span style={{ fontWeight: 600 }}>Rp {formatRupiahPos(subtotal)}</span>
             </div>
-          ))}
-          <div style={{ borderTop: "1px solid #F1F5F9", marginTop: 12, paddingTop: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span>Subtotal</span><span>Rp {formatRupiahPos(subtotal)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span>Diskon</span><span>- Rp {formatRupiahPos(diskonNominal)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 18, color: "#E91E63" }}>
-              <span>Total Bayar</span><span>Rp {formatRupiahPos(totalBayar)}</span>
+            {diskonNominal > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#10B981" }}>
+                <span>Diskon</span><span style={{ fontWeight: 600 }}>- Rp {formatRupiahPos(diskonNominal)}</span>
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 16, color: "#E91E63" }}>
+              <span>Total</span><span>Rp {formatRupiahPos(totalBayar)}</span>
             </div>
           </div>
         </div>
 
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <p style={{ fontWeight: 700, fontSize: 11, color: "#94A3B8", textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>Metode Pembayaran</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
             {METODE.map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMetode(m)}
                 style={{
-                  flex: 1,
                   padding: 10,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   border: metode === m ? "2px solid #E91E63" : "1px solid #E2E8F0",
                   background: metode === m ? "#FFF1F2" : "#fff",
                   fontWeight: 700,
                   fontSize: 12,
                   cursor: "pointer",
+                  color: metode === m ? "#E91E63" : "#64748B",
+                  transition: "all 0.2s",
                 }}
               >
                 {m}
@@ -122,33 +128,33 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
 
           {isTunai && (
             <>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Uang Diterima</label>
+              <label style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Uang Diterima</label>
               <input
                 type="number"
                 value={uangDiterima}
                 onChange={(e) => setUangDiterima(e.target.value)}
-                style={{ width: "100%", boxSizing: "border-box", padding: 14, borderRadius: 10, border: "1px solid #E2E8F0", fontSize: 18, fontWeight: 700, margin: "8px 0 12px" }}
+                style={{ width: "100%", boxSizing: "border-box", padding: 12, borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 16, fontWeight: 700, marginBottom: 10 }}
               />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
                 {QUICK_CASH.map((amt) => (
-                  <button key={amt} type="button" onClick={() => setUangDiterima(String(amt))} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 12 }}>
+                  <button key={amt} type="button" onClick={() => setUangDiterima(String(amt))} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 11 }}>
                     Rp {(amt / 1000).toFixed(0)}rb
                   </button>
                 ))}
-                <button type="button" onClick={() => setUangDiterima(String(totalBayar))} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #E91E63", background: "#FFF1F2", color: "#E91E63", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
-                  Uang Pas
+                <button type="button" onClick={() => setUangDiterima(String(totalBayar))} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #E91E63", background: "#FFF1F2", color: "#E91E63", fontWeight: 700, cursor: "pointer", fontSize: 11 }}>
+                  Pas
                 </button>
               </div>
-              <div style={{ background: "#F0FDF4", borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: "#64748B", fontWeight: 700 }}>KEMBALIAN</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#16A34A" }}>Rp {formatRupiahPos(kembalian)}</div>
+              <div style={{ background: "#F0FDF4", borderRadius: 10, padding: 12, marginBottom: 14, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>KEMBALIAN</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#16A34A" }}>Rp {formatRupiahPos(kembalian)}</div>
               </div>
             </>
           )}
 
-          <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, cursor: "pointer", fontSize: 14 }}>
-            <input type="checkbox" checked={cetakStruk} onChange={(e) => setCetakStruk(e.target.checked)} />
-            Cetak struk otomatis setelah bayar
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer", fontSize: 12 }}>
+            <input type="checkbox" checked={cetakStruk} onChange={(e) => setCetakStruk(e.target.checked)} style={{ cursor: "pointer" }} />
+            <span>Cetak struk ke printer thermal</span>
           </label>
 
           <button
@@ -157,17 +163,19 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
             onClick={handleConfirm}
             style={{
               width: "100%",
-              padding: 16,
-              borderRadius: 12,
+              padding: 13,
+              borderRadius: 10,
               border: "none",
               background: canPay && !loading ? "#E91E63" : "#F1F5F9",
               color: canPay && !loading ? "#fff" : "#94A3B8",
               fontWeight: 800,
-              fontSize: 15,
+              fontSize: 13,
               cursor: canPay && !loading ? "pointer" : "not-allowed",
+              transition: "all 0.2s",
+              boxShadow: canPay && !loading ? "0 3px 12px rgba(233,30,99,0.25)" : "none",
             }}
           >
-            {loading ? "Memproses..." : "Konfirmasi & Cetak Struk"}
+            {loading ? "Memproses..." : "Konfirmasi Pembayaran"}
           </button>
         </div>
       </div>

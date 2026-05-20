@@ -33,23 +33,23 @@ const PosSuccessModal = ({ open, data, onClose, onNewTransaction }) => {
   };
 
   return (
-    <Modal open={open} onClose={onClose} width={480}>
-      <div className="no-print" style={{ textAlign: "center", marginBottom: 20 }}>
-        <CheckCircleOutlineIcon sx={{ fontSize: 64, color: "#10B981" }} />
-        <h2 style={{ margin: "12px 0 4px", fontWeight: 800, color: "#1E293B" }}>Transaksi Berhasil!</h2>
+    <Modal open={open} onClose={onClose} width={440}>
+      <div className="no-print" style={{ textAlign: "center", marginBottom: 18 }}>
+        <CheckCircleOutlineIcon sx={{ fontSize: 56, color: "#10B981" }} />
+        <h2 style={{ margin: "10px 0 4px", fontWeight: 800, fontSize: 20, color: "#1E293B" }}>Transaksi Berhasil!</h2>
         {data.metode === "TUNAI" && data.kembalian > 0 && (
-          <p style={{ color: "#16A34A", fontWeight: 800, fontSize: 18 }}>Kembalian: Rp {formatRupiahPos(data.kembalian)}</p>
+          <p style={{ color: "#16A34A", fontWeight: 800, fontSize: 16, margin: "6px 0 0" }}>Kembalian: Rp {formatRupiahPos(data.kembalian)}</p>
         )}
       </div>
 
       <PosStruk data={strukData} />
 
-      <div className="no-print" style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        <button type="button" onClick={onNewTransaction} style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: "#E91E63", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+      <div className="no-print" style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <button type="button" onClick={onNewTransaction} style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: "#E91E63", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
           + Transaksi Baru
         </button>
-        <button type="button" onClick={handlePrint} style={{ flex: 1, padding: 14, borderRadius: 12, border: "2px solid #E91E63", background: "#fff", color: "#E91E63", fontWeight: 700, cursor: "pointer" }}>
-          Cetak Struk Lagi
+        <button type="button" onClick={handlePrint} style={{ flex: 1, padding: 12, borderRadius: 10, border: "2px solid #E91E63", background: "#fff", color: "#E91E63", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+          Cetak Ulang
         </button>
       </div>
     </Modal>

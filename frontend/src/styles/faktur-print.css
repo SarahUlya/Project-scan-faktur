@@ -38,14 +38,34 @@
   background: #f9fafb;
 }
 
+/* Thermal Printer Receipt Styles */
+.struk-print-area {
+  max-width: 300px;
+  margin: 0 auto;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #000;
+  padding: 0;
+  background: #fff;
+  line-height: 1.3;
+  word-break: break-word;
+  page-break-inside: avoid;
+}
+
+.struk-print-area > div {
+  margin: 0;
+}
+
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 12mm;
+    size: 80mm auto;
+    margin: 0;
   }
 
   body {
     background: #fff !important;
+    margin: 0;
+    padding: 0;
   }
 
   .no-print {
@@ -57,7 +77,8 @@
     -webkit-print-color-adjust: exact;
   }
 
-  .faktur-preview-page {
+  .faktur-preview-page,
+  .struk-print-area {
     max-width: none;
     margin: 0;
     padding: 0;
@@ -68,5 +89,29 @@
     border: none;
     padding: 0;
     box-shadow: none !important;
+    page-break-inside: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Thermal printer optimization */
+  .struk-print-area {
+    width: 80mm;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  /* Prevent page breaks in middle of items */
+  .struk-print-area > div {
+    page-break-inside: avoid;
+  }
+}
+
+@media print and (width: 80mm) {
+  body {
+    width: 80mm;
+  }
+
+  .struk-print-area {
+    width: 100%;
   }
 }
