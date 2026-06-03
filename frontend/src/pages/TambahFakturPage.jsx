@@ -79,15 +79,38 @@ const TambahFakturPage = () => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const updated = recalcItem({ ...item, [field]: value });
+
+        const updated = recalcItem({
+          ...item,
+          [field]: value,
+        });
+
         if (field === "produk_id") {
-          const p = produk.find((x) => String(x.id_produk) === String(value));
+          const p = produk.find(
+            (x) =>
+              String(x.id_produk) ===
+              String(value)
+          );
+
           if (p) {
-            updated.nama_produk = p.nama_produk;
-            updated.harga_satuan = p.harga_beli || p.harga_jual || 0;
-            updated.satuan = p.nama_satuan || p.satuan || "Pcs";
+            updated.nama_produk =
+              p.nama_produk;
+
+            updated.harga_satuan =
+              p.harga_beli ||
+              p.harga_jual ||
+              0;
+
+            updated.satuan =
+              p.nama_satuan ||
+              p.satuan ||
+              "Pcs";
+
+            updated.barcode =
+              p.barcode; // ← tambahkan ini
           }
         }
+
         return updated;
       })
     );
@@ -122,10 +145,10 @@ const TambahFakturPage = () => {
         prev.map((it) =>
           it.id === existing.id
             ? recalcItem({
-                ...it,
-                qty: (it.qty || 0) + qty,
-                harga_satuan: harga_satuan || it.harga_satuan,
-              })
+              ...it,
+              qty: (it.qty || 0) + qty,
+              harga_satuan: harga_satuan || it.harga_satuan,
+            })
             : it
         )
       );
@@ -273,7 +296,12 @@ const TambahFakturPage = () => {
             >
               <option value="">Pilih Supplier</option>
               {supplier.map((s) => (
-                <option key={s.id} value={`${s.id}|${s.nama}`}>{s.nama}</option>
+                <option
+                  key={s.id}
+                  value={`${s.id}|${s.nama}`}
+                >
+                  {s.nama}
+                </option>
               ))}
             </select>
           </Field>

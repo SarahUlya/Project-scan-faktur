@@ -50,7 +50,9 @@ const KasirContent = () => {
   }, [kategoriSearch, kategori]);
 
   const filtered = useMemo(() => {
-    let list = produk.filter((p) => p.is_active !== false && (p.stok || 0) > 0);
+    let list = produk.filter(
+      (p) => p.is_active !== false
+    );
     if (kategoriFilter !== "semua") {
       list = list.filter((p) => String(p.id_kategori) === String(kategoriFilter));
     }
@@ -65,6 +67,7 @@ const KasirContent = () => {
     }
     return list;
   }, [produk, kategoriFilter, search]);
+  console.log(produk);
 
   const handleBarcodeEnter = (e) => {
     if (e.key !== "Enter") return;
@@ -109,7 +112,7 @@ const KasirContent = () => {
 
       <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap", alignItems: "center" }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap", alignItems: "center" }}>
             <input
               type="text"
               placeholder="Cari nama obat atau barcode..."

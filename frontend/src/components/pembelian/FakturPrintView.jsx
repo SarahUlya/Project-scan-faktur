@@ -29,6 +29,8 @@ const FakturPrintView = ({ faktur }) => {
   if (!faktur) return null;
 
   const { header, supplier, items = [] } = faktur;
+  console.log(header);
+  console.log(items);
   const subtotal = header.subtotal ?? items.reduce((acc, it) => acc + (it.subtotal || 0), 0);
   const ppn = header.ppn ?? Math.round(subtotal * ((header.nilai_ppn || 11) / 100));
   const dpp = header.jenis_ppn === "sudah_termasuk" ? subtotal - ppn : subtotal;
@@ -83,10 +85,11 @@ const FakturPrintView = ({ faktur }) => {
           <strong>Pembayaran:</strong> {header.jenis_pembayaran || "Tunai"}
         </div>
         <div>
-          <strong>Akun:</strong> {header.akun_kas || "-"}
+          <strong>Akun:</strong> {header.akun_kas?.nama || header.akun_kas || "-"}
         </div>
+
         <div>
-          <strong>Gudang:</strong> {header.gudang || "-"}
+          <strong>Gudang:</strong> {header.gudang?.nama || header.gudang || "-"}
         </div>
         <div>
           <strong>Penerimaan:</strong> {formatTanggal(header.tanggal_penerimaan)}
@@ -121,7 +124,7 @@ const FakturPrintView = ({ faktur }) => {
                 <td style={{ textAlign: "center" }}>{row.batch}</td>
                 <td style={{ textAlign: "center" }}>{formatEd(row.ed)}</td>
                 <td style={{ textAlign: "center" }}>
-                  {row.qty} {row.satuan}
+                  {row.qty} {row.satuan?.nama || row.satuan || "-"}
                 </td>
                 <td style={{ textAlign: "right" }}>{formatRupiah(row.harga)}</td>
                 <td style={{ textAlign: "center" }}>

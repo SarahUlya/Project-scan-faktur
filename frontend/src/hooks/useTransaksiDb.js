@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../data/db";
 import { deductStockFefo } from "../services/stockService";
+import { getUser, ROLE } from "../auth/auth";
 
 const generateNoTransaksi = () => {
   const d = new Date();
@@ -90,9 +91,112 @@ export default function useTransaksiDb() {
     return { header, items };
   }, []);
 
+  const cancelTransaksi = useCallback(
+    async (transaksiId) => {
+
+      const user = getUser();
+
+      if (!user) {
+        throw new Error("User belum login");
+      }
+
+      if (user.role !== ROLE.ADMIN) {
+        throw new Error(
+          "Hanya admin yang dapat membatalkan transaksi"
+        );
+      }
+
+      const transaksi = await db.transaksi.get(
+        transaksiId
+      );
+
+      if (!transaksi) {
+        throw new Error(
+          "Transaksi tidak ditemukan"
+        );
+      }
+
+      if (
+        transaksi.status === "DIBATALKAN"
+      ) {
+        throw new Error(
+          "Transaksi sudah dibatalkan"
+        );
+      }
+
+      const items = await db.transaksiDetail
+        .where("transaksi_id")
+        .equals(transaksiId)
+        .toArray();
+
+      await db.transaction(
+        "rw",
+        db.transaksi,
+        db.transaksiDetail,
+        db.batchProduk,
+        db.logStok,
+        async () => {
+
+          for (const item of items) {
+
+            // ambil batch FEFO pertama
+            const batch = await db.batchProduk
+              .where("produk_id")
+              .equals(
+                String(item.produk_id)
+              )
+              .first();
+
+            if (batch) {
+
+              const stokBaru =
+                (batch.stok || 0) +
+                item.qty;
+
+              await db.batchProduk.update(
+                batch.id,
+                {
+                  stok: stokBaru
+                }
+              );
+
+              await db.logStok.add({
+                produk_id: item.produk_id,
+                batch_id: batch.id,
+                tanggal: new Date().toISOString(),
+                tipe: "in",
+                sumber: "BATAL_TRANSAKSI",
+                aktivitas: `Pembatalan transaksi (${transaksiId})`,
+                referensi: transaksiId,
+                masuk: item.qty,
+                keluar: 0,
+                saldoAkhir: stokBaru
+              });
+            }
+          }
+
+          await db.transaksi.update(
+            transaksiId,
+            {
+              status: "DIBATALKAN",
+              dibatalkan_oleh:
+                user.username,
+              tanggal_batal:
+                new Date().toISOString()
+            }
+          );
+        }
+      );
+
+      return true;
+    },
+    []
+  );
+
   return {
     transaksiList: transaksiList || [],
     processTransaksi,
     getTransaksiDetail,
+    cancelTransaksi,
   };
 }

@@ -7,3 +7,7 @@ export const login = async (data) => {
 export const getMe = async () => {
     return api.get('/auth/login');
 }
+
+export const getUsers = async () => {
+    return api.get('/auth/users');
+};

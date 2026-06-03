@@ -55,7 +55,7 @@ export default function useSidebarMenu() {
     {
       text: "Kasir POS",
       icon: "PointOfSaleIcon",
-      path: "/pos",
+      path: "/kasir",
       roles: [ROLE.ADMIN, ROLE.KASIR],
     },
   ];

@@ -1,22 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axiosInstance from "../api/axiosInstance";
+
 
 const useManajemenUser = () => {
-  // Logic data (bisa dari API nantinya)
-  const [users] = useState([
-    { id: 1, no: 1, nama: "Admin Utama", email: "admin@ampuh.com", username: "admin_utama", role: "ADMIN", status: "Aktif" },
-    { id: 2, no: 2, nama: "Siti Aminah", email: "siti.kasir@ampuh.com", username: "sitikasir12", role: "KASIR", status: "Aktif" },
-    { id: 3, no: 3, nama: "Budi Santoso", email: "budi.staff@ampuh.com", username: "budistaff_01", role: "STAFF", status: "Nonaktif" },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleEdit = (id) => console.log("Edit ID:", id);
-  const handleDelete = (id) => console.log("Delete ID:", id);
-  const handleTambah = () => console.log("Tambah User");
+  const getUsers = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axiosInstance.get("/auth/users");
+
+      const formattedUsers = res.data.users.map((user, index) => ({
+        id: user.id,
+        no: index + 1,
+        nama: user.name,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        status: user.isActive ? "Aktif" : "Nonaktif",
+        isActive: user.isActive,
+      }));
+
+      setUsers(formattedUsers);
+    } catch (err) {
+      console.error("Gagal ambil user:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getUsers();
+  }, []);
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      await axiosInstance.patch(`/users/${id}/status`, {
+        isActive: !currentStatus,
+      });
+
+      getUsers();
+    } catch (err) {
+      console.error("Gagal update status:", err);
+    }
+  };
 
   return {
     users,
-    handleEdit,
-    handleDelete,
-    handleTambah
+    loading,
+    handleToggleStatus,
+    getUsers
   };
 };
 

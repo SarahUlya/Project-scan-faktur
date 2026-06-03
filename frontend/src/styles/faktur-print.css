@@ -52,7 +52,7 @@
   page-break-inside: avoid;
 }
 
-.struk-print-area > div {
+.struk-print-area>div {
   margin: 0;
 }
 
@@ -62,45 +62,39 @@
     margin: 0;
   }
 
+  html,
   body {
-    background: #fff !important;
-    margin: 0;
-    padding: 0;
+    width: 80mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: white;
   }
 
   .no-print {
     display: none !important;
   }
 
-  body {
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .faktur-preview-page,
-  .struk-print-area {
-    max-width: none;
+  /* sembunyikan halaman lain */
+  .faktur-preview-page {
     margin: 0;
     padding: 0;
   }
 
-  .faktur-print-area,
   .struk-print-area {
-    border: none;
-    padding: 0;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    border: none !important;
     box-shadow: none !important;
-    page-break-inside: avoid;
-    page-break-after: avoid;
-  }
+    background: white !important;
 
-  /* Thermal printer optimization */
-  .struk-print-area {
-    width: 80mm;
+    font-family: 'Courier New', monospace;
     font-size: 11px;
     line-height: 1.3;
   }
 
-  /* Prevent page breaks in middle of items */
   .struk-print-area > div {
     page-break-inside: avoid;
   }

@@ -33,6 +33,8 @@ const ProdukPage = () => {
 		fetchProduk,
 	} = useProdukDb();
 
+	console.log(produk);
+
 	const [modal, setModal] = useState({ open: false, mode: "add", data: null });
 	const [detail, setDetail] = useState(null);
 	const [searchParams, setSearchParams] = useSearchParams();

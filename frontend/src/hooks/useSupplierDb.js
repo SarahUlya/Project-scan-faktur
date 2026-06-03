@@ -1,33 +1,38 @@
 import { useEffect, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db, seedDatabase } from "../data/db";
+import { getSupplier } from "../api/supplierApi";
 
 export default function useSupplierDb() {
   const [loading, setLoading] = useState(true);
+  const [supplier, setSupplier] = useState([]);
 
   useEffect(() => {
-    (async () => {
-      await seedDatabase();
-      setLoading(false);
-    })();
+    loadSupplier();
   }, []);
 
-  const supplier = useLiveQuery(async () => {
-    if (loading) return [];
-    return await db.supplier.toArray();
-  }, [loading], []);
+  const loadSupplier = async () => {
+    try {
+      setLoading(true);
 
-  const add = async (item) => {
-    await db.supplier.add(item);
+      const res = await getSupplier();
+
+      const formatted = (res.data || []).map((item) => ({
+        id: item.id_supplier,
+        nama: item.nama_supplier,
+      }));
+
+      setSupplier(formatted);
+    } catch (err) {
+      console.error(
+        "Gagal ambil supplier:",
+        err
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const update = async (item) => {
-    await db.supplier.put(item);
+  return {
+    supplier,
+    loading,
   };
-
-  const remove = async (id) => {
-    await db.supplier.delete(id);
-  };
-
-  return { supplier: supplier || [], loading, add, update, remove };
 }
