@@ -43,7 +43,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
       <Box sx={{ p: 1.5, borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography sx={{ fontWeight: 800, fontSize: 15, color: "#1E293B" }}>Keranjang</Typography>
         {cart.length > 0 && (
-          <Typography onClick={clearCart} sx={{ fontSize: 11, fontWeight: 700, color: "#E91E63", cursor: "pointer", transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}>
+          <Typography onClick={clearCart} sx={{ fontSize: 11, fontWeight: 700, color: "#D81B60", cursor: "pointer", transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}>
             BERSIHKAN
           </Typography>
         )}
@@ -72,11 +72,11 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
                     <RemoveIcon fontSize="small" />
                   </IconButton>
                   <Typography sx={{ minWidth: 24, textAlign: "center", fontWeight: 700, fontSize: 12 }}>{item.qty}</Typography>
-                  <IconButton size="small" onClick={() => updateQty(item.cartKey, item.qty + 1)} disabled={item.qty >= item.stok} sx={{ bgcolor: "#E91E63", color: "#fff", p: 0.4, "&:hover": { bgcolor: "#BE185D" } }}>
+                  <IconButton size="small" onClick={() => updateQty(item.cartKey, item.qty + 1)} disabled={item.qty >= item.stok} sx={{ bgcolor: "#D81B60", color: "#fff", p: 0.4, "&:hover": { bgcolor: "#AD1457" } }}>
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Box>
-                <Typography sx={{ fontWeight: 800, fontSize: 13, color: "#E91E63", whiteSpace: "nowrap" }}>Rp {formatRupiahPos(item.qty * item.harga)}</Typography>
+                <Typography sx={{ fontWeight: 800, fontSize: 13, color: "#D81B60", whiteSpace: "nowrap" }}>Rp {formatRupiahPos(item.qty * item.harga)}</Typography>
               </Box>
             </Box>
           ))
@@ -91,7 +91,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center" }}>
           <Typography
             onClick={() => setDiscountOpen(true)}
-            sx={{ color: "#E91E63", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 0.3, transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}
+            sx={{ color: "#D81B60", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 0.3, transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}
           >
             <LocalOfferOutlinedIcon sx={{ fontSize: 14 }} /> Diskon
           </Typography>
@@ -99,7 +99,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             - Rp {formatRupiahPos(diskonNominal)}
           </Typography>
         </Box>
-        <Typography sx={{ fontWeight: 800, fontSize: 20, color: "#E91E63", textAlign: "right", mb: 1.5 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 20, color: "#D81B60", textAlign: "right", mb: 1.5 }}>
           Rp {formatRupiahPos(totalBayar)}
         </Typography>
         <Typography sx={{ fontSize: 10, color: "#94A3B8", textAlign: "right", mb: 1.5 }}>Total Bayar</Typography>
@@ -113,12 +113,12 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             padding: "13px",
             borderRadius: 10,
             border: "none",
-            background: cart.length === 0 ? "#F1F5F9" : "#E91E63",
+            background: cart.length === 0 ? "#F1F5F9" : "#D81B60",
             color: cart.length === 0 ? "#94A3B8" : "#fff",
             fontWeight: 800,
             fontSize: 13,
             cursor: cart.length === 0 ? "not-allowed" : "pointer",
-            boxShadow: cart.length === 0 ? "none" : "0 3px 12px rgba(233,30,99,0.25)",
+            boxShadow: cart.length === 0 ? "none" : "0 3px 12px rgba(216, 27, 96, 0.25)",
             transition: "all 0.2s",
           }}
         >

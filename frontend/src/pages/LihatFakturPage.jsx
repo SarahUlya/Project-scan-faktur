@@ -81,14 +81,14 @@ const LihatFakturPage = () => {
             padding: "12px 20px",
             borderRadius: 12,
             border: "none",
-            background: faktur ? "#E91E63" : "#F1F5F9",
+            background: faktur ? "#0F766E" : "#F1F5F9",
             color: faktur ? "#fff" : "#94A3B8",
             fontWeight: 700,
             cursor: faktur ? "pointer" : "not-allowed",
             display: "flex",
             alignItems: "center",
             gap: 8,
-            boxShadow: faktur ? "0 4px 12px rgba(233, 30, 99, 0.2)" : "none",
+            boxShadow: faktur ? "0 4px 12px rgba(15, 118, 110, 0.2)" : "none",
           }}
         >
           <PrintOutlinedIcon fontSize="small" />
@@ -99,7 +99,7 @@ const LihatFakturPage = () => {
       <div className="no-print" style={{ marginBottom: 16 }}>
         <div
           style={{
-            color: "#EC4899",
+            color: "#0D9488",
             fontSize: 13,
             fontWeight: 700,
             textTransform: "uppercase",
@@ -135,7 +135,7 @@ const LihatFakturPage = () => {
                 padding: "10px 20px",
                 borderRadius: 10,
                 border: "none",
-                background: "#E91E63",
+                background: "#0F766E",
                 color: "#fff",
                 fontWeight: 700,
                 cursor: "pointer",

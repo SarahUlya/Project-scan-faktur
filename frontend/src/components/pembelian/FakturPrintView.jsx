@@ -122,7 +122,7 @@ const FakturPrintView = ({ faktur }) => {
                 <td style={{ textAlign: "center" }}>{row.no}</td>
                 <td>{row.nama}</td>
                 <td style={{ textAlign: "center" }}>{row.batch}</td>
-                <td style={{ textAlign: "center" }}>{formatEd(row.ed)}</td>
+                <td style={{ textAlign: "center" }}>{formatEd(row.expired_date)}</td>
                 <td style={{ textAlign: "center" }}>
                   {row.qty} {row.satuan?.nama || row.satuan || "-"}
                 </td>

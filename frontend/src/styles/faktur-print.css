@@ -1,3 +1,19 @@
+/* Prevent text selection and caret cursors outside of inputs/editable areas globally */
+html, body, #root {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow normal text selection/typing inside inputs, textareas, selects, and contenteditable elements */
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 .faktur-preview-page {
   max-width: 1100px;
   margin: 0 auto;
@@ -75,7 +91,15 @@
     display: none !important;
   }
 
-  /* sembunyikan halaman lain */
+  body.printing-stok > *:not(.stok-print-portal-root) {
+    display: none !important;
+  }
+
+  body.printing-stok .stok-print-portal-root {
+    display: block !important;
+    position: static !important;
+  }
+
   .faktur-preview-page {
     margin: 0;
     padding: 0;
@@ -89,7 +113,6 @@
     border: none !important;
     box-shadow: none !important;
     background: white !important;
-
     font-family: 'Courier New', monospace;
     font-size: 11px;
     line-height: 1.3;

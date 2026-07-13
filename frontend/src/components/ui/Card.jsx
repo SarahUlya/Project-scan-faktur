@@ -1,8 +1,20 @@
 import React from "react";
 import { Paper } from "@mui/material";
+import { colors, shadows, radii } from "../../theme/designTokens";
 
 const Card = ({ children, sx = {}, ...props }) => (
-  <Paper elevation={0} sx={{ borderRadius: 3, p: 3, background: '#fff', boxShadow: '0 2px 8px rgba(233,30,99,0.04)', ...sx }} {...props}>
+  <Paper
+    elevation={0}
+    sx={{
+      borderRadius: `${radii.md}px`,
+      p: 3,
+      background: colors.bgCard,
+      border: `1px solid ${colors.borderLight}`,
+      boxShadow: shadows.card,
+      ...sx,
+    }}
+    {...props}
+  >
     {children}
   </Paper>
 );

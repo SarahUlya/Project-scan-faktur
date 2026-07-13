@@ -11,28 +11,32 @@ export default function useSidebarMenu() {
       roles: [ROLE.ADMIN, ROLE.STAFF, ROLE.KASIR],
     },
     {
-      text: "Produk",
+      text: "Master Data",
       icon: "InventoryIcon",
-      path: "/produk",
       roles: [ROLE.ADMIN, ROLE.STAFF],
-    },
-    {
-      text: "Data Supplier",
-      icon: "LocalShippingIcon",
-      path: "/supplier",
-      roles: [ROLE.ADMIN, ROLE.STAFF],
-    },
-    {
-      text: "Stok & Batch",
-      icon: "ListAltIcon",
-      path: "/stok-batch",
-      roles: [ROLE.ADMIN, ROLE.STAFF],
+      subItems: [
+        { text: "Data Produk", path: "/produk" },
+        { text: "Data Supplier", path: "/supplier" },
+        { text: "Stok & Batch", path: "/stok-batch" },
+      ],
     },
     {
       text: "Pembelian",
       icon: "ShoppingCartIcon",
-      path: "/pembelian",
       roles: [ROLE.ADMIN],
+      subItems: [
+        { text: "Daftar Pembelian", path: "/pembelian" },
+        { text: "Tambah Pembelian", path: "/pembelian/tambah" },
+      ],
+    },
+    {
+      text: "(POS) Point of Sale",
+      icon: "PointOfSaleIcon",
+      roles: [ROLE.ADMIN, ROLE.KASIR],
+      subItems: [
+        { text: "Kasir", path: "/kasir" },
+        { text: "Riwayat Transaksi", path: "/riwayat" },
+      ],
     },
     {
       text: "Laporan",
@@ -41,26 +45,25 @@ export default function useSidebarMenu() {
       roles: [ROLE.ADMIN],
     },
     {
-      text: "Riwayat",
-      icon: "HistoryIcon",
-      path: "/riwayat",
-      roles: [ROLE.ADMIN, ROLE.STAFF, ROLE.KASIR],
-    },
-    {
-      text: "Manajemen User",
+      text: "Pengaturan",
       icon: "ManageAccountsIcon",
-      path: "/user-management",
       roles: [ROLE.ADMIN],
-    },
-    {
-      text: "Kasir POS",
-      icon: "PointOfSaleIcon",
-      path: "/kasir",
-      roles: [ROLE.ADMIN, ROLE.KASIR],
+      subItems: [
+        { text: "Manajemen User", path: "/user-management" },
+      ],
     },
   ];
 
   if (!user) return [];
 
-  return menuItems.filter((item) => item.roles.includes(user.role));
+  // Filter items based on user roles, and filter subItems if role requirements are added there (if any)
+  return menuItems
+    .filter((item) => item.roles.includes(user.role))
+    .map((item) => {
+      if (item.subItems) {
+        // If subItems are present, we make sure they are preserved
+        return item;
+      }
+      return item;
+    });
 }

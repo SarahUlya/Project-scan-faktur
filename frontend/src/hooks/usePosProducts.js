@@ -53,35 +53,10 @@ export default function usePosProducts() {
           ? prodResult.value.data?.data || []
           : [];
 
-      // DEBUG
-      console.log(
-        "TOTAL PRODUK:",
-        productList.length
-      );
-
-      console.log(
-        "SASALELE:",
-        productList.find(
-          (p) =>
-            p.nama_produk === "Sasalele"
-        )
-      );
-
-      console.table(
-        productList.map((p) => ({
-          id: p.id_produk,
-          nama: p.nama_produk,
-          barcode: p.barcode,
-          active: p.is_active,
-        }))
-      );
-
       if (
         katResult.status !== "fulfilled" ||
-        satResult.status !==
-        "fulfilled" ||
-        prodResult.status !==
-        "fulfilled"
+        satResult.status !== "fulfilled" ||
+        prodResult.status !== "fulfilled"
       ) {
         const errorMessages = [];
 
@@ -130,17 +105,6 @@ export default function usePosProducts() {
               p.id_produk,
               batchData
             );
-
-            if (p.nama_produk === "Sasalele") {
-              console.log(
-                "SASALELE DETAIL:",
-                {
-                  produk: p,
-                  stok,
-                  batch: batchData,
-                }
-              );
-            }
 
             return {
               ...p,

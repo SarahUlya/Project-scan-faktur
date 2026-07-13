@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import BatchTable from "../components/stok/BatchTable";
 import Modal from "../components/ui/Modal";
 import useProdukDb from "../hooks/useProdukDb";
+import useStokPrint from "../hooks/useStokPrint";
+import StokPrintActions from "../components/stok/StokPrintActions";
 import { Box, Typography, TextField, InputAdornment } from "@mui/material";
-import Button from "../components/ui/Button";
 import PaginationControls from "../components/ui/PaginationControls";
 import DetailBatchModal from "../components/stok/DetailBatchModal";
-import PrintIcon from '@mui/icons-material/Print';
 import SearchIcon from "@mui/icons-material/Search";
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import { colors, pageHeaderSx, statCardSx } from "../theme/designTokens";
+import { flattenProdukBatches } from "../utils/stokPrintUtils";
 
 const PAGE_SIZE = 25;
 
@@ -18,121 +17,133 @@ const StokBatchPage = () => {
   const [detailBatch, setDetailBatch] = useState(null);
   const { produk, loading } = useProdukDb();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { printLaporan, printKartuBatch, exportLaporanPdf, exportKartuPdf, PrintPortal } = useStokPrint();
 
-  const totalPages = Math.ceil(produk.length / PAGE_SIZE);
-  const pagedProduk = produk.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const filteredProduk = produk.filter((p) => {
+    const hasBatch = p.batch && p.batch.length > 0;
+    if (!hasBatch) return false;
+    const totalStok = (p.batch || []).reduce((sum, b) => sum + (b.stok || 0), 0);
+    if (totalStok === 0) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name = p.nama_produk || p.nama || p.namaItem || "";
+      const batchMatch = (p.batch || []).some(
+        (b) => (b.kodeBatch || b.no_batch || "").toLowerCase().includes(q)
+      );
+      return name.toLowerCase().includes(q) || p.barcode?.includes(q) || batchMatch;
+    }
+    return true;
+  });
+
+  const sortedProduk = [...filteredProduk].sort((a, b) => {
+    const getEarliest = (list) => {
+      const valid = (list || []).filter((b) => b.stok > 0);
+      if (!valid.length) return Infinity;
+      return Math.min(...valid.map((b) => new Date(b.expired).getTime()));
+    };
+    return getEarliest(a.batch) - getEarliest(b.batch);
+  });
+
+  const printRows = useMemo(() => flattenProdukBatches(sortedProduk), [sortedProduk]);
+
+  const nearExpiredCount = filteredProduk.reduce((count, p) => {
+    const near = (p.batch || [])
+      .filter((b) => b.stok > 0)
+      .map((b) => Math.ceil((new Date(b.expired) - new Date()) / (1000 * 60 * 60 * 24)))
+      .filter((d) => d <= 30 && d > 0);
+    return count + near.length;
+  }, 0);
+
+  const uniqueBatchCount = new Set(
+    filteredProduk.flatMap((p) =>
+      (p.batch || []).filter((b) => b.stok > 0).map((b) => b.kodeBatch || b.no_batch)
+    )
+  ).size;
+
+  const totalPages = Math.ceil(sortedProduk.length / PAGE_SIZE);
+  const pagedProduk = sortedProduk.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#1E293B' }}>
-            Monitoring Stok & Batch FEFO
-          </Typography>
-          <Typography sx={{ color: '#64748B', mt: 0.5 }}>
-            First-Expired-First-Out (FEFO) Inventory Management
+          <Typography sx={pageHeaderSx.title}>Stok & Batch</Typography>
+          <Typography sx={pageHeaderSx.subtitle}>
+            Monitoring stok per batch (FEFO) — 1 faktur = 1 kode batch
           </Typography>
         </Box>
-        <Button variant="outlined" sx={{ 
-          borderRadius: 3, 
-          borderColor: '#FCE7F3', 
-          color: '#E91E63', 
-          fontWeight: 700, 
-          px: 3, 
-          height: 44,
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1, 
-          '&:hover': { bgcolor: '#FDF2F8', borderColor: '#FBCFE8' } 
-        }}>
-          <PrintIcon fontSize="small" />
-          Cetak Laporan Stok
-        </Button>
-      </Box>
-
-      <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
-        <Box sx={{ flex: 1, background: '#fff', borderRadius: 4, p: 3, position: 'relative', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
-          <Box sx={{ position: 'absolute', right: -20, top: -20, width: 140, height: 140, background: '#FFF1F2', borderRadius: '50%' }}></Box>
-          <Box sx={{ width: 48, height: 48, background: '#FFE4E6', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F43F5E', mb: 2, position: 'relative' }}>
-             <Inventory2OutlinedIcon />
-          </Box>
-          <Typography sx={{ color: '#94A3B8', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, mb: 1, position: 'relative' }}>TOTAL PRODUK TERDATA</Typography>
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 1 }}>
-            <Typography sx={{ fontSize: 36, fontWeight: 800, color: '#1E293B', lineHeight: 1 }}>{loading ? '-' : produk.length}</Typography>
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#94A3B8' }}>SKU</Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ flex: 1, background: '#fff', borderRadius: 4, p: 3, position: 'relative', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
-          <Box sx={{ position: 'absolute', right: -20, top: -20, width: 140, height: 140, background: '#FFF1F2', borderRadius: '50%' }}></Box>
-          <Box sx={{ width: 48, height: 48, background: '#FFE4E6', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F43F5E', mb: 2, position: 'relative' }}>
-             <EventBusyOutlinedIcon />
-          </Box>
-          <Typography sx={{ color: '#94A3B8', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, mb: 1, position: 'relative' }}>BATCH MENDEKATI EXPIRED (&lt;30 HARI)</Typography>
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 1 }}>
-            <Typography sx={{ fontSize: 36, fontWeight: 800, color: '#E11D48', lineHeight: 1 }}>
-               {loading ? '-' : produk.flatMap(p => p.batch).filter(b => b && Math.ceil((new Date(b.expired) - new Date()) / (1000 * 60 * 60 * 24)) <= 30 && Math.ceil((new Date(b.expired) - new Date()) / (1000 * 60 * 60 * 24)) > 0).length}
-            </Typography>
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#FDA4AF' }}>Batch</Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ flex: 1, background: '#fff', borderRadius: 4, p: 3, position: 'relative', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
-          <Box sx={{ position: 'absolute', right: -20, top: -20, width: 140, height: 140, background: '#FFF7ED', borderRadius: '50%' }}></Box>
-          <Box sx={{ width: 48, height: 48, background: '#FFEDD5', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F97316', mb: 2, position: 'relative' }}>
-             <WarningAmberOutlinedIcon />
-          </Box>
-          <Typography sx={{ color: '#94A3B8', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, mb: 1, position: 'relative' }}>PRODUK STOK RENDAH</Typography>
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'baseline', gap: 1 }}>
-             <Typography sx={{ fontSize: 36, fontWeight: 800, color: '#F97316', lineHeight: 1 }}>
-               {loading ? '-' : produk.filter(p => (p.batch || []).reduce((a, b) => a + (b.stok || 0), 0) < (p.stokMinimum || 50)).length}
-             </Typography>
-             <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#FDBA74' }}>Item</Typography>
-          </Box>
-        </Box>
-      </div>
-
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <TextField
-          placeholder="Cari Nama Produk atau Kode Batch..."
-          size="small"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#94A3B8' }} />
-              </InputAdornment>
-            ),
-            sx: { borderRadius: 3, bgcolor: '#F8FAFC', width: 400, height: 44, '& fieldset': { border: 'none' } }
-          }}
+        <StokPrintActions
+          printLabel="Cetak Laporan"
+          pdfLabel="Export PDF"
+          disabled={loading || !printRows.length}
+          onPrint={() => printLaporan(printRows)}
+          onExportPdf={() => exportLaporanPdf(printRows)}
         />
-        <select style={{ padding: '0 20px', borderRadius: 12, border: 'none', background: '#F8FAFC', fontSize: 14, color: '#475569', fontWeight: 600, outline: 'none', minWidth: 160, height: 44 }}>
-          <option>Semua Kategori</option>
-        </select>
-        <select style={{ padding: '0 20px', borderRadius: 12, border: 'none', background: '#F8FAFC', fontSize: 14, color: '#475569', fontWeight: 600, outline: 'none', minWidth: 160, height: 44 }}>
-          <option>Semua Status</option>
-        </select>
       </Box>
+
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, mb: 3 }}>
+        {[
+          { label: "Produk Terdata", value: loading ? "-" : sortedProduk.length },
+          { label: "Kode Batch Aktif", value: loading ? "-" : uniqueBatchCount },
+          { label: "Hampir Expired", value: loading ? "-" : nearExpiredCount, warn: true },
+        ].map((s) => (
+          <Box key={s.label} sx={statCardSx}>
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
+              {s.label}
+            </Typography>
+            <Typography sx={{ fontSize: 24, fontWeight: 700, color: s.warn ? colors.warning : colors.text }}>
+              {s.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <TextField
+        placeholder="Cari produk, barcode, atau kode batch..."
+        size="small"
+        value={searchQuery}
+        onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+        sx={{ mb: 2, width: 360, "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: colors.bgCard } }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ color: colors.textMuted, fontSize: 20 }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
       {loading ? (
-        <div>Loading...</div>
+        <Typography sx={{ textAlign: "center", py: 5, color: colors.textMuted }}>Memuat data...</Typography>
+      ) : sortedProduk.length === 0 ? (
+        <Box sx={{ ...statCardSx, textAlign: "center", py: 5 }}>
+          <Typography sx={{ fontWeight: 600, color: colors.text, mb: 0.5 }}>Belum ada data stok</Typography>
+          <Typography sx={{ fontSize: 14, color: colors.textSecondary }}>
+            Stok muncul setelah penerimaan faktur pembelian.
+          </Typography>
+        </Box>
       ) : (
-        <>
-          <Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 10px 40px rgba(233, 30, 99, 0.05)", overflow: "hidden" }}>
-            <Box sx={{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
-              <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 15 }}>Data Batch & Expired (FEFO Sorted)</Typography>
-              <Typography sx={{ fontSize: 10, fontWeight: 800, color: '#E91E63', bgcolor: '#FDF2F8', px: 1.5, py: 0.5, borderRadius: 1, letterSpacing: 0.5 }}>OTOMATIS UPDATE DARI POS/PEMBELIAN</Typography>
-            </Box>
-            <BatchTable produk={pagedProduk} onShowDetail={setDetailBatch} />
-            <div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>Menampilkan {pagedProduk.length} dari {produk.length} produk</div>
-              <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
-            </div>
+        <Box sx={{ bgcolor: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, overflow: "hidden" }}>
+          <BatchTable produk={pagedProduk} onShowDetail={setDetailBatch} />
+          <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${colors.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography sx={{ fontSize: 13, color: colors.textMuted }}>
+              {pagedProduk.length} dari {sortedProduk.length} produk
+            </Typography>
+            <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
           </Box>
-        </>
+        </Box>
       )}
+
       <Modal open={!!detailBatch} onClose={() => setDetailBatch(null)} width={800}>
-        <DetailBatchModal batch={detailBatch} />
+        <DetailBatchModal
+          batch={detailBatch}
+          onPrint={() => printKartuBatch(detailBatch)}
+          onExportPdf={() => exportKartuPdf(detailBatch)}
+        />
       </Modal>
+
+      {PrintPortal}
     </Box>
   );
 };

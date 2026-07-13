@@ -1,7 +1,15 @@
 import axiosInstance from "./axiosInstance";
 
-export const getPembelian = async () => {
-  const res = await axiosInstance.get("/pembelian");
+export const getPembelian = async (page = 1) => {
+  const res = await axiosInstance.get(
+    "/pembelian",
+    {
+      params: {
+        page,
+      },
+    }
+  );
+
   return res.data;
 };
 

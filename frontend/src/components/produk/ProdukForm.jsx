@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Box, TextField, FormControl, Select, MenuItem, Switch, Typography, Divider } from "@mui/material";
+import { Box, TextField, FormControl, Select, MenuItem, Typography, Divider } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import Button from "../ui/Button";
+import StatusToggle from "../ui/StatusToggle";
 import { SATUAN_OPTIONS } from "../../config/fakturFormConfig";
 
 const initialState = {
@@ -83,7 +84,7 @@ const ProdukForm = ({
     <Box component="form" onSubmit={handleSubmit} sx={{ minWidth: 340, maxWidth: 520 }}>
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         {mode === "edit" && (
-          <Box sx={{ width: 48, height: 48, background: '#FCE7F3', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E91E63' }}>
+          <Box sx={{ width: 48, height: 48, background: '#FCE4EC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E91E63' }}>
             <EditIcon />
           </Box>
         )}
@@ -112,21 +113,6 @@ const ProdukForm = ({
               size="small"
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, mt: 1, bgcolor: "#F8FAFC" }}
             />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-              STATUS PRODUK
-            </Typography>
-            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-              <Select
-                value={form.is_active ? "AKTIF" : "NONAKTIF"}
-                onChange={(e) => handleChange("is_active", e.target.value === "AKTIF")}
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="AKTIF">Aktif</MenuItem>
-                <MenuItem value="NONAKTIF">Non-Aktif</MenuItem>
-              </Select>
-            </FormControl>
           </Box>
         </Box>
       )}
@@ -240,26 +226,14 @@ const ProdukForm = ({
             }}
           />
         </Box>
-        {mode === "add" && (
-          <Box>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-              STATUS PRODUK
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', height: 40, gap: 1 }}>
-              <Switch
-                checked={form.is_active}
-                onChange={(e) => handleChange("is_active", e.target.checked)}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': { color: '#E91E63' },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#E91E63' }
-                }}
-              />
-              <Typography sx={{ fontWeight: 700, color: form.is_active ? '#E91E63' : '#94A3B8' }}>
-                {form.is_active ? 'AKTIF' : 'NON-AKTIF'}
-              </Typography>
-            </Box>
-          </Box>
-        )}
+        <Box>
+          <StatusToggle
+            value={form.is_active}
+            onChange={(value) => handleChange("is_active", value)}
+            label="STATUS PRODUK"
+            variant="horizontal"
+          />
+        </Box>
       </Box>
 
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: 3 }}>
@@ -296,7 +270,7 @@ const ProdukForm = ({
         <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: '#1E293B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
           Batal
         </Button>
-        <Button type="submit" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#D81B60' }, boxShadow: '0 4px 14px rgba(233,30,99,0.3)', display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Button type="submit" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#C2185B' }, boxShadow: '0 4px 14px rgba(233, 30, 99, 0.3)', display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
           {mode === "edit" && <SaveIcon fontSize="small" />}
           {mode === "add" ? "Simpan Produk" : "Simpan Perubahan"}
         </Button>

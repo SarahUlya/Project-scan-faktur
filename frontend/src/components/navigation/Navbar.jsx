@@ -44,7 +44,7 @@ const NAVBAR_MAP = {
     showPeriod: true,
   },
   "/kasir": {
-    title: "Kasir POS",
+    title: "Kasir",
     desc: "Sistem Point of Sale untuk transaksi penjualan.",
     showPeriod: true,
   },
@@ -131,17 +131,17 @@ const Navbar = () => {
                   py: 1,
                   display: "flex",
                   alignItems: "center",
-                  boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)",
+                  boxShadow: "0 20px 40px rgba(15, 118, 110, 0.08)",
                 }}
               >
-                <FilterListIcon sx={{ mr: 1, color: "#E91E63" }} />
+                <FilterListIcon sx={{ mr: 1, color: "#0F766E" }} />
                 <Typography sx={{ color: "#64748B", fontSize: 14 }}>
                   Periode:
                 </Typography>
-                <Box sx={{ fontWeight: 700, color: "#E91E63", ml: 1 }}>
+                <Box sx={{ fontWeight: 700, color: "#0F766E", ml: 1 }}>
                   {periodLabel}
                 </Box>
-                <IconButton size="small" sx={{ color: "#E91E63" }}>
+                <IconButton size="small" sx={{ color: "#0F766E" }}>
                   <KeyboardArrowDownIcon />
                 </IconButton>
               </Box>

@@ -117,7 +117,60 @@ const handleOpenAdd = () => {
 
 return (
 	<Box>
-		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", p: 3, mb: 3 }}>
+		{/* Loading Indicator */}
+		{loading && (
+			<Box sx={{
+				position: "fixed",
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				background: "rgba(0,0,0,0.1)",
+				backdropFilter: "blur(4px)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				zIndex: 9999,
+			}}>
+				<Box sx={{
+					background: "#fff",
+					borderRadius: "16px",
+					p: 4,
+					textAlign: "center",
+					boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+					maxWidth: 300,
+				}}>
+					<Box sx={{ mb: 2, fontSize: 48 }}>📦</Box>
+					<Typography sx={{ fontWeight: 800, color: "#1E293B", fontSize: 16, mb: 1 }}>
+						Memuat Data Produk
+					</Typography>
+					<Typography sx={{ color: "#64748B", fontSize: 13 }}>
+						Harap tunggu, kami sedang mengambil data produk dan batch...
+					</Typography>
+					<Box sx={{
+						mt: 3,
+						height: 4,
+						background: "#F1F5F9",
+						borderRadius: 2,
+						overflow: "hidden",
+					}}>
+						<Box sx={{
+							height: "100%",
+							width: "60%",
+							background: "linear-gradient(90deg, #0F766E 0%, #EC407A 100%)",
+							animation: "loading 1.5s infinite",
+							"@keyframes loading": {
+								"0%": { width: "20%" },
+								"50%": { width: "80%" },
+								"100%": { width: "20%" },
+							},
+						}} />
+					</Box>
+				</Box>
+			</Box>
+		)}
+
+		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(15, 118, 110, 0.08)", p: 3, mb: 3 }}>
 			<Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 3, flexWrap: "wrap" }}>
 				<Box sx={{ flex: 1, minWidth: 280 }}>
 					<Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
@@ -163,6 +216,7 @@ return (
 					<Button
 						variant="contained"
 						startIcon={<AddIcon />}
+						disabled={loading}
 						sx={{
 							textTransform: "none",
 							borderRadius: 3,
@@ -171,9 +225,12 @@ return (
 							fontWeight: 700,
 							backgroundColor: "rgb(233, 30, 99)",
 							color: "rgb(255, 255, 255)",
-							boxShadow: "0 20px 40px rgba(233, 30, 99, 0.2)",
+							boxShadow: "0 20px 40px rgba(15, 118, 110, 0.2)",
 							'&:hover': {
-								backgroundColor: "#d81b60",
+								backgroundColor: "#0D5C56",
+							},
+							"&:disabled": {
+								opacity: 0.5,
 							},
 						}}
 						onClick={handleOpenAdd}
@@ -185,7 +242,7 @@ return (
 		</Box>
 
 
-		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(233, 30, 99, 0.08)", overflow: "hidden" }}>
+		<Box sx={{ background: "#fff", borderRadius: 3, boxShadow: "0 20px 40px rgba(15, 118, 110, 0.08)", overflow: "hidden" }}>
 			<ProdukTable
 				data={produk}
 				getNamaKategori={getNamaKategori}

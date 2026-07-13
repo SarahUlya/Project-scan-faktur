@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
@@ -9,13 +9,16 @@ const PAGE_SIZE = 25;
 const LaporanProdukTerlaris = () => {
   const [page, setPage] = useState(1);
   const { produkTerlaris } = useLaporanTransaksi();
-  const data = produkTerlaris.map((p, i) => ({
-    id: i + 1,
-    nama: p.nama,
-    kategori: "-",
-    terjual: p.terjual,
-    omzet: p.omzet,
-  }));
+  const data = useMemo(() =>
+    (produkTerlaris || []).map((p, i) => ({
+      id: i + 1,
+      nama: p.nama || p.nama_produk || "-",
+      kategori: p.kategori || p.nama_kategori || "-",
+      terjual: Number(p.terjual || p.qty || 0),
+      omzet: Number(p.omzet || p.subtotal || 0),
+    })),
+    [produkTerlaris]
+  );
   
   const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -26,7 +29,7 @@ const LaporanProdukTerlaris = () => {
       header: "RANK", 
       accessor: "id",
       render: (row, idx) => (
-        <Box sx={{ width: 32, height: 32, background: '#E91E63', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>
+        <Box sx={{ width: 32, height: 32, background: '#D81B60', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>
           {(page - 1) * PAGE_SIZE + idx + 1}
         </Box>
       ),
@@ -81,10 +84,10 @@ const LaporanProdukTerlaris = () => {
               <Box key={idx} sx={{ width: '100%' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                   <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 13 }}>{item.nama}</Typography>
-                  <Typography sx={{ fontWeight: 800, color: '#E91E63', fontSize: 13 }}>{item.terjual.toLocaleString('id-ID')} Sold</Typography>
+                  <Typography sx={{ fontWeight: 800, color: '#D81B60', fontSize: 13 }}>{item.terjual.toLocaleString('id-ID')} Sold</Typography>
                 </Box>
                 <Box sx={{ width: '100%', background: '#F8FAFC', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-                   <Box sx={{ width: `${widthPercent}%`, background: '#E91E63', height: '100%', borderRadius: 4 }}></Box>
+                   <Box sx={{ width: `${widthPercent}%`, background: '#D81B60', height: '100%', borderRadius: 4 }}></Box>
                 </Box>
               </Box>
             )

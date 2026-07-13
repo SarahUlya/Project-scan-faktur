@@ -69,7 +69,7 @@ const ManajemenUserPage = () => {
             size="small"
             sx={{
               bgcolor: isAdmin ? "#FCE4EC" : "#E3F2FD",
-              color: isAdmin ? "#E91E63" : "#2196F3",
+              color: isAdmin ? "#0F766E" : "#2196F3",
               fontWeight: "bold",
               fontSize: 10,
             }}

@@ -1,24 +1,32 @@
 import { Box } from "@mui/material";
 import Sidebar from "../components/navigation/Sidebar";
 import { Outlet } from "react-router-dom";
+import { colors } from "../theme/designTokens";
 
 const DashboardLayout = () => {
   return (
-    <Box sx={{ display: "flex" }}>
-      
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: colors.bg }}>
       <Box className="no-print" component="nav">
         <Sidebar />
       </Box>
 
-      <Box sx={{ flexGrow: 1, background: '#FFF5F8', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ p: { xs: 2, md: 4 }, flexGrow: 1, maxWidth: 1600, mx: "auto", w: "100%", width: "100%" }}>
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Box sx={{ p: { xs: 2, md: 3 }, flexGrow: 1, maxWidth: 1400, mx: "auto", width: "100%" }}>
           <Outlet />
         </Box>
-        <Box className="no-print" sx={{ p: 3, textAlign: "center", color: "#B0B0B0", fontSize: 13 }}>
-          © 2024 Apotek Ampuh Tayul Management System. Data dikelola oleh Master Admin.
+        <Box
+          className="no-print"
+          sx={{
+            py: 2,
+            textAlign: "center",
+            color: colors.textMuted,
+            fontSize: 12,
+            borderTop: `1px solid ${colors.borderLight}`,
+          }}
+        >
+          Apotek Ampuh Tayu — Pharmacy Management System
         </Box>
       </Box>
-
     </Box>
   );
 };

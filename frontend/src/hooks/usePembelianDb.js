@@ -8,26 +8,54 @@ import {
 export default function usePembelianDb() {
   const [loading, setLoading] = useState(true);
   const [pembelian, setPembelian] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadPembelian();
   }, []);
 
-  const loadPembelian = async () => {
+  const loadPembelian = async (page = 1) => {
     try {
       setLoading(true);
 
-      const res = await getPembelian();
+      const res = await getPembelian(page);
 
-      const formatted = (res.data || []).map((item) => ({
-        id: item.id_pembelian,
-        no_faktur: item.no_faktur,
-        tanggal: item.tanggal_faktur,
-        total: Number(item.total || 0),
-        status: item.status,
-        supplier:
-          item.supplier?.nama_supplier || "-",
-      }));
+      console.log("FULL RESPONSE:", res);
+      console.log("DATA:", res.data);
+
+      setTotal(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+
+      console.log("TOTAL:", res.total);
+      console.log("TOTAL PAGES:", res.totalPages);
+
+      console.log(
+        "JUMLAH DARI API:",
+        res.data.data?.length
+      );
+
+      console.log(
+        "ISI DATA:",
+        res.data.data
+      );
+
+      const formatted = (res.data || []).map(
+        (item) => ({
+          id: item.id_pembelian,
+          no_faktur: item.no_faktur,
+          tanggal: item.tanggal_faktur,
+          total: Number(item.total || 0),
+          status: item.status,
+          supplier:
+            item.supplier?.nama_supplier || "-",
+        })
+      );
+
+      console.log(
+        "SETELAH FORMAT:",
+        formatted.length
+      );
 
       setPembelian(formatted);
     } catch (err) {
@@ -41,20 +69,37 @@ export default function usePembelianDb() {
     try {
       const res = await fetchPembelianDetail(id);
 
-      console.log("DETAIL:", res);
+      console.log("========== RAW RESPONSE ==========");
+      console.log(res);
 
-      // ambil data dengan aman
+      console.log("========== RAW DATA ==========");
+      console.log(res?.data);
+
       const data = res?.data || res;
+
+      console.log("========== DATA YANG DIPAKAI ==========");
+      console.log(data);
+
+      console.log("========== PEMBELIAN DETAIL ==========");
+      console.log(
+        JSON.stringify(
+          data?.pembeliandetail,
+          null,
+          2
+        )
+      );
 
       if (!data) return null;
 
-      return {
+      const result = {
         header: {
           no_faktur: data.no_faktur || "-",
           tanggal: data.tanggal_faktur || "",
-          jatuh_tempo: data.tanggal_jatuh_tempo || "",
+          jatuh_tempo:
+            data.tanggal_jatuh_tempo || "",
           total: Number(data.total || 0),
           status: data.status || "-",
+
           supplier_name:
             data.supplier?.nama_supplier || "-",
         },
@@ -68,8 +113,15 @@ export default function usePembelianDb() {
           data.pembeliandetail?.map(
             (item, idx) => ({
               no: idx + 1,
+
               nama:
                 item.produk?.nama_produk || "-",
+
+              batch:
+                item.no_batch || "-",
+
+              expired_date:
+                item.expired_date || "-",
 
               qty: item.qty || 0,
 
@@ -90,6 +142,17 @@ export default function usePembelianDb() {
             })
           ) || [],
       };
+
+      console.log("========== RESULT AKHIR ==========");
+      console.log(
+        JSON.stringify(
+          result,
+          null,
+          2
+        )
+      );
+
+      return result;
     } catch (error) {
       console.error(
         "Gagal ambil detail:",
@@ -114,7 +177,7 @@ export default function usePembelianDb() {
           faktur.supplier_id
         ),
 
-        id_user: 1, // sementara buat tes
+        id_user: 1,
 
         total: Number(
           faktur.total
@@ -146,10 +209,20 @@ export default function usePembelianDb() {
           no_batch: item.no_batch
         })),
       };
+      console.log(
+        "FAKTUR:",
+        JSON.stringify(faktur, null, 2)
+      );
 
-      console.log("FAKTUR:", faktur);
-      console.log("ITEMS:", JSON.stringify(items, null, 2));
-      console.log("PAYLOAD:", payload);
+      console.log(
+        "ITEM YANG AKAN DIKIRIM:",
+        JSON.stringify(items, null, 2)
+      );
+
+      console.log(
+        "PAYLOAD:",
+        JSON.stringify(payload, null, 2)
+      );
 
       const res =
         await createPembelian(
@@ -175,9 +248,17 @@ export default function usePembelianDb() {
     }
   };
 
+  console.log("RETURNING:", {
+    total,
+    totalPages,
+  });
+
   return {
     pembelian,
     loading,
+    total,
+    totalPages,
+    loadPembelian,
     getPembelianDetail,
     addPembelian,
   };

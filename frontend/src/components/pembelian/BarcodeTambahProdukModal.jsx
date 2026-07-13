@@ -63,8 +63,8 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
             width: 56,
             height: 56,
             borderRadius: 16,
-            background: "#FDF2F8",
-            color: "#E91E63",
+            background: "#F0FDFA",
+            color: "#0F766E",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -162,11 +162,11 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
               padding: "14px 0",
               borderRadius: 12,
               border: "none",
-              background: "#E91E63",
+              background: "#0F766E",
               color: "#fff",
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(233, 30, 99, 0.25)",
+              boxShadow: "0 4px 12px rgba(15, 118, 110, 0.25)",
             }}
           >
             Tambahkan ke Faktur

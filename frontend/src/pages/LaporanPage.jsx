@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Box, Typography } from "@mui/material";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import PrintIcon from "@mui/icons-material/Print";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import AssignmentLateOutlinedIcon from "@mui/icons-material/AssignmentLateOutlined";
@@ -26,13 +27,14 @@ const laporanMenu = [
 
 const LaporanPage = () => {
     const [activeTab, setActiveTab] = useState('penjualan');
+    const stokLaporanRef = useRef(null);
 
     const renderContent = () => {
         switch(activeTab) {
             case 'penjualan': return <LaporanPenjualan />;
             case 'terlaris': return <LaporanProdukTerlaris />;
             case 'tidak-laku': return <LaporanBarangTidakLaku />;
-            case 'expired': return <LaporanStokExpired />;
+            case 'expired': return <LaporanStokExpired ref={stokLaporanRef} />;
             default: return <LaporanPenjualan />;
         }
     };
@@ -43,7 +45,7 @@ const LaporanPage = () => {
     };
 
     return (
-        <Box sx={{ minHeight: "100vh", background: '#FAFAFA' }}>
+        <Box sx={{ minHeight: "100vh", background: '#F1F5F9', px: 3, pt: 3, pb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: '#0F172A', mb: 0.5 }}>
@@ -57,7 +59,7 @@ const LaporanPage = () => {
                     <Box sx={{ color: '#94A3B8' }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     </Box>
-                    <Typography sx={{ color: '#64748B', fontSize: 14, fontWeight: 600 }}>Periode: <span style={{ color: '#E91E63', fontWeight: 700 }}>Bulan Januari 2024</span></Typography>
+                    <Typography sx={{ color: '#64748B', fontSize: 14, fontWeight: 600 }}>Periode: <span style={{ color: '#D81B60', fontWeight: 700 }}>Bulan Januari 2024</span></Typography>
                     <KeyboardArrowDownIcon sx={{ color: '#94A3B8' }} />
                 </Box>
             </Box>
@@ -77,9 +79,9 @@ const LaporanPage = () => {
                                 borderRadius: 4,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
-                                border: isActive ? '2px solid #E91E63' : '2px solid transparent',
-                                background: isActive ? '#FFF1F2' : '#fff',
-                                boxShadow: isActive ? '0 10px 30px rgba(233, 30, 99, 0.1)' : '0 4px 20px rgba(0,0,0,0.03)',
+                                border: isActive ? '2px solid #D81B60' : '2px solid transparent',
+                                background: isActive ? '#FCE4EC' : '#fff',
+                                boxShadow: isActive ? '0 10px 30px rgba(216, 27, 96, 0.1)' : '0 4px 20px rgba(0,0,0,0.03)',
                                 '&:hover': {
                                     transform: 'translateY(-2px)'
                                 }
@@ -89,12 +91,12 @@ const LaporanPage = () => {
                                 sx={{
                                     width: 44,
                                     height: 44,
-                                    backgroundColor: isActive ? '#FCE7F3' : '#F8FAFC',
+                                    backgroundColor: isActive ? '#F8BBD0' : '#F8FAFC',
                                     borderRadius: 3,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: isActive ? '#E91E63' : '#94A3B8',
+                                    color: isActive ? '#D81B60' : '#94A3B8',
                                     mb: 2
                                 }}
                             >
@@ -136,7 +138,7 @@ const LaporanPage = () => {
                 </Box>
             )}
 
-            <Box sx={{ background: "#fff", borderRadius: 5, boxShadow: "0 4px 20px rgba(0,0,0,0.03)", border: '1px solid #F1F5F9', overflow: 'hidden' }}>
+            <Box sx={{ background: "#fff", borderRadius: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: '1px solid #E2E8F0', overflow: 'hidden', mt: 3 }}>
                 <Box
                     sx={{
                         display: "flex",
@@ -147,7 +149,7 @@ const LaporanPage = () => {
                     }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box sx={{ background: '#FCE7F3', color: '#E91E63', px: 1.5, py: 0.5, borderRadius: 1.5, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>PREVIEW</Box>
+                        <Box sx={{ background: '#FCE4EC', color: '#D81B60', px: 1.5, py: 0.5, borderRadius: 1.5, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>PREVIEW</Box>
                         <Box>
                             <Typography sx={{ fontWeight: 800, fontSize: 18, color: '#1E293B' }}>
                                 Preview Laporan {getActiveTitle()}
@@ -159,36 +161,55 @@ const LaporanPage = () => {
                     </Box>
 
                     <Box sx={{ display: "flex", gap: 1.5 }}>
-                        <Button sx={{
-                            backgroundColor: "#16A34A",
-                            borderRadius: 3,
-                            px: 3,
-                            fontWeight: 700,
-                            "&:hover": {
-                                backgroundColor: "#15803D",
-                            },
-                            color: "#fff",
-                            display: 'flex',
-                            gap: 1
-                        }}>
-                            <DescriptionOutlinedIcon fontSize="small" />
-                            EXPORT EXCEL
-                        </Button>
-                        <Button sx={{
-                            backgroundColor: "#E91E63",
-                            borderRadius: 3,
-                            px: 3,
-                            fontWeight: 700,
-                            "&:hover": {
-                                backgroundColor: "#BE185D",
-                            },
-                            color: "#fff",
-                            display: 'flex',
-                            gap: 1
-                        }}>
-                            <PictureAsPdfOutlinedIcon fontSize="small" />
-                            EXPORT PDF
-                        </Button>
+                        {activeTab === 'expired' ? (
+                          <>
+                            <Button
+                              variant="outlined"
+                              startIcon={<PrintIcon />}
+                              onClick={() => stokLaporanRef.current?.print()}
+                              sx={{ borderColor: '#E2E8F0', color: '#64748B', fontWeight: 600 }}
+                            >
+                              Cetak Laporan
+                            </Button>
+                            <Button
+                              color="primary"
+                              startIcon={<PictureAsPdfOutlinedIcon />}
+                              onClick={() => stokLaporanRef.current?.exportPdf()}
+                              sx={{ fontWeight: 600 }}
+                            >
+                              Export PDF
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button sx={{
+                                backgroundColor: "#16A34A",
+                                borderRadius: 3,
+                                px: 3,
+                                fontWeight: 700,
+                                "&:hover": { backgroundColor: "#15803D" },
+                                color: "#fff",
+                                display: 'flex',
+                                gap: 1
+                            }}>
+                                <DescriptionOutlinedIcon fontSize="small" />
+                                EXPORT EXCEL
+                            </Button>
+                            <Button sx={{
+                                backgroundColor: "#D81B60",
+                                borderRadius: 3,
+                                px: 3,
+                                fontWeight: 700,
+                                "&:hover": { backgroundColor: "#AD1457" },
+                                color: "#fff",
+                                display: 'flex',
+                                gap: 1
+                            }}>
+                                <PictureAsPdfOutlinedIcon fontSize="small" />
+                                EXPORT PDF
+                            </Button>
+                          </>
+                        )}
                     </Box>
                 </Box>
                 <Box>

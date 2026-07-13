@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
 import useLaporanTransaksi from "../../hooks/useLaporanTransaksi";
-import { db } from "../../data/db";
+import formatCurrency from "../../utils/formatCurrency";
 
 const PAGE_SIZE = 25;
 
@@ -14,43 +14,18 @@ const formatDate = (value) => {
   return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 };
 
-const formatCurrency = (value) => {
-  const numberValue = Number(value);
-  if (Number.isNaN(numberValue)) return "Rp 0";
-  return `Rp ${numberValue.toLocaleString("id-ID")}`;
-};
-
 const LaporanPenjualan = () => {
   const [page, setPage] = useState(1);
   const { penjualan } = useLaporanTransaksi();
-  const [data, setData] = useState([]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const enriched = await Promise.all(
-          (penjualan || []).map(async (p) => {
-            const items = p.id
-              ? await db.transaksiDetail.where("transaksi_id").equals(p.id).toArray()
-              : [];
-            const itemTerjual = items
-              .map((i) => `${i.nama_produk} (${i.qty})`)
-              .join(", ");
-            return {
-              ...p,
-              itemTerjual: itemTerjual || "-",
-              metode: p.metode === "TUNAI" ? "Tunai" : p.metode || "-",
-              status: p.status || "Sukses",
-              total: typeof p.total === "number" ? p.total : Number(p.total) || 0,
-            };
-          })
-        );
-        setData(enriched);
-      } catch (error) {
-        console.warn("Gagal memuat data laporan penjualan:", error);
-        setData([]);
-      }
-    })();
+  const data = useMemo(() => {
+    return (penjualan || []).map((p) => ({
+      ...p,
+      itemTerjual: p.itemTerjual || p.item_terjual || p.items || "-",
+      metode: p.metode === "TUNAI" ? "Tunai" : p.metode || "-",
+      status: p.status || "Sukses",
+      total: typeof p.total === "number" ? p.total : Number(p.total) || 0,
+    }));
   }, [penjualan]);
 
   const totalPages = Math.ceil(data.length / PAGE_SIZE);

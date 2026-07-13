@@ -45,10 +45,10 @@ const PosSuccessModal = ({ open, data, onClose, onNewTransaction }) => {
       <PosStruk data={strukData} />
 
       <div className="no-print" style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <button type="button" onClick={onNewTransaction} style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: "#E91E63", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+        <button type="button" onClick={onNewTransaction} style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: "#0F766E", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
           + Transaksi Baru
         </button>
-        <button type="button" onClick={handlePrint} style={{ flex: 1, padding: 12, borderRadius: 10, border: "2px solid #E91E63", background: "#fff", color: "#E91E63", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+        <button type="button" onClick={handlePrint} style={{ flex: 1, padding: 12, borderRadius: 10, border: "2px solid #0F766E", background: "#fff", color: "#0F766E", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
           Cetak Ulang
         </button>
       </div>

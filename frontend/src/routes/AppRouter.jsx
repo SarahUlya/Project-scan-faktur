@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -90,6 +90,7 @@ const AppRouter = () => {
             <KasirPage />
           </ProtectedRoute>
         } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
       </Routes>
     </BrowserRouter >

@@ -52,7 +52,6 @@ export const emptyItem = () => ({
   id: Date.now(),
   produk_id: "",
   nama_produk: "",
-  no_batch: "",
   exp_date: "",
   qty: 0,
   satuan: "Pcs",

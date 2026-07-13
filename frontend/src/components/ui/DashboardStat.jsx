@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import Card from "./Card";
 
-const DashboardStat = ({ icon, label, value, color = '#E91E63', bg = '#FCE7F3', sublabel, sx = {} }) => (
+const DashboardStat = ({ icon, label, value, color = '#000000', bg = '#CCFBF1', sublabel, sx = {} }) => (
   <Card sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minHeight: 120, ...sx }}>
     <Box sx={{ width: 48, height: 48, borderRadius: 2, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
       {icon}

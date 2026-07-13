@@ -1,101 +1,107 @@
-import React, { useState } from "react";
+import React from "react";
 import Table from "../ui/Table";
-import { IconButton } from "@mui/material";
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import { IconButton, Typography, Box } from "@mui/material";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import { colors } from "../../theme/designTokens";
 
 const checkStatus = (expiredDateStr) => {
   const expiredDate = new Date(expiredDateStr);
-  const now = new Date('2024-01-01'); 
-  const diffTime = expiredDate - now;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays <= 0) return { label: 'EXPIRED', color: '#E11D48', bg: '#FFE4E6' };
-  if (diffDays <= 30) return { label: 'PERINGATAN', color: '#EC4899', bg: '#FCE7F3' };
-  return { label: 'AMAN', color: '#64748B', bg: '#F1F5F9' };
+  const now = new Date();
+  const diffDays = Math.ceil((expiredDate - now) / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return { label: "Expired", color: colors.danger, bg: "#FEE2E2" };
+  if (diffDays <= 30) return { label: "Hampir ED", color: colors.warning, bg: "#FEF3C7" };
+  return { label: "Aman", color: colors.textSecondary, bg: colors.bgMuted };
 };
 
-
 const BatchTable = ({ produk, onShowDetail }) => {
-
-  const allBatch = produk
-    .flatMap((p) =>
-      (p.batch || []).map((b) => ({
-        ...b,
-        produkId: p.id,
-        namaProduk: p.nama,
-        kategori: p.kategori,
-      }))
-    );
+  const allBatch = produk.flatMap((p) =>
+    (p.batch || []).map((b) => ({
+      ...b,
+      produkId: p.id_produk || p.id,
+      namaProduk: p.nama_produk || p.nama || p.namaItem,
+      kategori: p.nama_kategori || p.kategori,
+      kodeBatch: b.kodeBatch || b.no_batch,
+    }))
+  );
 
   const sortedBatch = [...allBatch].sort(
     (a, b) => new Date(a.expired) - new Date(b.expired)
   );
 
   const columns = [
-    { 
-      header: "NAMA PRODUK", 
+    {
+      header: "Produk",
       accessor: "namaProduk",
       render: (row) => (
-        <div>
-          <div style={{ fontWeight: 700, color: '#1E293B', fontSize: 15 }}>{row.namaProduk}</div>
-          <div style={{ color: '#94A3B8', fontSize: 13, marginTop: 4 }}>{row.kategori}</div>
-        </div>
-      )
+        <Box>
+          <Typography sx={{ fontWeight: 600, fontSize: 14, color: colors.text }}>{row.namaProduk}</Typography>
+          <Typography sx={{ color: colors.textMuted, fontSize: 12 }}>{row.kategori}</Typography>
+        </Box>
+      ),
     },
-    { 
-      header: "KODE BATCH", 
+    {
+      header: "Kode Batch",
       accessor: "kodeBatch",
       render: (row) => (
-        <span style={{ color: '#64748B', fontWeight: 500 }}>{row.kodeBatch}</span>
-      )
+        <Typography sx={{ fontFamily: "monospace", fontWeight: 600, fontSize: 13, color: colors.primary }}>
+          {row.kodeBatch || row.no_batch || "-"}
+        </Typography>
+      ),
     },
-    { 
-      header: "TANGGAL EXPIRED", 
+    {
+      header: "No. Faktur",
+      accessor: "no_faktur",
+      render: (row) => (
+        <Typography sx={{ fontSize: 13, color: colors.textSecondary }}>
+          {row.no_faktur || "-"}
+        </Typography>
+      ),
+    },
+    {
+      header: "Expired",
       accessor: "expired",
       render: (row) => {
-        const isExpired = new Date(row.expired) < new Date('2024-01-01');
+        const isExpired = new Date(row.expired) < new Date();
         return (
-          <span style={{ color: isExpired ? '#E11D48' : '#1E293B', fontWeight: isExpired ? 700 : 600 }}>
-            {new Date(row.expired).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year:'numeric'})}
-          </span>
-        )
-      }
+          <Typography sx={{ fontWeight: isExpired ? 600 : 500, fontSize: 13, color: isExpired ? colors.danger : colors.text }}>
+            {new Date(row.expired).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+          </Typography>
+        );
+      },
     },
-    { 
-      header: "SISA STOK", 
-      accessor: "stok", 
+    {
+      header: "Stok",
+      accessor: "stok",
       render: (row) => (
-        <span style={{ fontWeight: 700, color: '#1E293B' }}>{row.stok} <span style={{fontWeight: 600, color: '#64748B'}}>Unit</span></span>
-      )
+        <Typography sx={{ fontWeight: 600, fontSize: 13 }}>
+          {row.stok} <Typography component="span" sx={{ color: colors.textMuted, fontSize: 12 }}>unit</Typography>
+        </Typography>
+      ),
     },
-    { 
-      header: "STATUS", 
+    {
+      header: "Status",
       accessor: "status",
       align: "center",
       render: (row) => {
         const st = checkStatus(row.expired);
         return (
-          <span style={{ background: st.bg, color: st.color, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 800, letterSpacing: 0.5 }}>
+          <Box component="span" sx={{ bgcolor: st.bg, color: st.color, px: 1.5, py: 0.5, borderRadius: 1, fontSize: 11, fontWeight: 600 }}>
             {st.label}
-          </span>
-        )
-      }
+          </Box>
+        );
+      },
     },
     {
-      header: "AKSI",
+      header: "",
       accessor: "aksi",
       align: "center",
       render: (row) => (
         <IconButton
           size="small"
           onClick={() => onShowDetail(row)}
-          title="Lihat detail batch"
-          sx={{
-            color: "#64748B",
-            border: "1px solid #F3F6F9",
-            bgcolor: "#fff",
-            '&:hover': { bgcolor: "#f8f4f8" },
-          }}
+          title="Detail batch"
+          sx={{ color: colors.textSecondary, border: `1px solid ${colors.borderLight}` }}
         >
           <VisibilityOutlinedIcon fontSize="small" />
         </IconButton>
@@ -103,9 +109,7 @@ const BatchTable = ({ produk, onShowDetail }) => {
     },
   ];
 
-  return (
-    <Table columns={columns} data={sortedBatch} />
-  );
+  return <Table columns={columns} data={sortedBatch} />;
 };
 
 export default BatchTable;

@@ -10,7 +10,7 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
     <Box sx={{ minWidth: 340, maxWidth: 420, textAlign: 'center' }}>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
         <Box sx={{
-          background: "#FDF2F8",
+          background: "#F0FDFA",
           borderRadius: "50%",
           width: 72,
           height: 72,
@@ -18,9 +18,9 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
           alignItems: "center",
           justifyContent: "center",
           mb: 1,
-          border: '8px solid #FCE7F3'
+          border: '8px solid #CCFBF1'
         }}>
-          <DeleteOutlineIcon sx={{ fontSize: 32, color: "#E91E63" }} />
+          <DeleteOutlineIcon sx={{ fontSize: 32, color: "#0F766E" }} />
         </Box>
 
         <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', m: 0 }}>
@@ -56,7 +56,7 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
           <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: '#1E293B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
             Batal
           </Button>
-          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#D81B60' }, boxShadow: '0 4px 14px rgba(233,30,99,0.3)' }}
+          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#0F766E', color: '#fff', '&:hover': { bgcolor: '#0D5C56' }, boxShadow: '0 4px 14px rgba(15, 118, 110,0.3)' }}
             onClick={() => onDelete &&
               onDelete(
                 produk?.id_produk || produk?.id
@@ -65,7 +65,7 @@ const HapusProdukConfirm = ({ open, onClose, onDelete, produk }) => {
           </Button>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: "#E91E63", mt: 3, bgcolor: '#FDF2F8', py: 1, px: 2, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: "#0F766E", mt: 3, bgcolor: '#F0FDFA', py: 1, px: 2, borderRadius: 2 }}>
           <InfoOutlinedIcon sx={{ fontSize: 16 }} />
           <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.5 }}>
             AKSI PERMANEN

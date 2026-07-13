@@ -1,23 +1,32 @@
 import React from "react";
 import { Button as MuiButton } from "@mui/material";
+import { colors } from "../../theme/designTokens";
 
 const Button = ({ children, color = "primary", variant = "contained", sx = {}, ...props }) => {
-	const colorStyles = color === "pink"
-		? {
-				background: '#E91E63',
-				color: '#FFFFFF',
-				fontWeight: 700,
-				borderRadius: 2,
-				boxShadow: 'none',
-				px: 3,
-				'&:hover': { background: '#F06292' },
-			}
-		: {};
-	return (
-		<MuiButton variant={variant} sx={{ textTransform: 'none', ...colorStyles, ...sx }} {...props}>
-			{children}
-		</MuiButton>
-	);
+  const colorStyles =
+    color === "primary"
+      ? {
+          background: colors.primary,
+          color: "#FFFFFF",
+          fontWeight: 600,
+          boxShadow: "none",
+          "&:hover": { background: colors.primaryHover },
+        }
+      : color === "pink"
+        ? {
+            background: colors.primary,
+            color: "#FFFFFF",
+            fontWeight: 600,
+            boxShadow: "none",
+            "&:hover": { background: colors.primaryHover },
+          }
+        : {};
+
+  return (
+    <MuiButton variant={variant} sx={{ textTransform: "none", ...colorStyles, ...sx }} {...props}>
+      {children}
+    </MuiButton>
+  );
 };
 
 export default Button;

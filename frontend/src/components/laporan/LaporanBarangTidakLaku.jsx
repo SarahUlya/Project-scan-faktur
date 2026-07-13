@@ -79,8 +79,8 @@ const LaporanBarangTidakLaku = () => {
       accessor: "durasi",
       render: (row) => (
         <Box sx={{ 
-          background: '#FDF2F8', 
-          color: '#E91E63', 
+          background: '#FCE4EC', 
+          color: '#D81B60', 
           px: 1.5, 
           py: 0.5, 
           borderRadius: 2, 

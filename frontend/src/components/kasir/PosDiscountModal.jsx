@@ -39,11 +39,11 @@ const PosDiscountModal = ({ open, onClose }) => {
               flex: 1,
               padding: 10,
               borderRadius: 8,
-              border: tipe === t ? "2px solid #E91E63" : "1px solid #E2E8F0",
+              border: tipe === t ? "2px solid #0F766E" : "1px solid #E2E8F0",
               background: tipe === t ? "#FFF1F2" : "#fff",
               fontWeight: 700,
               cursor: "pointer",
-              color: tipe === t ? "#E91E63" : "#64748B",
+              color: tipe === t ? "#0F766E" : "#64748B",
               fontSize: 12,
               transition: "all 0.2s",
             }}
@@ -79,7 +79,7 @@ const PosDiscountModal = ({ open, onClose }) => {
         <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
           Batal
         </button>
-        <button type="button" onClick={handleApply} style={{ flex: 1, padding: 12, borderRadius: 8, border: "none", background: "#E91E63", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+        <button type="button" onClick={handleApply} style={{ flex: 1, padding: 12, borderRadius: 8, border: "none", background: "#0F766E", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
           Terapkan
         </button>
       </div>

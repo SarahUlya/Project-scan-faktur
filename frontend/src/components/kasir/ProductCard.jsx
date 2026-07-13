@@ -46,7 +46,7 @@ const ProductCard = ({ item, getNamaKategori, getNamaSatuan }) => {
 			<Typography
 				sx={{
 					mt: 2,
-					color: "#E91E63",
+					color: "#0F766E",
 					fontWeight: 700,
 				}}
 			>
