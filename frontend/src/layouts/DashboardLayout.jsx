@@ -11,7 +11,14 @@ const DashboardLayout = () => {
       </Box>
 
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Box sx={{ p: { xs: 2, md: 3 }, flexGrow: 1, maxWidth: 1400, mx: "auto", width: "100%" }}>
+        <Box
+          sx={{
+            p: { xs: 2, md: 3 },
+            flexGrow: 1,
+            width: "100%",
+            maxWidth: "100%",
+          }}
+        >
           <Outlet />
         </Box>
         <Box

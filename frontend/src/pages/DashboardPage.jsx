@@ -6,6 +6,7 @@ import AssignmentLateOutlinedIcon from "@mui/icons-material/AssignmentLateOutlin
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import KeyboardTabOutlinedIcon from "@mui/icons-material/KeyboardTabOutlined";
 import useLaporanTransaksi from "../hooks/useLaporanTransaksi";
+import useProdukDb from "../hooks/useProdukDb";
 import Table from "../components/ui/Table";
 import { colors, pageHeaderSx, statCardSx } from "../theme/designTokens";
 import formatCurrency from "../utils/formatCurrency";
@@ -24,15 +25,32 @@ const StatCard = ({ icon, title, value, accent }) => (
 
 const DashboardPage = () => {
   const { produkTerlaris, totalOmzet, jumlahTransaksi } = useLaporanTransaksi();
+  const { produk } = useProdukDb();
+
+  const totalUnitTerjual = useMemo(() => {
+    return (produkTerlaris || []).reduce(
+      (sum, item) => sum + Number(item.total_terjual || 0),
+      0
+    );
+  }, [produkTerlaris]);
 
   const topProducts = useMemo(() => {
-    return (produkTerlaris || []).slice(0, 5).map((item, idx) => ({
-      name: item.nama || `Produk ${idx + 1}`,
-      type: item.kategori || "Umum",
-      sold: item.terjual || 0,
-      stock: item.stok || 0,
-    }));
-  }, [produkTerlaris]);
+    return (produkTerlaris || [])
+      .slice(0, 5)
+      .map((item) => {
+        const dataProduk = produk.find(
+          (p) => p.id_produk === item.id_produk
+        );
+
+        return {
+          id: item.id_produk,
+          name: item.nama_produk || "-",
+          type: item.kategori || "-",
+          sold: Number(item.total_terjual || 0),
+          stock: Number(dataProduk?.stok || 0),
+        };
+      });
+  }, [produkTerlaris, produk]);
 
   const columns = [
     {
@@ -48,7 +66,15 @@ const DashboardPage = () => {
         </Box>
       ),
     },
-    { header: "Kategori", accessor: "category", render: (row) => <Typography sx={{ fontSize: 14, color: colors.textSecondary }}>{row.category}</Typography> },
+    {
+      header: "Kategori",
+      accessor: "type",
+      render: (row) => (
+        <Typography sx={{ fontSize: 14, color: colors.textSecondary }}>
+          {row.type}
+        </Typography>
+      ),
+    },
     { header: "Terjual", accessor: "sold", align: "center", render: (row) => <Typography sx={{ fontWeight: 600 }}>{row.sold.toLocaleString()} unit</Typography> },
     { header: "Sisa Stok", accessor: "stock", align: "center", render: (row) => <Typography sx={{ color: colors.textSecondary }}>{row.stock.toLocaleString()} unit</Typography> },
   ];
@@ -61,20 +87,50 @@ const DashboardPage = () => {
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2, mb: 2 }}>
-        <StatCard icon={<AccountBalanceWalletOutlinedIcon />} title="Pendapatan Bulan Ini" value={formatCurrency(totalOmzet)} />
-        <StatCard icon={<InsertChartOutlinedIcon />} title="Transaksi Selesai" value={jumlahTransaksi.toString()} />
+        <StatCard icon={<AccountBalanceWalletOutlinedIcon />} title="Pendapatan Bulan Ini" value={formatCurrency(totalOmzet ?? 0)} />
+        <StatCard icon={<InsertChartOutlinedIcon />} title="Transaksi Selesai" value={(jumlahTransaksi ?? 0).toLocaleString()} />
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, mb: 3 }}>
-        <StatCard icon={<AssignmentLateOutlinedIcon />} title="Produk Terdata" value={produkTerlaris.length.toString()} accent={colors.warning} />
-        <StatCard icon={<EventBusyOutlinedIcon />} title="Produk Terlaris" value={topProducts.length.toString()} accent={colors.danger} />
-        <StatCard icon={<KeyboardTabOutlinedIcon sx={{ transform: "rotate(180deg)" }} />} title="Top 5 Tampil" value={topProducts.length.toString()} accent={colors.warning} />
+        <StatCard
+          icon={<AssignmentLateOutlinedIcon />}
+          title="Produk Terjual"
+          value={produkTerlaris.length.toLocaleString()}
+          accent={colors.warning}
+        />
+
+        <StatCard
+          icon={<EventBusyOutlinedIcon />}
+          title="Unit Terjual"
+          value={totalUnitTerjual.toLocaleString()}
+          accent={colors.danger}
+        />
+
+        <StatCard
+          icon={<KeyboardTabOutlinedIcon sx={{ transform: "rotate(180deg)" }} />}
+          title="Produk Terlaris"
+          value={topProducts[0]?.name || "-"}
+          accent={colors.primary}
+        />
       </Box>
 
       <Box sx={{ bgcolor: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, p: 2.5 }}>
         <Typography sx={{ fontWeight: 600, fontSize: 15, mb: 0.5 }}>Top 5 Produk Terlaris</Typography>
         <Typography sx={{ fontSize: 13, color: colors.textMuted, mb: 2 }}>Performa produk periode berjalan</Typography>
-        <Table columns={columns} data={topProducts} />
+
+        {topProducts.length > 0 ? (
+          <Table columns={columns} data={topProducts} />
+        ) : (
+          <Typography
+            sx={{
+              textAlign: "center",
+              py: 5,
+              color: colors.textMuted,
+            }}
+          >
+            Belum ada data penjualan.
+          </Typography>
+        )}
       </Box>
     </Box>
   );

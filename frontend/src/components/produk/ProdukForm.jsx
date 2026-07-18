@@ -59,10 +59,25 @@ const ProdukForm = ({
 
   const validate = () => {
     const err = {};
-    if (!form.nama_produk.trim()) err.nama_produk = "Nama produk wajib diisi";
-    if (!form.id_kategori) err.id_kategori = "Kategori wajib dipilih";
-    if (!form.satuan_id) err.satuan_id = "Satuan wajib diisi";
-    if (form.stok_minimum === "" || isNaN(form.stok_minimum)) err.stok_minimum = "Stok minimum wajib diisi";
+
+    if (!form.nama_produk.trim())
+      err.nama_produk = "Nama produk wajib diisi";
+
+    if (!form.harga_jual || Number(form.harga_jual) <= 0)
+      err.harga_jual = "Harga jual wajib diisi";
+
+    if (!form.id_kategori)
+      err.id_kategori = "Kategori wajib dipilih";
+
+    if (!form.satuan_id)
+      err.satuan_id = "Satuan wajib diisi";
+
+    if (
+      form.stok_minimum === "" ||
+      isNaN(form.stok_minimum)
+    )
+      err.stok_minimum = "Stok minimum wajib diisi";
+
     setError(err);
     return Object.keys(err).length === 0;
   };
@@ -238,8 +253,18 @@ const ProdukForm = ({
 
       <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: 3 }}>
         <Box>
-          <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-            HARGA JUAL
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            HARGA JUAL <span style={{ color: "#EF4444" }}>*</span>
           </Typography>
           <TextField
             type="number"
@@ -247,7 +272,21 @@ const ProdukForm = ({
             onChange={(e) => handleChange("harga_jual", e.target.value)}
             fullWidth
             size="small"
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            error={!!error.harga_jual}
+            helperText={
+              error.harga_jual ? (
+                <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                  {error.harga_jual}
+                </span>
+              ) : (
+                ""
+              )
+            }
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+              },
+            }}
           />
         </Box>
         <Box>

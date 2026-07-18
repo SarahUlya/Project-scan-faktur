@@ -1,39 +1,52 @@
 import { useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../data/db";
+import useTransaksiDb from "./useTransaksiDb";
 
 const formatWaktu = (iso) => {
   const d = new Date(iso);
+
   return {
-    waktu: d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-    jam: d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB",
+    waktu: d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    jam:
+      d.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " WIB",
   };
 };
 
+console.log("USE RIWAYAT KELOAD");
+
 export default function useRiwayat() {
-  const transaksi = useLiveQuery(
-    () => db.transaksi.orderBy("tanggal").reverse().toArray(),
-    [],
-    []
-  );
+  console.log("USE RIWAYAT DIPANGGIL");
+
+  const { transaksiList } = useTransaksiDb();
+
+  console.log("TRANSAKSI LIST RIWAYAT:", transaksiList);
 
   const data = useMemo(
     () =>
-      (transaksi || []).map((t, idx) => {
-        const { waktu, jam } = formatWaktu(t.tanggal);
+      (transaksiList || []).map((t, idx) => {
+        const { waktu, jam } = formatWaktu(t.tanggal_transaksi);
+
         return {
-          id: t.id,
+          id: t.id_transaksi,
           no: idx + 1,
           waktu,
           jam,
-          kasir: t.kasir,
-          total: t.total,
-          metode: t.metode,
+          kasir: t.user?.nama || "-",
+          total: Number(t.total),
+          metode: t.metode_bayar,
           raw: t,
         };
       }),
-    [transaksi]
+    [transaksiList]
   );
+
+  console.log("HASIL DATA RIWAYAT:", data);
 
   return { data };
 }

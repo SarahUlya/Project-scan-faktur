@@ -37,11 +37,12 @@ const useManajemenUser = () => {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      await axiosInstance.patch(`/users/${id}/status`, {
+      await axiosInstance.patch(`/auth/users/${id}/status`, {
         isActive: !currentStatus,
       });
 
       getUsers();
+
     } catch (err) {
       console.error("Gagal update status:", err);
     }

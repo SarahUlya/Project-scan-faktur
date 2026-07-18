@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
 import BatchTable from "../components/stok/BatchTable";
 import Modal from "../components/ui/Modal";
-import useProdukDb from "../hooks/useProdukDb";
+import useProdukBatch from "../hooks/useProdukBatch";
 import useStokPrint from "../hooks/useStokPrint";
 import StokPrintActions from "../components/stok/StokPrintActions";
 import { Box, Typography, TextField, InputAdornment } from "@mui/material";
@@ -15,16 +15,16 @@ const PAGE_SIZE = 25;
 
 const StokBatchPage = () => {
   const [detailBatch, setDetailBatch] = useState(null);
-  const { produk, loading } = useProdukDb();
+  const { produk, loading } = useProdukBatch();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const { printLaporan, printKartuBatch, exportLaporanPdf, exportKartuPdf, PrintPortal } = useStokPrint();
 
+  console.log("Produk dari hook:", produk.length);
   const filteredProduk = produk.filter((p) => {
     const hasBatch = p.batch && p.batch.length > 0;
     if (!hasBatch) return false;
-    const totalStok = (p.batch || []).reduce((sum, b) => sum + (b.stok || 0), 0);
-    if (totalStok === 0) return false;
+    if (p.stok <= 0) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const name = p.nama_produk || p.nama || p.namaItem || "";
@@ -45,6 +45,16 @@ const StokBatchPage = () => {
     return getEarliest(a.batch) - getEarliest(b.batch);
   });
 
+  const allBatch = sortedProduk.flatMap((p) =>
+    (p.batch || []).map((b) => ({
+      ...b,
+      produkId: p.id_produk,
+      namaProduk: p.nama_produk,
+      kategori: p.nama_kategori || "-",
+      kodeBatch: b.kodeBatch || b.no_batch,
+    }))
+  );
+
   const printRows = useMemo(() => flattenProdukBatches(sortedProduk), [sortedProduk]);
 
   const nearExpiredCount = filteredProduk.reduce((count, p) => {
@@ -61,8 +71,26 @@ const StokBatchPage = () => {
     )
   ).size;
 
-  const totalPages = Math.ceil(sortedProduk.length / PAGE_SIZE);
-  const pagedProduk = sortedProduk.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(allBatch.length / PAGE_SIZE);
+
+  const pagedBatch = allBatch.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  const start = allBatch.length === 0
+    ? 0
+    : (page - 1) * PAGE_SIZE + 1;
+
+  const end = Math.min(page * PAGE_SIZE, allBatch.length);
+
+  console.log({
+    page,
+    totalPages,
+    sorted: sortedProduk.length,
+    allBatch: allBatch.length,
+    pagedBatch: pagedBatch.length,
+  });
 
   return (
     <Box>
@@ -84,9 +112,19 @@ const StokBatchPage = () => {
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, mb: 3 }}>
         {[
-          { label: "Produk Terdata", value: loading ? "-" : sortedProduk.length },
-          { label: "Kode Batch Aktif", value: loading ? "-" : uniqueBatchCount },
-          { label: "Hampir Expired", value: loading ? "-" : nearExpiredCount, warn: true },
+          {
+            label: "Produk dengan Batch",
+            value: loading ? "-" : sortedProduk.length,
+          },
+          {
+            label: "Kode Batch Aktif",
+            value: loading ? "-" : uniqueBatchCount,
+          },
+          {
+            label: "Hampir Expired",
+            value: loading ? "-" : nearExpiredCount,
+            warn: true,
+          },
         ].map((s) => (
           <Box key={s.label} sx={statCardSx}>
             <Typography sx={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: "uppercase", mb: 0.5 }}>
@@ -125,10 +163,13 @@ const StokBatchPage = () => {
         </Box>
       ) : (
         <Box sx={{ bgcolor: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, overflow: "hidden" }}>
-          <BatchTable produk={pagedProduk} onShowDetail={setDetailBatch} />
+          <BatchTable
+            batch={pagedBatch}
+            onShowDetail={setDetailBatch}
+          />
           <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${colors.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Typography sx={{ fontSize: 13, color: colors.textMuted }}>
-              {pagedProduk.length} dari {sortedProduk.length} produk
+              Menampilkan {start}-{end} dari {allBatch.length} batch
             </Typography>
             <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
           </Box>

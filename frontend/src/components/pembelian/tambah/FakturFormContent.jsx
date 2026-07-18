@@ -26,6 +26,7 @@ import {
   AKUN_KAS_OPTIONS,
   SATUAN_OPTIONS,
 } from "../../../config/fakturFormConfig";
+import Autocomplete from "@mui/material/Autocomplete";
 
 const fieldInputSx = sharedFieldSx;
 
@@ -203,7 +204,7 @@ const FakturInfoForm = ({
         )}
         <Grid item xs={12} sm={6} md={3}>
           <FormField label="Cashback (Rp)">
-            <TextField fullWidth size="small" type="number" inputProps={{ min: 0 }} value={fakturInfo.cashback} onChange={(e) => setInfo("cashback", Number(e.target.value) || 0)} sx={fieldInputSx} />
+            <TextField fullWidth size="small" type="number" inputProps={{ min: 0 }} value={fakturInfo.cashback || ""} onChange={(e) => setInfo("cashback", Number(e.target.value) || 0)} sx={fieldInputSx} />
           </FormField>
         </Grid>
         <Grid item xs={12} sm={6} md={isKredit ? 6 : 9}>
@@ -237,7 +238,17 @@ const FakturItemForm = ({
   handleHapusBaris,
 }) => (
   <Box sx={{ background: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, overflow: "hidden" }}>
-    <Box sx={{ px: 2.5, py: 2, borderBottom: `1px solid ${colors.borderLight}`, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+    <Box
+      sx={{
+        px: 2,
+        py: 1.5,
+        borderBottom: `1px solid ${colors.borderLight}`,
+        display: "flex",
+        gap: 1.5,
+        flexWrap: "wrap",
+        alignItems: "center",
+      }}
+    >
       <TextField
         inputRef={barcodeInputRef}
         size="small"
@@ -245,7 +256,7 @@ const FakturItemForm = ({
         value={barcodeInput}
         onChange={(e) => setBarcodeInput(e.target.value)}
         onKeyDown={handleBarcodeScan}
-        sx={{ ...fieldInputSx, flex: 1, minWidth: 240 }}
+        sx={{ ...fieldInputSx, flex: 1, minWidth: 180 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -254,11 +265,32 @@ const FakturItemForm = ({
           ),
         }}
       />
-      <Box sx={{ px: 1.5, py: 0.75, bgcolor: colors.bgMuted, borderRadius: 1.5, border: `1px solid ${colors.borderLight}` }}>
+      <Box
+        sx={{
+          px: 1,
+          py: 0.5,
+          bgcolor: colors.bgMuted,
+          borderRadius: 1,
+          border: `1px solid ${colors.borderLight}`,
+          minWidth: 150,
+        }}
+      >
         <Typography sx={{ fontSize: 11, color: colors.textMuted, fontWeight: 600 }}>BATCH</Typography>
         <Typography sx={{ fontSize: 13, fontWeight: 700, color: colors.primary, fontFamily: "monospace" }}>{kodeBatch || "—"}</Typography>
       </Box>
-      <Button size="small" startIcon={<AddIcon />} onClick={handleTambahBaris} variant="outlined" sx={{ borderColor: colors.border, color: colors.text }}>
+      <Button
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={handleTambahBaris}
+        variant="outlined"
+        sx={{
+          borderColor: colors.border,
+          color: colors.text,
+          px: 2,
+          py: 0.6,
+          minWidth: 120,
+        }}
+      >
         Tambah Baris
       </Button>
     </Box>
@@ -269,7 +301,7 @@ const FakturItemForm = ({
         sx={{
           width: "100%",
           borderCollapse: "collapse",
-          minWidth: 900,
+          minWidth: 800,
           "& th": {
             px: 1.5,
             py: 1,
@@ -287,7 +319,7 @@ const FakturItemForm = ({
       >
         <thead>
           <tr>
-            {["No", "Produk", "Exp. Date", "Harga", "Qty", "Satuan", "Diskon", "Subtotal", ""].map((h, i) => (
+            {["No", "Produk", "Exp. Date", "Harga Beli", "Harga Jual", "Qty", "Satuan", "Diskon", "Subtotal", ""].map((h, i) => (
               <th key={h || "aksi"} style={{ textAlign: i >= 3 && i <= 7 ? "right" : "left", width: h === "" ? 40 : undefined }}>
                 {h}
               </th>
@@ -298,29 +330,78 @@ const FakturItemForm = ({
           {items.map((item, index) => (
             <tr key={item.id}>
               <td><Typography sx={{ fontSize: 13, color: colors.textMuted }}>{index + 1}</Typography></td>
-              <td style={{ minWidth: 180 }}>
-                <TextField select fullWidth size="small" value={item.produk_id} onChange={(e) => updateItem(item.id, "produk_id", e.target.value)} sx={tableInputSx} SelectProps={{ displayEmpty: true }}>
-                  <MenuItem value="" disabled>Pilih produk...</MenuItem>
-                  {produk.map((p) => <MenuItem key={p.id_produk} value={p.id_produk}>{p.nama_produk}</MenuItem>)}
-                </TextField>
+              <td style={{ width: 320, minWidth: 320 }}>
+                <Autocomplete
+                  size="small"
+                  options={produk}
+                  value={
+                    produk.find(
+                      (p) => String(p.id_produk) === String(item.produk_id)
+                    ) || null
+                  }
+                  getOptionLabel={(option) => option.nama_produk || ""}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id_produk === value.id_produk
+                  }
+                  onChange={(_, value) =>
+                    updateItem(
+                      item.id,
+                      "produk_id",
+                      value?.id_produk || ""
+                    )
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Cari produk..."
+                      sx={tableInputSx}
+                    />
+                  )}
+                />
+              </td>
+              <td>
+                <Typography>
+                  <TextField
+                    inputRef={(el) => { if (!inputRefs.current.exp_date) inputRefs.current.exp_date = {}; inputRefs.current.exp_date[item.id] = el; }}
+                    type="date" size="small" value={item.exp_date || ""}
+                    onChange={(e) => updateItem(item.id, "exp_date", e.target.value)}
+                    onKeyDown={(e) => handleInputKeyDown(e, item.id, "exp_date")}
+                    sx={{
+                      ...tableInputSx,
+                      width: 120,
+                    }}
+                  />
+                </Typography>
               </td>
               <td>
                 <TextField
-                  inputRef={(el) => { if (!inputRefs.current.exp_date) inputRefs.current.exp_date = {}; inputRefs.current.exp_date[item.id] = el; }}
-                  type="date" size="small" value={item.exp_date}
-                  onChange={(e) => updateItem(item.id, "exp_date", e.target.value)}
-                  onKeyDown={(e) => handleInputKeyDown(e, item.id, "exp_date")}
-                  sx={{ ...tableInputSx, minWidth: 130 }}
+                  inputRef={(el) => { if (!inputRefs.current.harga_beli) inputRefs.current.harga_beli = {}; inputRefs.current.harga_beli[item.id] = el; }}
+                  type="number" size="small" value={item.harga_beli || ""}
+                  onChange={(e) => updateItem(item.id, "harga_beli", parseInt(e.target.value, 10) || 0)}
+                  onKeyDown={(e) => handleInputKeyDown(e, item.id, "harga_beli")}
+                  sx={{ ...tableInputSx, width: 95 }}
+                  inputProps={{ min: 0, style: { textAlign: "right" } }}
                 />
               </td>
               <td>
                 <TextField
-                  inputRef={(el) => { if (!inputRefs.current.harga_satuan) inputRefs.current.harga_satuan = {}; inputRefs.current.harga_satuan[item.id] = el; }}
-                  type="number" size="small" value={item.harga_satuan || ""}
-                  onChange={(e) => updateItem(item.id, "harga_satuan", parseInt(e.target.value, 10) || 0)}
-                  onKeyDown={(e) => handleInputKeyDown(e, item.id, "harga_satuan")}
-                  sx={{ ...tableInputSx, width: 110 }}
-                  inputProps={{ min: 0, style: { textAlign: "right" } }}
+                  inputRef={(el) => { if (!inputRefs.current.harga_jual) inputRefs.current.harga_jual = {}; inputRefs.current.harga_jual[item.id] = el; }}
+                  type="number"
+                  size="small"
+                  value={item.harga_jual || ""}
+                  onChange={(e) =>
+                    updateItem(
+                      item.id,
+                      "harga_jual",
+                      parseInt(e.target.value, 10) || 0
+                    )
+                  }
+                  onKeyDown={(e) => handleInputKeyDown(e, item.id, "harga_jual")}
+                  sx={{ ...tableInputSx, width: 95 }}
+                  inputProps={{
+                    min: 0,
+                    style: { textAlign: "right" },
+                  }}
                 />
               </td>
               <td>
@@ -334,13 +415,13 @@ const FakturItemForm = ({
                 />
               </td>
               <td>
-                <TextField select size="small" value={item.satuan} onChange={(e) => updateItem(item.id, "satuan", e.target.value)} sx={{ ...tableInputSx, minWidth: 80 }}>
+                <TextField select size="small" value={item.satuan || ""} onChange={(e) => updateItem(item.id, "satuan", e.target.value)} sx={{ ...tableInputSx, minWidth: 70 }}>
                   {SATUAN_OPTIONS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                 </TextField>
               </td>
               <td>
-                <Box sx={{ display: "flex", gap: 0.5, minWidth: 100 }}>
-                  <TextField select size="small" value={item.diskon_tipe} onChange={(e) => updateItem(item.id, "diskon_tipe", e.target.value)} sx={{ ...tableInputSx, width: 52 }}>
+                <Box sx={{ display: "flex", gap: 0.5, minWidth: 90 }}>
+                  <TextField select size="small" value={item.diskon_tipe || "%"} onChange={(e) => updateItem(item.id, "diskon_tipe", e.target.value)} sx={{ ...tableInputSx, width: 52 }}>
                     <MenuItem value="%">%</MenuItem>
                     <MenuItem value="Rp">Rp</MenuItem>
                   </TextField>

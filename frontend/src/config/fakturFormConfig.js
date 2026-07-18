@@ -55,17 +55,20 @@ export const emptyItem = () => ({
   exp_date: "",
   qty: 0,
   satuan: "Pcs",
-  harga_satuan: 0,
+  harga_beli: 0,
+  harga_jual: 0,
   diskon: 0,
   diskon_tipe: "%",
   total: 0,
 });
 
 export const hitungSubtotalItem = (item) => {
-  const bruto = (item.qty || 0) * (item.harga_satuan || 0);
+  const bruto = (item.qty || 0) * (item.harga_beli || 0);
   const diskon = item.diskon || 0;
+
   if (item.diskon_tipe === "%") {
     return Math.max(0, bruto - (bruto * diskon) / 100);
   }
+
   return Math.max(0, bruto - diskon);
 };

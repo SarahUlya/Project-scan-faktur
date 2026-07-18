@@ -12,6 +12,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import LaporanPenjualan from "../components/laporan/LaporanPenjualan";
 import LaporanProdukTerlaris from "../components/laporan/LaporanProdukTerlaris";
@@ -19,22 +20,27 @@ import LaporanBarangTidakLaku from "../components/laporan/LaporanBarangTidakLaku
 import LaporanStokExpired from "../components/laporan/LaporanStokExpired";
 
 const laporanMenu = [
-  { id: 'penjualan', title: "Laporan Penjualan", desc: "Rekap transaksi dan omzet", icon: AssessmentOutlinedIcon },
-  { id: 'terlaris', title: "Produk Terlaris", desc: "Analisis performa produk", icon: TrendingUpOutlinedIcon },
-  { id: 'tidak-laku', title: "Barang Tidak Laku", desc: "Dead stock & slow moving", icon: AssignmentLateOutlinedIcon },
-  { id: 'expired', title: "Stok & Expired", desc: "Status gudang & kadaluarsa", icon: EventBusyOutlinedIcon },
+    { id: 'penjualan', title: "Laporan Penjualan", desc: "Rekap transaksi dan omzet", icon: AssessmentOutlinedIcon },
+    { id: 'terlaris', title: "Produk Terlaris", desc: "Analisis performa produk", icon: TrendingUpOutlinedIcon },
+    { id: 'tidak-laku', title: "Barang Tidak Laku", desc: "Dead stock & slow moving", icon: AssignmentLateOutlinedIcon },
+    { id: 'expired', title: "Stok & Expired", desc: "Status gudang & kadaluarsa", icon: EventBusyOutlinedIcon },
 ];
 
 const LaporanPage = () => {
     const [activeTab, setActiveTab] = useState('penjualan');
     const stokLaporanRef = useRef(null);
+    const [expiredSummary, setExpiredSummary] = useState({
+        expired: 0,
+        warning: 0,
+        aman: 0,
+    });
 
     const renderContent = () => {
-        switch(activeTab) {
+        switch (activeTab) {
             case 'penjualan': return <LaporanPenjualan />;
             case 'terlaris': return <LaporanProdukTerlaris />;
             case 'tidak-laku': return <LaporanBarangTidakLaku />;
-            case 'expired': return <LaporanStokExpired ref={stokLaporanRef} />;
+            case 'expired': return (<LaporanStokExpired ref={stokLaporanRef} onSummaryChange={setExpiredSummary} />);
             default: return <LaporanPenjualan />;
         }
     };
@@ -115,24 +121,158 @@ const LaporanPage = () => {
                 })}
             </Box>
 
-            {activeTab === 'expired' && (
-                <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
-                    <Box sx={{ flex: 1, background: '#FFF1F2', borderRadius: 4, p: 3, display: 'flex', alignItems: 'center', gap: 2.5, border: '1px solid #FFE4E6' }}>
-                        <Box sx={{ width: 48, height: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E11D48' }}>
+            {activeTab === "expired" && (
+                <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
+                    {/* Expired */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            background: "#FFF1F2",
+                            borderRadius: 4,
+                            p: 3,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2.5,
+                            border: "1px solid #FFE4E6",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: "50%",
+                                background: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#E11D48",
+                            }}
+                        >
                             <HighlightOffIcon />
                         </Box>
+
                         <Box>
-                            <Typography sx={{ fontSize: 24, fontWeight: 900, color: '#E11D48', lineHeight: 1.2 }}>5</Typography>
-                            <Typography sx={{ color: '#E11D48', fontWeight: 700, fontSize: 13 }}>Produk Expired</Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                    color: "#E11D48",
+                                }}
+                            >
+                                {expiredSummary.expired}
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    color: "#E11D48",
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                }}
+                            >
+                                Produk Expired
+                            </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ flex: 1, background: '#FFF7ED', borderRadius: 4, p: 3, display: 'flex', alignItems: 'center', gap: 2.5, border: '1px solid #FFEDD5' }}>
-                        <Box sx={{ width: 48, height: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F97316' }}>
+
+                    {/* Warning */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            background: "#FFF7ED",
+                            borderRadius: 4,
+                            p: 3,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2.5,
+                            border: "1px solid #FFEDD5",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: "50%",
+                                background: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#F97316",
+                            }}
+                        >
                             <WarningAmberIcon />
                         </Box>
+
                         <Box>
-                            <Typography sx={{ fontSize: 24, fontWeight: 900, color: '#F97316', lineHeight: 1.2 }}>12</Typography>
-                            <Typography sx={{ color: '#F97316', fontWeight: 700, fontSize: 13 }}>Produk Mendekati Expired</Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                    color: "#F97316",
+                                }}
+                            >
+                                {expiredSummary.warning}
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    color: "#F97316",
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                }}
+                            >
+                                Produk Mendekati Expired
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Aman */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            background: "#F0FDF4",
+                            borderRadius: 4,
+                            p: 3,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2.5,
+                            border: "1px solid #BBF7D0",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: "50%",
+                                background: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#16A34A",
+                            }}
+                        >
+                            <InfoOutlinedIcon />
+                        </Box>
+
+                        <Box>
+                            <Typography
+                                sx={{
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                    color: "#16A34A",
+                                }}
+                            >
+                                {expiredSummary.aman}
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    color: "#16A34A",
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                }}
+                            >
+                                Produk Aman
+                            </Typography>
                         </Box>
                     </Box>
                 </Box>
@@ -162,53 +302,53 @@ const LaporanPage = () => {
 
                     <Box sx={{ display: "flex", gap: 1.5 }}>
                         {activeTab === 'expired' ? (
-                          <>
-                            <Button
-                              variant="outlined"
-                              startIcon={<PrintIcon />}
-                              onClick={() => stokLaporanRef.current?.print()}
-                              sx={{ borderColor: '#E2E8F0', color: '#64748B', fontWeight: 600 }}
-                            >
-                              Cetak Laporan
-                            </Button>
-                            <Button
-                              color="primary"
-                              startIcon={<PictureAsPdfOutlinedIcon />}
-                              onClick={() => stokLaporanRef.current?.exportPdf()}
-                              sx={{ fontWeight: 600 }}
-                            >
-                              Export PDF
-                            </Button>
-                          </>
+                            <>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<PrintIcon />}
+                                    onClick={() => stokLaporanRef.current?.print()}
+                                    sx={{ borderColor: '#E2E8F0', color: '#64748B', fontWeight: 600 }}
+                                >
+                                    Cetak Laporan
+                                </Button>
+                                <Button
+                                    color="primary"
+                                    startIcon={<PictureAsPdfOutlinedIcon />}
+                                    onClick={() => stokLaporanRef.current?.exportPdf()}
+                                    sx={{ fontWeight: 600 }}
+                                >
+                                    Export PDF
+                                </Button>
+                            </>
                         ) : (
-                          <>
-                            <Button sx={{
-                                backgroundColor: "#16A34A",
-                                borderRadius: 3,
-                                px: 3,
-                                fontWeight: 700,
-                                "&:hover": { backgroundColor: "#15803D" },
-                                color: "#fff",
-                                display: 'flex',
-                                gap: 1
-                            }}>
-                                <DescriptionOutlinedIcon fontSize="small" />
-                                EXPORT EXCEL
-                            </Button>
-                            <Button sx={{
-                                backgroundColor: "#D81B60",
-                                borderRadius: 3,
-                                px: 3,
-                                fontWeight: 700,
-                                "&:hover": { backgroundColor: "#AD1457" },
-                                color: "#fff",
-                                display: 'flex',
-                                gap: 1
-                            }}>
-                                <PictureAsPdfOutlinedIcon fontSize="small" />
-                                EXPORT PDF
-                            </Button>
-                          </>
+                            <>
+                                <Button sx={{
+                                    backgroundColor: "#16A34A",
+                                    borderRadius: 3,
+                                    px: 3,
+                                    fontWeight: 700,
+                                    "&:hover": { backgroundColor: "#15803D" },
+                                    color: "#fff",
+                                    display: 'flex',
+                                    gap: 1
+                                }}>
+                                    <DescriptionOutlinedIcon fontSize="small" />
+                                    EXPORT EXCEL
+                                </Button>
+                                <Button sx={{
+                                    backgroundColor: "#D81B60",
+                                    borderRadius: 3,
+                                    px: 3,
+                                    fontWeight: 700,
+                                    "&:hover": { backgroundColor: "#AD1457" },
+                                    color: "#fff",
+                                    display: 'flex',
+                                    gap: 1
+                                }}>
+                                    <PictureAsPdfOutlinedIcon fontSize="small" />
+                                    EXPORT PDF
+                                </Button>
+                            </>
                         )}
                     </Box>
                 </Box>

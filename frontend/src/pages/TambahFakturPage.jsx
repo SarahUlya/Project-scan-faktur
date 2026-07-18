@@ -3,8 +3,8 @@ import { Box, Typography, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import usePembelianDb from "../hooks/usePembelianDb";
-import useProdukDb from "../hooks/useProdukDb";
 import useSupplierDb from "../hooks/useSupplierDb";
+import useProdukDropdown from "../hooks/useProdukDropdown";
 import FakturStepIndicator from "../components/pembelian/tambah/FakturStepIndicator";
 import FakturSummaryPanel from "../components/pembelian/tambah/FakturSummaryPanel";
 import { FakturInfoForm, FakturItemForm } from "../components/pembelian/tambah/FakturFormContent";
@@ -19,7 +19,7 @@ import {
 const TambahFakturPage = () => {
   const navigate = useNavigate();
   const { addPembelian } = usePembelianDb();
-  const { produk } = useProdukDb();
+  const { produk } = useProdukDropdown();
   const { supplier } = useSupplierDb();
 
   const getOneYearLater = (baseDateStr) => {
@@ -50,8 +50,9 @@ const TambahFakturPage = () => {
 
   const inputRefs = useRef({
     exp_date: {},
+    harga_beli: {},
+    harga_jual: {},
     qty: {},
-    harga_satuan: {},
     diskon: {},
   });
 
@@ -115,8 +116,9 @@ const TambahFakturPage = () => {
     if (e.key !== "Enter") return;
     e.preventDefault();
 
-    if (field === "exp_date") focusRowInput(itemId, "harga_satuan");
-    else if (field === "harga_satuan") focusRowInput(itemId, "qty");
+    if (field === "exp_date") focusRowInput(itemId, "harga_beli");
+    else if (field === "harga_beli") focusRowInput(itemId, "harga_jual");
+    else if (field === "harga_jual") focusRowInput(itemId, "qty");
     else if (field === "qty") focusRowInput(itemId, "diskon");
     else if (field === "diskon") {
       barcodeInputRef.current?.focus();
@@ -135,7 +137,8 @@ const TambahFakturPage = () => {
           const p = produk.find((x) => String(x.id_produk) === String(value));
           if (p) {
             updated.nama_produk = p.nama_produk;
-            updated.harga_satuan = p.harga_beli || p.harga_jual || 0;
+            updated.harga_beli = p.harga_beli || 0;
+            updated.harga_jual = p.harga_jual || 0;
             updated.satuan = p.nama_satuan || p.satuan || "Pcs";
             updated.barcode = p.barcode;
             updated.exp_date = getOneYearLater(fakturInfo.tanggal);
@@ -168,7 +171,8 @@ const TambahFakturPage = () => {
       exp_date: getOneYearLater(fakturInfo.tanggal),
       qty: 1,
       satuan: foundProduct.nama_satuan || foundProduct.satuan || "Pcs",
-      harga_satuan: foundProduct.harga_beli || foundProduct.harga_jual || 0,
+      harga_beli: foundProduct.harga_beli || 0,
+      harga_jual: foundProduct.harga_jual || 0,
       diskon: 0,
       diskon_tipe: "%",
       total: 0,
@@ -282,7 +286,10 @@ const TambahFakturPage = () => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "1fr 280px" },
+          gridTemplateColumns: {
+            xs: "1fr",
+            lg: "1fr 280px",
+          },
           gap: 2.5,
           alignItems: "start",
         }}

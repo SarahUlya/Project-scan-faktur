@@ -14,7 +14,7 @@ const LaporanProdukTerlaris = () => {
       id: i + 1,
       nama: p.nama || p.nama_produk || "-",
       kategori: p.kategori || p.nama_kategori || "-",
-      terjual: Number(p.terjual || p.qty || 0),
+      terjual: Number(p.terjual || p.total_terjual || 0),
       omzet: Number(p.omzet || p.subtotal || 0),
     })),
     [produkTerlaris]

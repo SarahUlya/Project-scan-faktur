@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSupplier } from "../api/supplierApi";
+import { getSupplier, createSupplier } from "../api/supplierApi";
 
 const normalizeSupplier = (item) => ({
   id: item.id_supplier ?? item.id ?? "",
@@ -39,21 +39,24 @@ export default function useSupplierDb() {
     }
   };
 
-  const addSupplier = (item) => {
-    const normalized = normalizeSupplier({
-      ...item,
-      id: item.id || `SUP-${Date.now()}`,
-      nama: item.nama || item.nama_supplier || "",
-      inisial: item.inisial || (item.nama || item.nama_supplier || "")
-        .split(" ")
-        .map((word) => word[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2),
-    });
+  const addSupplier = async (item) => {
+    try {
+      const payload = {
+        nama_supplier: item.nama,
+        email: "supplier@gmail.com",
+        telepon: item.telepon,
+        alamat: item.alamat,
+      };
 
-    setSupplier((prev) => [normalized, ...prev]);
-    return normalized;
+      console.log("Payload:", payload);
+
+      await createSupplier(payload);
+
+      await loadSupplier();
+    } catch (err) {
+      console.error("Response:", err.response?.data);
+      throw err;
+    }
   };
 
   const updateSupplier = (item) => {

@@ -110,37 +110,30 @@ export default function usePembelianDb() {
         },
 
         items:
-          data.pembeliandetail?.map(
-            (item, idx) => ({
-              no: idx + 1,
+          data.pembeliandetail?.map((item, idx) => ({
+            no: idx + 1,
 
-              nama:
-                item.produk?.nama_produk || "-",
+            nama:
+              item.produk?.nama_produk || "-",
 
-              batch:
-                item.no_batch || "-",
+            batch:
+              item.no_batch || "-",
 
-              expired_date:
-                item.expired_date || "-",
+            expired_date:
+              item.expired_date || "-",
 
-              qty: item.qty || 0,
+            qty: item.qty || 0,
 
-              satuan:
-                item.produk?.satuan?.kode ||
-                "-",
+            satuan:
+              item.produk?.satuan?.kode || "-",
 
-              harga:
-                Number(
-                  item.harga_beli
-                ) || 0,
+            harga:
+              Number(item.harga_beli) || 0,
 
-              subtotal:
-                (item.qty || 0) *
-                (Number(
-                  item.harga_beli
-                ) || 0),
-            })
-          ) || [],
+            subtotal:
+              (item.qty || 0) *
+              (Number(item.harga_beli) || 0),
+          })) || [],
       };
 
       console.log("========== RESULT AKHIR ==========");
@@ -190,23 +183,19 @@ export default function usePembelianDb() {
             : "LUNAS",
 
         items: items.map((item) => ({
-          id_produk: Number(
-            item.produk_id
-          ),
+          id_produk: Number(item.produk_id),
 
-          qty:
-            parseInt(item.qty) || 0,
+          qty: parseInt(item.qty) || 0,
 
-          harga_beli:
-            Number(
-              item.harga_satuan
-            ) || 0,
+          harga_beli: Number(item.harga_beli) || 0,
+
+          harga_jual: Number(item.harga_jual) || 0,
 
           barcode: item.barcode,
 
           expired_date: item.exp_date,
 
-          no_batch: item.no_batch
+          no_batch: item.no_batch,
         })),
       };
       console.log(

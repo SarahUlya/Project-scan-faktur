@@ -17,6 +17,7 @@ const PosProductGrid = ({ produk, getNamaKategori }) => {
       }}
     >
       {produk.map((item) => {
+        console.log(item.nama_produk, item.stok);
         const habis = (item.stok || 0) <= 0;
         if (habis) return null;
         

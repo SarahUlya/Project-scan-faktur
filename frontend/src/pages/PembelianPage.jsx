@@ -8,6 +8,10 @@ import Button from "../components/ui/Button";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import { colors, pageHeaderSx, statCardSx } from "../theme/designTokens";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
 
 const PAGE_SIZE = 25;
 
@@ -36,10 +40,36 @@ const PembelianPage = () => {
   );
 
   const stats = [
-    { label: "Total Faktur", value: loading ? "-" : total },
-    { label: "Total Pembelian", value: loading ? "-" : `Rp ${totalPembelian.toLocaleString("id-ID")}` },
-    { label: "Sudah Lunas", value: loading ? "-" : lunas, color: colors.success },
-    { label: "Belum Bayar", value: loading ? "-" : belumBayar, color: colors.danger },
+    {
+      label: "Total Faktur",
+      value: loading ? "-" : total,
+      subtitle: "Seluruh invoice",
+      color: colors.primary,
+      icon: <ReceiptLongOutlinedIcon />,
+    },
+    {
+      label: "Nilai Pembelian",
+      value: loading
+        ? "-"
+        : `Rp ${totalPembelian.toLocaleString("id-ID")}`,
+      subtitle: "Total transaksi",
+      color: colors.info,
+      icon: <PaymentsOutlinedIcon />,
+    },
+    {
+      label: "Sudah Lunas",
+      value: loading ? "-" : lunas,
+      subtitle: "Pembayaran selesai",
+      color: colors.success,
+      icon: <CheckCircleOutlineOutlinedIcon />,
+    },
+    {
+      label: "Belum Bayar",
+      value: loading ? "-" : belumBayar,
+      subtitle: "Perlu pembayaran",
+      color: colors.danger,
+      icon: <PendingActionsOutlinedIcon />,
+    },
   ];
 
   return (
@@ -68,15 +98,77 @@ const PembelianPage = () => {
         </Box>
       </Box>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2, mb: 3 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(230px,1fr))",
+          gap: 2,
+          mb: 3,
+        }}
+      >
         {stats.map((s) => (
-          <Box key={s.label} sx={statCardSx}>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: s.color || colors.textMuted, textTransform: "uppercase" }}>
-              {s.label}
-            </Typography>
-            <Typography sx={{ fontSize: 20, fontWeight: 700, color: colors.text, mt: 0.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {s.value}
-            </Typography>
+          <Box
+            key={s.label}
+            sx={{
+              ...statCardSx,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: s.color,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.6,
+                }}
+              >
+                {s.label}
+              </Typography>
+
+              <Typography
+                sx={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: colors.text,
+                  mt: 0.5,
+                }}
+              >
+                {s.value}
+              </Typography>
+
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: colors.textMuted,
+                  mt: 0.5,
+                }}
+              >
+                {s.subtitle}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                width: 54,
+                height: 54,
+                borderRadius: "50%",
+                bgcolor: `${s.color}18`,
+                color: s.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+
+                "& svg": {
+                  fontSize: 28,
+                },
+              }}
+            >
+              {s.icon}
+            </Box>
           </Box>
         ))}
       </Box>

@@ -4,9 +4,9 @@ import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
 import StokPrintActions from "../stok/StokPrintActions";
 import useStokPrint from "../../hooks/useStokPrint";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../../data/db";
+import useProdukDb from "../../hooks/useProdukDb";
 import { normalizeDexieBatchRows } from "../../utils/stokPrintUtils";
+import { useEffect } from "react";
 
 const PAGE_SIZE = 25;
 
@@ -20,40 +20,61 @@ const computeStatus = (dateString) => {
   return diffDays <= 30 ? "PERINGATAN" : "AMAN";
 };
 
-const LaporanStokExpired = forwardRef((_props, ref) => {
+const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
   const [page, setPage] = useState(1);
   const { printLaporan, exportLaporanPdf, PrintPortal } = useStokPrint();
 
-  const batchData = useLiveQuery(async () => {
-    const batches = await db.batchProduk.toArray();
-    return await Promise.all(
-      batches.map(async (batch) => {
-        const produk = await db.produk.get(batch.produk_id);
-        return {
-          id: batch.id,
-          nama: produk?.nama || batch.produk_id,
-          type: produk?.satuan || "-",
-          batch: batch.kodeBatch || "-",
-          exp: batch.expired || "",
-          stok: batch.stok || 0,
-          status: computeStatus(batch.expired),
-        };
-      })
-    );
-  }, [], []);
+  const { produk } = useProdukDb();
 
-  const data = useMemo(
-    () => (batchData || []).sort((a, b) => new Date(a.exp || 0) - new Date(b.exp || 0)),
-    [batchData]
+  const data = useMemo(() => {
+    const rows = [];
+
+    (produk || []).forEach((p) => {
+      (p.batch || []).forEach((batch) => {
+        rows.push({
+          id: batch.id,
+          nama: p.nama_produk,
+          type: p.satuan?.kode || "-",
+          batch: batch.kodeBatch || batch.no_faktur || "-",
+          exp: batch.expired,
+          stok: Number(batch.stok || 0),
+          status: computeStatus(batch.expired),
+        });
+      });
+    });
+
+    return rows.sort(
+      (a, b) => new Date(a.exp || 0) - new Date(b.exp || 0)
+    );
+  }, [produk]);
+
+  const expiredCount = useMemo(
+    () => data.filter((item) => item.status === "EXPIRED").length,
+    [data]
   );
 
-  const printRows = useMemo(() => normalizeDexieBatchRows(data), [data]);
+  const warningCount = useMemo(
+    () => data.filter((item) => item.status === "PERINGATAN").length,
+    [data]
+  );
 
-  useImperativeHandle(ref, () => ({
-    print: () => printLaporan(printRows, "LAPORAN STOK & EXPIRED"),
-    exportPdf: () => exportLaporanPdf(printRows, "LAPORAN STOK & EXPIRED"),
-    hasData: printRows.length > 0,
-  }));
+  const amanCount = useMemo(
+    () => data.filter((item) => item.status === "AMAN").length,
+    [data]
+  );
+
+  useEffect(() => {
+    onSummaryChange?.({
+      expired: expiredCount,
+      warning: warningCount,
+      aman: amanCount,
+    });
+  }, [expiredCount, warningCount, amanCount, onSummaryChange]);
+
+  const printRows = useMemo(
+    () => normalizeDexieBatchRows(data),
+    [data]
+  );
 
   const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -117,7 +138,9 @@ const LaporanStokExpired = forwardRef((_props, ref) => {
 
   return (
     <Box>
+
       <Table columns={columns} data={pagedData} />
+
       <div style={{ padding: "16px 20px", borderTop: "1px solid #F1F5F9", color: "#94A3B8", fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>Menampilkan {pagedData.length} dari {data.length} item stok</div>
         <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />

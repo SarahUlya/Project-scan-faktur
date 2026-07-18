@@ -28,12 +28,14 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
   const [qty, setQty] = useState(1);
   const [satuan, setSatuan] = useState("Pcs");
   const [hargaBeli, setHargaBeli] = useState(0);
+  const [hargaJual, setHargaJual] = useState(0);
 
   useEffect(() => {
     if (produk) {
       setQty(1);
       setSatuan(produk.satuan || produk.nama_satuan || "Pcs");
-      setHargaBeli(produk.harga_beli || produk.harga_jual || 0);
+      setHargaBeli(produk.harga_beli || 0);
+      setHargaJual(produk.harga_jual || 0);
     }
   }, [produk]);
 
@@ -50,7 +52,8 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
       nama_produk: produk.nama_produk,
       qty: Number(qty),
       satuan,
-      harga_satuan: Number(hargaBeli) || 0,
+      harga_beli: Number(hargaBeli) || 0,
+      harga_jual: Number(hargaJual) || 0,
     });
     onClose();
   };
@@ -134,6 +137,17 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
             min={0}
             value={hargaBeli}
             onChange={(e) => setHargaBeli(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={labelStyle}>Harga Jual (Rp)</label>
+          <input
+            type="number"
+            min={0}
+            value={hargaJual}
+            onChange={(e) => setHargaJual(e.target.value)}
             style={inputStyle}
           />
         </div>

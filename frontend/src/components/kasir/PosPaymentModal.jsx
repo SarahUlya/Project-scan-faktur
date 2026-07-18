@@ -91,11 +91,11 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
               <span style={{ color: "#64748B" }}>Subtotal</span><span style={{ fontWeight: 600 }}>Rp {formatRupiahPos(subtotal)}</span>
             </div>
             {diskonNominal > 0 && (
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#10B981" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, color: "#DB2777" }}>
                 <span>Diskon</span><span style={{ fontWeight: 600 }}>- Rp {formatRupiahPos(diskonNominal)}</span>
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 16, color: "#0F766E" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 16, color: "#E11D48" }}>
               <span>Total</span><span>Rp {formatRupiahPos(totalBayar)}</span>
             </div>
           </div>
@@ -112,12 +112,12 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  border: metode === m ? "2px solid #0F766E" : "1px solid #E2E8F0",
+                  border: metode === m ? "2px solid #E11D48" : "1px solid #E2E8F0",
                   background: metode === m ? "#FFF1F2" : "#fff",
                   fontWeight: 700,
                   fontSize: 12,
                   cursor: "pointer",
-                  color: metode === m ? "#0F766E" : "#64748B",
+                  color: metode === m ? "#E11D48" : "#64748B",
                   transition: "all 0.2s",
                 }}
               >
@@ -141,13 +141,13 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                     Rp {(amt / 1000).toFixed(0)}rb
                   </button>
                 ))}
-                <button type="button" onClick={() => setUangDiterima(String(totalBayar))} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #0F766E", background: "#FFF1F2", color: "#0F766E", fontWeight: 700, cursor: "pointer", fontSize: 11 }}>
+                <button type="button" onClick={() => setUangDiterima(String(totalBayar))} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #E11D48", background: "#FFF1F2", color: "#E11D48", fontWeight: 700, cursor: "pointer", fontSize: 11 }}>
                   Pas
                 </button>
               </div>
-              <div style={{ background: "#F0FDF4", borderRadius: 10, padding: 12, marginBottom: 14, textAlign: "center" }}>
+              <div style={{ background: "#FFF1F2", borderRadius: 10, padding: 12, marginBottom: 14, textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: "#64748B", fontWeight: 700, marginBottom: 4 }}>KEMBALIAN</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#16A34A" }}>Rp {formatRupiahPos(kembalian)}</div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#E11D48" }}>Rp {formatRupiahPos(kembalian)}</div>
               </div>
             </>
           )}
@@ -166,13 +166,13 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
               padding: 13,
               borderRadius: 10,
               border: "none",
-              background: canPay && !loading ? "#0F766E" : "#F1F5F9",
+              background: canPay && !loading ? "#E11D48" : "#F1F5F9",
               color: canPay && !loading ? "#fff" : "#94A3B8",
               fontWeight: 800,
               fontSize: 13,
               cursor: canPay && !loading ? "pointer" : "not-allowed",
               transition: "all 0.2s",
-              boxShadow: canPay && !loading ? "0 3px 12px rgba(15, 118, 110,0.25)" : "none",
+              boxShadow: canPay && !loading ? "0 3px 12px rgba(225, 29, 72, 0.25)" : "none",
             }}
           >
             {loading ? "Memproses..." : "Konfirmasi Pembayaran"}

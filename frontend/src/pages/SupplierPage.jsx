@@ -11,7 +11,6 @@ import AddIcon from "@mui/icons-material/Add";
 const PAGE_SIZE = 25;
 
 
-
 const SupplierPage = () => {
 	const { supplier, loading, addSupplier, updateSupplier } = useSupplierDb();
 	const [search, setSearch] = useState("");
@@ -21,7 +20,7 @@ const SupplierPage = () => {
 	const filteredSupplier = supplier.filter((item) => {
 		const query = search.toLowerCase();
 		return (
-			(item.namaSupplier || "").toLowerCase().includes(query) ||
+			(item.nama || "").toLowerCase().includes(query) ||
 			(item.alamat || "").toLowerCase().includes(query) ||
 			(item.telepon || "").toLowerCase().includes(query)
 		);
@@ -31,9 +30,18 @@ const SupplierPage = () => {
 	const totalPages = Math.ceil(total / PAGE_SIZE);
 	const pagedSupplier = filteredSupplier.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-	const handleAdd = (item) => {
-		addSupplier({ ...item, id: item.id || `SUP-${Date.now()}` });
-		setModal({ open: false, mode: "add", data: null });
+	const handleAdd = async (item) => {
+		try {
+			await addSupplier(item);
+
+			setModal({
+				open: false,
+				mode: "add",
+				data: null,
+			});
+		} catch (err) {
+			console.error(err);
+		}
 	};
 	const handleEdit = (item) => {
 		setModal({ open: true, mode: "edit", data: item });

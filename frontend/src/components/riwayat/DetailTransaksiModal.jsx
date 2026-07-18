@@ -63,16 +63,35 @@ const DetailTransaksiModal = ({
 
   if (!open) return null;
 
-  const strukData = detail
+  const mappedDetail = detail
     ? {
-        header: detail.header,
-        items: detail.items,
-        cetakStruk: true,
-      }
+      header: {
+        no_transaksi: detail.no_transaksi,
+        tanggal: detail.tanggal_transaksi,
+        kasir: detail.user?.nama || "-",
+        metode: detail.metode_bayar,
+        total: Number(detail.total),
+        status: "SELESAI",
+      },
+      items: detail.transaksidetail.map((item) => ({
+        id: item.id_transaksi_detail,
+        nama_produk: item.produk?.nama_produk || "-",
+        qty: item.qty,
+        subtotal: Number(item.subtotal),
+        harga: Number(item.harga_jual),
+      })),
+    }
     : null;
 
+  const strukData = mappedDetail
+    ? {
+      header: mappedDetail.header,
+      items: mappedDetail.items,
+      cetakStruk: true,
+    }
+    : null;
   const user = getUser();
-  const isCanceled = detail?.header.status === "DIBATALKAN";
+  const isCanceled = mappedDetail?.header.status === "DIBATALKAN";
   const canCancel = user?.role === ROLE.ADMIN && !isCanceled;
 
   return (
@@ -164,7 +183,7 @@ const DetailTransaksiModal = ({
               >
                 Rincian Barang
               </div>
-              {detail.items.map((it) => (
+              {mappedDetail.items.map((it) => (
                 <div
                   key={it.id}
                   style={{

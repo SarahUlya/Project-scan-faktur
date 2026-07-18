@@ -1,222 +1,304 @@
 import { useEffect, useState } from "react";
-import axiosInstance from "../api/axiosInstance";
+
+import {
+  getProduk,
+  addProdukApi,
+  updateProdukApi,
+} from "../api/produkApi";
+
 import { getKategori } from "../api/kategoriApi";
 import { getSatuan } from "../api/satuanApi";
-import { getPembelian, getPembelianDetail } from "../api/pembelianApi";
+
 
 export default function useProdukDb() {
+
   const [produk, setProduk] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [kategori, setKategori] = useState([]);
   const [satuanList, setSatuanList] = useState([]);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
 
   const getNamaKategori = (id) => {
     const found = kategori.find(
       (k) => String(k.id_kategori) === String(id)
     );
 
-    return found ? found.nama_kategori : "-";
+    return found?.nama_kategori || "-";
   };
+
 
   const getNamaSatuan = (id) => {
     const found = satuanList.find(
       (s) => String(s.id) === String(id)
     );
 
-    return found ? found.nama : "-";
+    return found?.nama || "-";
   };
 
-  // Enrich produk dengan batch data dari pembelian
-  const enrichProdukWithBatch = async (produkList) => {
-    try {
-      const res = await getPembelian();
-      const pembelianList = res.data || [];
 
-      // Aggregate batch data per produk
-      const batchByProduk = {};
+  const normalizeSatuan = (data) => {
 
-      for (const pembelian of pembelianList) {
-        const detail = await getPembelianDetail(pembelian.id_pembelian);
-        const items = detail?.pembeliandetail || [];
+    const raw = Array.isArray(data)
+      ? data
+      : data?.data || [];
 
-        for (const item of items) {
-          const produkId = item.id_produk;
-          if (!batchByProduk[produkId]) {
-            batchByProduk[produkId] = [];
-          }
-          batchByProduk[produkId].push({
-            id: `${pembelian.id_pembelian}-${item.id_pembeliandetail}`,
-            no_batch: item.no_batch || `BATCH-${pembelian.id_pembelian}`,
-            kodeBatch: item.no_batch || `BATCH-${pembelian.id_pembelian}`,
-            expired: item.expired_date,
-            stok: item.qty || 0,
-            hargaBeli: item.harga_beli || 0,
-            no_faktur: pembelian.no_faktur || "-",
-            id_pembelian: pembelian.id_pembelian,
-          });
-        }
+
+    return raw.map((s) => {
+
+      if (typeof s === "string") {
+        return {
+          id: s,
+          nama: s,
+        };
       }
 
-      // Only use actual API batches
-      return produkList.map((p) => {
-        let batches = batchByProduk[p.id_produk] || [];
-        return {
-          ...p,
-          batch: batches,
-        };
-      });
-    } catch (error) {
-      console.error("Error saat memperkaya produk dengan data batch:", error);
-      // Fallback in case of complete error
-      return produkList.map((p, idx) => {
-        const expDate = new Date();
-        expDate.setDate(expDate.getDate() + (idx % 3 === 0 ? 15 : 200));
-        return {
-          ...p,
-          batch: [
-            {
-              id: `fallback-batch-${p.id_produk}`,
-              no_batch: `BTH-FALLBACK-${p.id_produk}`,
-              kodeBatch: `BTH-FALLBACK-${p.id_produk}`,
-              expired: expDate.toISOString().split('T')[0],
-              stok: 45 + (idx * 5),
-              hargaBeli: 12000,
-              history: [
-                {
-                  tanggal: new Date().toISOString(),
-                  aktivitas: "Penerimaan Barang Dari Faktur (Fallback)",
-                  referensi: `FAK-FALLBACK`,
-                  masuk: 45 + (idx * 5),
-                  keluar: 0,
-                  saldoAkhir: 45 + (idx * 5),
-                  tipe: "in"
-                }
-              ]
-            }
-          ]
-        };
-      });
-    }
+
+      return {
+        id: s.id_satuan ?? s.id,
+        nama:
+          s.nama_satuan ??
+          s.nama ??
+          s.label ??
+          "",
+        raw: s,
+      };
+
+    });
+
   };
 
+
+  const normalizeProduk = (data) => {
+
+    return data.map((p) => ({
+      ...p,
+
+      batch: (p.batchproduk || []).map((b) => ({
+        id: b.id_batch,
+        no_batch: b.no_batch,
+        kodeBatch: b.no_batch,
+        expired: b.expired_date,
+        stok: b.qty_sisa,
+        no_faktur:
+          b.pembelian?.no_faktur || "-",
+      })),
+
+    }));
+
+  };
+
+
   const fetchProduk = async () => {
+
     setLoading(true);
 
     try {
-      const kategoriData = await getKategori(1, 100);
-      setKategori(kategoriData.data);
 
-      const satuanData = await getSatuan();
-      const satuanRaw = Array.isArray(satuanData)
-        ? satuanData
-        : satuanData?.data || [];
-      const normalizedSatuan = satuanRaw.map((s) => {
-        if (typeof s === "string") {
-          return { id: s, nama: s };
-        }
-        return {
-          id: s.id_satuan ?? s.id,
-          nama: s.nama_satuan ?? s.nama ?? s.label ?? "",
-          raw: s,
-        };
-      });
-      setSatuanList(normalizedSatuan);
+      const [
+        kategoriData,
+        satuanData,
+        produkData,
+      ] = await Promise.all([
 
-      const res = await axiosInstance.get("/produk", {
-        params: {
+        getKategori(1, 100),
+
+        getSatuan(),
+
+        getProduk(
           page,
-          limit: 25,
-          search,
-        },
-      });
+          25,
+          search
+        ),
 
-      setTotal(res.data.total);
-      setTotalPages(res.data.totalPages);
+      ]);
 
-      // Enrich dengan batch data
-      const enriched = await enrichProdukWithBatch(res.data.data);
-      setProduk(enriched);
+
+      setKategori(
+        kategoriData.data || []
+      );
+
+
+      setSatuanList(
+        normalizeSatuan(satuanData)
+      );
+
+
+      setTotal(
+        produkData.total
+      );
+
+
+      setTotalPages(
+        produkData.totalPages
+      );
+
+
+      const normalized =
+        normalizeProduk(
+          produkData.data || []
+        );
+
+
+      setProduk(normalized);
+
 
     } catch (error) {
-      console.error("Gagal memuat data produk dari server:", error);
-      
-      // API tidak tersedia, produk dikosongkan
+
+      console.error(
+        "Gagal memuat data produk:",
+        error
+      );
+
       setProduk([]);
-      
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
+
 
   useEffect(() => {
+
     fetchProduk();
+
   }, [page, search]);
 
+
+
   const addProduk = async (data) => {
+
     try {
-      const res = await axiosInstance.post("/produk", data);
 
-      setProduk((prev) => [{ ...res.data.data, batch: [] }, ...prev]);
+      const res =
+        await addProdukApi(data);
 
-      return res.data;
+
+      setProduk((prev) => [
+        {
+          ...res.data,
+          batch: []
+        },
+        ...prev
+      ]);
+
+
+      return res;
+
+
     } catch (error) {
-      console.error("Error tambah produk:", error);
+
+      console.error(
+        "Error tambah produk:",
+        error
+      );
+
       throw error;
+
     }
+
   };
 
+
+
   const updateProduk = async (id, data) => {
+
     try {
-      await axiosInstance.put(`/produk/${id}`, data);
+
+      await updateProdukApi(
+        id,
+        data
+      );
+
 
       await fetchProduk();
 
+
     } catch (error) {
-      console.error("Error update produk:", error);
+
+      console.error(
+        "Error update produk:",
+        error
+      );
+
       throw error;
+
     }
+
   };
 
+
+
   const deleteProduk = async (id) => {
+
     try {
-      await axiosInstance.delete(`/produk/${id}`);
+
+      await deleteProdukApi(id);
+
 
       setProduk((prev) =>
         prev.map((item) =>
           item.id_produk === id
-            ? { ...item, is_active: false }
+            ? {
+              ...item,
+              is_active: false
+            }
             : item
         )
       );
 
+
     } catch (error) {
-      console.error("Error nonaktifkan produk:", error);
+
+      console.error(
+        "Error nonaktifkan produk:",
+        error
+      );
+
       throw error;
+
     }
+
   };
 
+
   return {
+
     produk,
     setProduk,
+
     kategori,
+    satuanList,
+
     getNamaKategori,
     getNamaSatuan,
+
     page,
     setPage,
+
     search,
     setSearch,
+
     loading,
+
     total,
     totalPages,
+
     addProduk,
     updateProduk,
     deleteProduk,
+
     fetchProduk,
-    satuanList
+
   };
+
 }

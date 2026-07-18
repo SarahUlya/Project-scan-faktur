@@ -14,18 +14,9 @@ const checkStatus = (expiredDateStr) => {
   return { label: "Aman", color: colors.textSecondary, bg: colors.bgMuted };
 };
 
-const BatchTable = ({ produk, onShowDetail }) => {
-  const allBatch = produk.flatMap((p) =>
-    (p.batch || []).map((b) => ({
-      ...b,
-      produkId: p.id_produk || p.id,
-      namaProduk: p.nama_produk || p.nama || p.namaItem,
-      kategori: p.nama_kategori || p.kategori,
-      kodeBatch: b.kodeBatch || b.no_batch,
-    }))
-  );
+const BatchTable = ({ batch, onShowDetail }) => {
 
-  const sortedBatch = [...allBatch].sort(
+  const sortedBatch = [...batch].sort(
     (a, b) => new Date(a.expired) - new Date(b.expired)
   );
 

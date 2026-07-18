@@ -35,7 +35,7 @@ const FakturSummaryPanel = ({
 }) => (
   <Box sx={{ position: { md: "sticky" }, top: 24, alignSelf: "flex-start", width: "100%" }}>
     <Box sx={{ background: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, overflow: "hidden" }}>
-      <Box sx={{ px: 2.5, py: 2, bgcolor: colors.bgSidebar }}>
+      <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgSidebar }}>
         <Typography sx={{ color: colors.textMuted, fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>
           Grand Total
         </Typography>
@@ -71,7 +71,7 @@ const FakturSummaryPanel = ({
       </Box>
 
       <Box sx={{ px: 2, pb: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-        <Button fullWidth onClick={onSimpan} startIcon={<SaveOutlinedIcon />} color="primary" sx={{ py: 1.25, fontWeight: 600 }}>
+        <Button fullWidth onClick={onSimpan} startIcon={<SaveOutlinedIcon />} color="primary" sx={{ py: 0.8, fontWeight: 600 }}>
           Simpan Faktur
         </Button>
         <Button fullWidth variant="outlined" onClick={onBatal} startIcon={<ArrowBackIcon />} sx={{ py: 1, borderColor: colors.border, color: colors.textSecondary }}>

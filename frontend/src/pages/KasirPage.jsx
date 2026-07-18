@@ -19,7 +19,7 @@ const KasirContent = () => {
   const [kategoriSearch, setKategoriSearch] = useState("");
   const [showKategoriDropdown, setShowKategoriDropdown] = useState(false);
   const scanRef = useRef(null);
-  const kategoriInputRef = useRef(null);
+  const kategoriWrapperRef = useRef(null);
 
   // Auto-focus barcode input on mount
   useEffect(() => {
@@ -29,7 +29,7 @@ const KasirContent = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (kategoriInputRef.current && !kategoriInputRef.current.contains(event.target)) {
+      if (kategoriWrapperRef.current && !kategoriWrapperRef.current.contains(event.target)) {
         setShowKategoriDropdown(false);
         setKategoriSearch("");
       }
@@ -49,6 +49,13 @@ const KasirContent = () => {
     );
   }, [kategoriSearch, kategori]);
 
+  const selectedKategoriLabel =
+    kategoriFilter === "semua"
+      ? "Semua Kategori"
+      : kategori.find(
+        (k) => String(k.id_kategori) === String(kategoriFilter)
+      )?.nama_kategori || "Semua Kategori";
+
   const filtered = useMemo(() => {
     let list = produk.filter(
       (p) => p.is_active !== false
@@ -65,6 +72,11 @@ const KasirContent = () => {
           String(p.id_produk).includes(q)
       );
     }
+    console.log("Produk:", produk);
+    console.log("Setelah filter aktif:", list);
+    console.log("Kategori:", kategoriFilter);
+    console.log("Search:", search);
+
     return list;
   }, [produk, kategoriFilter, search]);
   console.log(produk);
@@ -85,7 +97,12 @@ const KasirContent = () => {
   };
 
   const handleKategoriSelect = (kategoriId) => {
+    console.log("Dipilih:", kategoriId);
+    console.log("Klik kategori:", kategoriId);
     setKategoriFilter(String(kategoriId));
+
+    console.log("Sesudah set:", String(kategoriId));
+
     setKategoriSearch("");
     setShowKategoriDropdown(false);
   };
@@ -121,11 +138,11 @@ const KasirContent = () => {
         <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* Search & Control Bar - Premium Glass Design */}
-            <Box sx={{ 
-              display: "flex", 
-              gap: 2, 
-              mb: 3, 
-              flexWrap: "wrap", 
+            <Box sx={{
+              display: "flex",
+              gap: 2,
+              mb: 3,
+              flexWrap: "wrap",
               alignItems: "center",
               backgroundColor: "#FFFFFF",
               padding: "16px 20px",
@@ -194,24 +211,24 @@ const KasirContent = () => {
               />
 
               {/* View Mode Toggle */}
-              <Box sx={{ 
-                display: "flex", 
-                gap: 0.5, 
-                bgcolor: "rgba(255, 255, 255, 0.8)", 
-                borderRadius: 2.5, 
-                border: "1px solid #E2E8F0", 
+              <Box sx={{
+                display: "flex",
+                gap: 0.5,
+                bgcolor: "rgba(255, 255, 255, 0.8)",
+                borderRadius: 2.5,
+                border: "1px solid #E2E8F0",
                 p: 0.5,
                 transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
               }}>
-                <Box 
-                  onClick={() => setViewMode("grid")} 
-                  sx={{ 
-                    p: 1, 
-                    cursor: "pointer", 
-                    borderRadius: 2, 
-                    bgcolor: viewMode === "grid" ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)" : "transparent", 
-                    color: viewMode === "grid" ? "#D81B60" : "#94A3B8", 
+                <Box
+                  onClick={() => setViewMode("grid")}
+                  sx={{
+                    p: 1,
+                    cursor: "pointer",
+                    borderRadius: 2,
+                    bgcolor: viewMode === "grid" ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)" : "transparent",
+                    color: viewMode === "grid" ? "#D81B60" : "#94A3B8",
                     fontSize: 18,
                     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                     boxShadow: viewMode === "grid" ? "0 2px 6px rgba(216, 27, 96, 0.12)" : "none",
@@ -222,14 +239,14 @@ const KasirContent = () => {
                 >
                   <GridViewIcon fontSize="small" />
                 </Box>
-                <Box 
-                  onClick={() => setViewMode("list")} 
-                  sx={{ 
-                    p: 1, 
-                    cursor: "pointer", 
-                    borderRadius: 2, 
-                    bgcolor: viewMode === "list" ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)" : "transparent", 
-                    color: viewMode === "list" ? "#D81B60" : "#94A3B8", 
+                <Box
+                  onClick={() => setViewMode("list")}
+                  sx={{
+                    p: 1,
+                    cursor: "pointer",
+                    borderRadius: 2,
+                    bgcolor: viewMode === "list" ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)" : "transparent",
+                    color: viewMode === "list" ? "#D81B60" : "#94A3B8",
                     fontSize: 18,
                     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                     boxShadow: viewMode === "list" ? "0 2px 6px rgba(216, 27, 96, 0.12)" : "none",
@@ -246,29 +263,15 @@ const KasirContent = () => {
             {/* Category Filter - Premium Design */}
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 3, alignItems: "center", position: "relative" }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#94A3B8", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 0.5 }}>Kategori:</label>
-              <div style={{ position: "relative", minWidth: 190 }}>
+              <div ref={kategoriWrapperRef} style={{ position: "relative", minWidth: 190 }}>
                 <input
-                  ref={kategoriInputRef}
+                  // ref={kategoriInputRef}
                   type="text"
                   placeholder="Semua Kategori"
-                  value={kategoriSearch || kategori.find((k) => String(k.id_kategori) === kategoriFilter)?.nama_kategori || "Semua Kategori"}
+                  value={kategoriSearch || selectedKategoriLabel}
                   onChange={(e) => {
                     setKategoriSearch(e.target.value);
                     setShowKategoriDropdown(true);
-                  }}
-                  onFocus={() => setShowKategoriDropdown(true)}
-                  style={{
-                    width: "100%",
-                    padding: "11px 12px",
-                    borderRadius: 10,
-                    border: "1.5px solid #E2E8F0",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    outline: "none",
-                    cursor: "pointer",
-                    backgroundColor: "#fff",
-                    color: "#1E293B",
-                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                   onMouseDown={(e) => {
                     if (!kategoriSearch) {
@@ -277,6 +280,8 @@ const KasirContent = () => {
                     }
                   }}
                   onFocus={(e) => {
+                    setShowKategoriDropdown(true);
+
                     e.target.style.borderColor = "#D81B60";
                     e.target.style.boxShadow = "0 0 0 3px rgba(216, 27, 96, 0.1)";
                   }}
