@@ -9,6 +9,15 @@ import {
   formatNameInput,
   validatePhoneNumber,
 } from "../../utils/inputValidation";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
 
 const initialState = {
   nama: "",
@@ -90,7 +99,7 @@ const SupplierForm = ({ open, onClose, onSubmit, mode = "add", initialData }) =>
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B' }}>
             {mode === "add" ? "Input Supplier Baru" : "Edit Detail Supplier"}
           </Typography>
-          <Typography sx={{ color: "#64748B", fontSize: 13, mt: 0.5 }}>
+          <Typography sx={{ color: colors.textSecondary, fontSize: 13, mt: 0.5 }}>
             {mode === "add"
               ? "Tambahkan informasi mitra pemasok obat ke dalam sistem."
               : "Perbarui informasi mitra pemasok pada sistem katalog."}

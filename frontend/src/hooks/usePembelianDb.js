@@ -190,9 +190,6 @@ export default function usePembelianDb() {
           harga_beli: Number(item.harga_beli) || 0,
 
           harga_jual: Number(item.harga_jual) || 0,
-
-          barcode: item.barcode,
-
           expired_date: item.exp_date,
 
           no_batch: item.no_batch,

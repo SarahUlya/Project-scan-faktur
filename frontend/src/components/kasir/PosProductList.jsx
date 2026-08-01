@@ -4,6 +4,14 @@ import MedicationIcon from "@mui/icons-material/Medication";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { usePos } from "../../context/PosContext";
 import { formatRupiahPos } from "../../utils/posCalculations";
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+} from "@/theme/designTokens";
 
 const PosProductList = ({ produk, getNamaKategori }) => {
   const { addToCart } = usePos();
@@ -23,40 +31,30 @@ const PosProductList = ({ produk, getNamaKategori }) => {
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
-              p: "12px 14px",
-              bgcolor: "#fff",
-              borderRadius: "10px",
-              border: "1px solid #E2E8F0",
+              gap: spacing.md,
+              p: "8px 12px",
+              bgcolor: colors.bgCard,
+              borderRadius: `${radii.sm}px`,
+              border: `1px solid ${colors.border}`,
               cursor: "pointer",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: transitions.fast,
               position: "relative",
               overflow: "hidden",
-              "&:before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "linear-gradient(90deg, rgba(15, 118, 110,0.02) 0%, transparent 100%)",
-                pointerEvents: "none",
-              },
               "&:hover": {
-                bgcolor: "#FFF8FA",
-                boxShadow: "0 8px 16px rgba(15, 118, 110,0.12)",
-                borderColor: "#0F766E",
+                bgcolor: colors.bgMuted,
+                boxShadow: shadows.card,
+                borderColor: colors.primary,
                 transform: "translateX(4px)",
-              }
+              },
             }}
           >
             {/* Product Icon */}
             <Box
               sx={{
-                width: 44,
-                height: 44,
-                background: "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
-                borderRadius: "10px",
+                width: 36,
+                height: 36,
+                background: "linear-gradient(135deg, colors.primaryLight, colors.primary)",
+                borderRadius: `${radii.sm}px`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -64,35 +62,77 @@ const PosProductList = ({ produk, getNamaKategori }) => {
                 position: "relative",
               }}
             >
-              <MedicationIcon sx={{ color: "#0F766E", fontSize: 22 }} />
+              <MedicationIcon sx={{ color: colors.primary, fontSize: 18 }} />
             </Box>
 
             {/* Product Info */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#1E293B" }} noWrap>
+              <Typography
+                sx={{ fontWeight: 700, fontSize: 12, color: colors.text }}
+                noWrap
+              >
                 {item.nama_produk}
               </Typography>
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center", mt: 0.3 }}>
-                <Typography sx={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 0.5,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 10,
+                    color: colors.textSecondary,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                  }}
+                >
                   {getNamaKategori(item.id_kategori)}
                 </Typography>
-                <Box sx={{ width: 1, height: 1, bgcolor: "#E2E8F0", borderRadius: "50%" }} />
-                <Typography sx={{ fontSize: 11, color: "#64748B" }}>
-                  Stok: <strong style={{ color: terbatas ? "#F59E0B" : "#10B981" }}>{item.stok ?? 0}</strong>
+
+                <Box
+                  sx={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: "50%",
+                    bgcolor: colors.border,
+                  }}
+                />
+
+                <Typography
+                  sx={{
+                    fontSize: 10,
+                    color: colors.textSecondary,
+                    fontWeight: 500,
+                  }}
+                >
+                  Stok
                 </Typography>
-                {terbatas && (
-                  <>
-                    <Box sx={{ width: 1, height: 1, bgcolor: "#E2E8F0", borderRadius: "50%" }} />
-                    <Typography sx={{ fontSize: 10, color: "#F59E0B", fontWeight: 700, textTransform: "uppercase" }}>
-                      ⚠️ Terbatas
-                    </Typography>
-                  </>
-                )}
+
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: terbatas ? colors.stockMedium : colors.stockHigh,
+                  }}
+                >
+                  {item.stok ?? 0}
+                </Typography>
               </Box>
             </Box>
 
             {/* Price */}
-            <Typography sx={{ fontWeight: 800, color: "#0F766E", fontSize: 13, whiteSpace: "nowrap" }}>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: 14,
+                color: colors.text,
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.2px",
+              }}
+            >
               Rp {formatRupiahPos(item.harga_jual)}
             </Typography>
 
@@ -104,11 +144,11 @@ const PosProductList = ({ produk, getNamaKategori }) => {
                 addToCart(item, 1);
               }}
               sx={{
-                color: "#0F766E",
-                padding: "6px",
-                transition: "all 0.2s",
+                color: colors.primary,
+                padding: `${spacing.xs}px`,
+                transition: transitions.fast,
                 "&:hover": {
-                  background: "rgba(15, 118, 110, 0.08)",
+                  background: `rgba(${parseInt(colors.primary.slice(1, 3), 16)}, ${parseInt(colors.primary.slice(3, 5), 16)}, ${parseInt(colors.primary.slice(5, 7), 16)}, 0.08)`,
                   transform: "scale(1.1)",
                 },
               }}

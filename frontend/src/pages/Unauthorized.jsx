@@ -1,7 +1,18 @@
 import { Box, Typography, Button, Paper } from "@mui/material";
 import { Link } from "react-router-dom";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  zIndex,
+  fieldInputSx,
+  pageHeaderSx,
+  statCardSx,
+} from "@/theme/designTokens";
 export default function UnauthorizedPage() {
   return (
     <Box
@@ -10,7 +21,7 @@ export default function UnauthorizedPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#f5f5f5",
+        bgcolor: colors.bg,
       }}
     >
       <Paper elevation={3} sx={{ p: 4, maxWidth: 400, textAlign: "center" }}>

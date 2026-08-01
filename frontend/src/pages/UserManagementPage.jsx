@@ -9,7 +9,19 @@ import useManajemenUser from "../hooks/useManajemenUser";
 import { Box, Card, Chip, CircularProgress, Typography } from "@mui/material";
 import CrudPageHeader from "../components/ui/CrudPageHeader";
 import Table from "../components/ui/Table";
-
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  zIndex,
+  fieldInputSx,
+  pageHeaderSx,
+  statCardSx,
+} from "@/theme/designTokens";
+import UserManagementLoadingSkeleton from "../components/user/UserManagementLoadingSkeleton";
 const ManajemenUserPage = () => {
   const {
     users,
@@ -68,8 +80,8 @@ const ManajemenUserPage = () => {
             label={role}
             size="small"
             sx={{
-              bgcolor: isAdmin ? "#FCE4EC" : "#E3F2FD",
-              color: isAdmin ? "#0F766E" : "#2196F3",
+              bgcolor: isAdmin ? colors.primaryLight : colors.bgMuted,
+              color: isAdmin ? colors.primary : colors.textSecondary,
               fontWeight: "bold",
               fontSize: 10,
             }}
@@ -85,8 +97,8 @@ const ManajemenUserPage = () => {
           label={row.status}
           size="small"
           sx={{
-            bgcolor: row.isActive ? "#E8F5E9" : "#FFEBEE",
-            color: row.isActive ? "#2E7D32" : "#C62828",
+            bgcolor: row.isActive ? colors.successLight : colors.dangerLight,
+            color: row.isActive ? colors.success : colors.danger,
             fontWeight: 600,
           }}
         />
@@ -132,7 +144,7 @@ const ManajemenUserPage = () => {
   ];
 
   return (
-    <Box sx={{ p: 3, width: "100%" }}>
+    <Box sx={{ p: 2, bgcolor: colors.bgPage, minHeight: "100vh" }}>
       <CrudPageHeader
         title="Manajemen User"
         description="Kelola pengguna dan hak akses sistem dengan cepat."
@@ -141,57 +153,42 @@ const ManajemenUserPage = () => {
 
       <Card
         sx={{
-          p: 0,
-          borderRadius: 3,
-          overflow: "hidden",
-          minHeight: 300,
+          p: 2,
+          borderRadius: radii.Boolean,
+          boxShadow: shadows.sm,
+          border: `1px solid ${colors.borderLight}`,
+          bgcolor: colors.bgCard,
         }}
       >
         {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: 200,
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <CircularProgress size={28} />
-            <Typography fontSize={13} color="text.secondary">
-              Memuat data user...
-            </Typography>
-          </Box>
+          <UserManagementLoadingSkeleton />
         ) : users.length === 0 ? (
           <Box
             sx={{
-              textAlign: "center",
-              py: 6,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
+              gap: 1,
+              bgcolor: colors.bgMuted,
+              borderRadius: radii.xs,
+              border: `1px solid ${colors.borderLight}`,
+              boxShadow: shadows.sm,
+              transition: transitions.fast,
+              "&:hover": {
+                boxShadow: shadows.md,
+                transform: "translateY(-2px)",
+              },
             }}
           >
-            <Typography fontWeight={600}>
-              Belum ada data user
-            </Typography>
-            <Typography fontSize={13} color="text.secondary">
-              Silakan tambahkan user baru terlebih dahulu
+            <Typography variant="caption" color="text.secondary">
+              © 2024 Apotek Ampuh Tayu Management System • Versi 1.0.0-PRO
             </Typography>
           </Box>
         ) : (
           <Table columns={columns} data={users} />
         )}
-
-        <Box
-          sx={{
-            p: 2,
-            textAlign: "center",
-            borderTop: "1px solid #eee",
-          }}
-        >
-          <Typography variant="caption" color="text.secondary">
-            © 2024 Apotek Ampuh Tayu Management System • Versi 1.0.0-PRO
-          </Typography>
-        </Box>
       </Card>
     </Box>
   );

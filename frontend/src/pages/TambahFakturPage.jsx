@@ -9,12 +9,22 @@ import FakturStepIndicator from "../components/pembelian/tambah/FakturStepIndica
 import FakturSummaryPanel from "../components/pembelian/tambah/FakturSummaryPanel";
 import { FakturInfoForm, FakturItemForm } from "../components/pembelian/tambah/FakturFormContent";
 import { generateBatchCode } from "../utils/batchCode";
-import { colors, pageHeaderSx } from "../theme/designTokens";
 import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  zIndex,
+  fieldInputSx,
+  pageHeaderSx,
+  statCardSx,
+} from "@/theme/designTokens";import {
   defaultFakturInfo,
   emptyItem,
   hitungSubtotalItem,
-} from "../config/fakturFormConfig";
+} from "../config/apotek";
 
 const TambahFakturPage = () => {
   const navigate = useNavigate();

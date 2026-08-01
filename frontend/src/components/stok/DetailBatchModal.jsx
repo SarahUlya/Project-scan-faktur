@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import StokPrintActions from "./StokPrintActions";
-import { colors } from "../../theme/designTokens";
+import { colors, radii, spacing, typography } from "@/theme/designTokens";
 
 const DetailBatchModal = ({ batch, onPrint, onExportPdf }) => {
   if (!batch) return null;
@@ -73,14 +73,6 @@ const DetailBatchModal = ({ batch, onPrint, onExportPdf }) => {
         <Typography sx={{ fontSize: 13, color: colors.textSecondary }}>
           Sisa stok: <strong style={{ color: colors.text }}>{batch.stok} unit</strong>
         </Typography>
-        <StokPrintActions
-          printLabel="Cetak Kartu"
-          pdfLabel="PDF Kartu"
-          size="small"
-          variant="contained"
-          onPrint={onPrint}
-          onExportPdf={onExportPdf}
-        />
       </Box>
     </Box>
   );

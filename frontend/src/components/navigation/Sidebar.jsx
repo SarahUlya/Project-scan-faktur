@@ -29,7 +29,14 @@ import LocalPharmacyOutlinedIcon from "@mui/icons-material/LocalPharmacyOutlined
 import { useNavigate, useLocation } from "react-router-dom";
 import useSidebarMenu from "../../hooks/useSidebarMenu";
 import { getUser } from "../../auth/auth";
-import { colors } from "../../theme/designTokens";
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  transitions,
+} from "@/theme/designTokens";
 
 const drawerWidth = 248;
 
@@ -47,7 +54,12 @@ const iconMap = {
 
 const getInitials = (name) => {
   if (!name) return "U";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 };
 
 const Sidebar = () => {
@@ -57,16 +69,21 @@ const Sidebar = () => {
   const user = getUser();
   const [openMenus, setOpenMenus] = useState({});
 
+  // Initialize open menus based on the current route. We only depend on location.pathname
+  // to avoid unnecessary re‑renders caused by a constantly new menu array from the hook.
   useEffect(() => {
     const initial = {};
     menu.forEach((item) => {
       if (item.subItems) {
-        const hasActiveSub = item.subItems.some((sub) => sub.path === location.pathname);
+        const hasActiveSub = item.subItems.some(
+          (sub) => sub.path === location.pathname,
+        );
         if (hasActiveSub) initial[item.text] = true;
       }
     });
-    setOpenMenus((prev) => ({ ...prev, ...initial }));
-  }, [location.pathname, menu]);
+    // Replace the whole state – we don't need to merge with previous values here.
+    setOpenMenus(initial);
+  }, [location.pathname]);
 
   const handleToggle = (text) => {
     setOpenMenus((prev) => ({ ...prev, [text]: !prev[text] }));
@@ -85,10 +102,11 @@ const Sidebar = () => {
     borderRadius: 2,
     pl: 2,
     py: 1,
-    color: selected ? "#fff" : "#94A3B8",
-    bgcolor: selected ? colors.bgSidebarActive : "transparent",
+    color: selected ? colors.textOnDark : colors.textSecondary,
+    bgcolor: selected ? colors.primary : "transparent",
     "&:hover": {
-      bgcolor: selected ? colors.bgSidebarActive : colors.bgSidebarHover,
+      bgcolor: selected ? colors.primary : "transparent",
+      color: colors.textOnDark,
     },
   });
 
@@ -107,14 +125,31 @@ const Sidebar = () => {
       }}
     >
       <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <Box sx={{ px: 2.5, py: 2.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <Box
+          sx={{ px: 2.5, py: 2.5, borderBottom: "1px solid " + colors.border }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <LocalPharmacyOutlinedIcon sx={{ color: colors.primaryHover, fontSize: 28 }} />
+            <LocalPharmacyOutlinedIcon
+              sx={{ color: colors.primaryHover, fontSize: 28 }}
+            />
             <Box>
-              <Typography sx={{ fontWeight: 700, color: "#fff", fontSize: 15, lineHeight: 1.2 }}>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  color: colors.textOnDark,
+                  fontSize: 15,
+                  lineHeight: 1.2,
+                }}
+              >
                 Ampuh Tayu
               </Typography>
-              <Typography sx={{ color: "#64748B", fontSize: 11, fontWeight: 500 }}>
+              <Typography
+                sx={{
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              >
                 Apotek System
               </Typography>
             </Box>
@@ -127,7 +162,9 @@ const Sidebar = () => {
 
             if (hasSubItems) {
               const isOpen = !!openMenus[item.text];
-              const isAnyChildActive = item.subItems.some((sub) => location.pathname === sub.path);
+              const isAnyChildActive = item.subItems.some(
+                (sub) => location.pathname === sub.path,
+              );
 
               return (
                 <Box key={index}>
@@ -135,14 +172,23 @@ const Sidebar = () => {
                     onClick={() => handleToggle(item.text)}
                     sx={{
                       ...itemSx(false),
-                      color: isAnyChildActive ? "#fff" : "#94A3B8",
+                      color: isAnyChildActive
+                        ? colors.textOnDark
+                        : colors.textSecondary,
                     }}
                   >
                     <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
                       {iconMap[item.icon]}
                     </ListItemIcon>
-                    <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: 600, fontSize: 13 }} />
-                    {isOpen ? <ExpandLess sx={{ fontSize: 18 }} /> : <ExpandMore sx={{ fontSize: 18 }} />}
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: 13 }}
+                    />
+                    {isOpen ? (
+                      <ExpandLess sx={{ fontSize: 18 }} />
+                    ) : (
+                      <ExpandMore sx={{ fontSize: 18 }} />
+                    )}
                   </ListItemButton>
 
                   <Collapse in={isOpen} timeout="auto" unmountOnExit>
@@ -157,7 +203,10 @@ const Sidebar = () => {
                           >
                             <ListItemText
                               primary={sub.text}
-                              primaryTypographyProps={{ fontWeight: selected ? 600 : 500, fontSize: 13 }}
+                              primaryTypographyProps={{
+                                fontWeight: selected ? 600 : 500,
+                                fontSize: 13,
+                              }}
                             />
                           </ListItemButton>
                         );
@@ -170,13 +219,20 @@ const Sidebar = () => {
 
             const selected = location.pathname === item.path;
             return (
-              <ListItemButton key={index} onClick={() => navigate(item.path)} sx={itemSx(selected)}>
+              <ListItemButton
+                key={index}
+                onClick={() => navigate(item.path)}
+                sx={itemSx(selected)}
+              >
                 <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
                   {iconMap[item.icon]}
                 </ListItemIcon>
                 <ListItemText
                   primary={item.text}
-                  primaryTypographyProps={{ fontWeight: selected ? 600 : 500, fontSize: 13 }}
+                  primaryTypographyProps={{
+                    fontWeight: selected ? 600 : 500,
+                    fontSize: 13,
+                  }}
                 />
               </ListItemButton>
             );
@@ -184,21 +240,63 @@ const Sidebar = () => {
         </List>
 
         <Box sx={{ p: 2, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-              <Avatar sx={{ bgcolor: colors.primary, width: 36, height: 36, fontSize: 13 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                minWidth: 0,
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: colors.primary,
+                  width: 36,
+                  height: 36,
+                  fontSize: 13,
+                }}
+              >
                 {getInitials(user?.name || user?.username)}
               </Avatar>
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 600, fontSize: 13, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: colors.textOnDark,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {user?.name || user?.username || "User"}
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    color: colors.textSecondary,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {user?.email || "—"}
                 </Typography>
               </Box>
             </Box>
-            <IconButton onClick={handleLogout} size="small" sx={{ color: "#94A3B8", "&:hover": { color: "#fff" } }}>
+            <IconButton
+              onClick={handleLogout}
+              size="small"
+              sx={{ color: colors.primary, "&:hover": { color: colors.textOnDark } }}
+            >
               <ExitToAppIcon fontSize="small" />
             </IconButton>
           </Box>

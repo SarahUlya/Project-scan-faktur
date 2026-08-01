@@ -18,35 +18,28 @@ const formatWaktu = (iso) => {
   };
 };
 
-console.log("USE RIWAYAT KELOAD");
-
 export default function useRiwayat() {
-  console.log("USE RIWAYAT DIPANGGIL");
+  const { transaksiList, loading } = useTransaksiDb();
 
-  const { transaksiList } = useTransaksiDb();
+  const data = useMemo(() => {
+    return (transaksiList || []).map((t, idx) => {
+      const { waktu, jam } = formatWaktu(t.tanggal_transaksi);
 
-  console.log("TRANSAKSI LIST RIWAYAT:", transaksiList);
+      return {
+        id: t.id_transaksi,
+        no: idx + 1,
+        waktu,
+        jam,
+        kasir: t.user?.nama ?? "-",
+        total: Number(t.total),
+        metode: t.metode_bayar,
+        raw: t,
+      };
+    });
+  }, [transaksiList]);
 
-  const data = useMemo(
-    () =>
-      (transaksiList || []).map((t, idx) => {
-        const { waktu, jam } = formatWaktu(t.tanggal_transaksi);
-
-        return {
-          id: t.id_transaksi,
-          no: idx + 1,
-          waktu,
-          jam,
-          kasir: t.user?.nama || "-",
-          total: Number(t.total),
-          metode: t.metode_bayar,
-          raw: t,
-        };
-      }),
-    [transaksiList]
-  );
-
-  console.log("HASIL DATA RIWAYAT:", data);
-
-  return { data };
+  return {
+    data,
+    loading,
+  };
 }

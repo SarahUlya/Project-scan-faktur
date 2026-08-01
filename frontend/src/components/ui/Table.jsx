@@ -1,5 +1,14 @@
 import React from "react";
 import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
+import {
   Table as MuiTable,
   TableBody,
   TableCell,
@@ -15,8 +24,8 @@ const Table = ({ columns, data, highlightRows = [] }) => {
       component={Paper}
       sx={{
         boxShadow: "none",
-        borderRadius: 3,
-        background: "#fff",
+        borderRadius: 1,
+        background: colors.bgCard,
         overflowX: "auto",
       }}
     >
@@ -33,9 +42,9 @@ const Table = ({ columns, data, highlightRows = [] }) => {
                 key={idx}
                 sx={{
                   fontWeight: 700,
-                  color: "#B0B0B0",
+                  color: colors.textMuted,
                   background: "transparent",
-                  borderBottom: "2px solid #F3F6F9",
+                  borderBottom: "2px solid " + colors.border,
                   fontSize: 15,
                   px: 2,
                   py: 1.5,
@@ -50,7 +59,7 @@ const Table = ({ columns, data, highlightRows = [] }) => {
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length} sx={{ textAlign: "center", color: "#94A3B8", py: 8, fontSize: 15 }}>
+              <TableCell colSpan={columns.length} sx={{ textAlign: "center", color: colors.textMuted, py: 8, fontSize: 15 }}>
                 Tidak ada data untuk ditampilkan.
               </TableCell>
             </TableRow>
@@ -62,10 +71,10 @@ const Table = ({ columns, data, highlightRows = [] }) => {
                     key={cidx}
                     sx={{
                       fontWeight: col.bold ? 700 : 500,
-                      color: col.bold && col.color ? col.color : "#222",
+                      color: col.bold && col.color ? col.color : colors.text,
                       fontSize: 15,
                       borderBottom:
-                        idx === data.length - 1 ? "none" : "1px solid #F3F6F9",
+                        idx === data.length - 1 ? "none" : "1px solid " + colors.border,
                       px: 2,
                       py: 1.5,
                       textAlign: col.align || "left",

@@ -1,6 +1,13 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { colors } from "../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 const ModernTabs = ({ tabs = [], activeTab, onChange }) => (
   <Box sx={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.borderLight}`, mb: 2 }}>

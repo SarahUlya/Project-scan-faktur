@@ -1,4 +1,9 @@
-import React, { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Box, Typography } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
@@ -7,6 +12,14 @@ import useStokPrint from "../../hooks/useStokPrint";
 import useProdukDb from "../../hooks/useProdukDb";
 import { normalizeDexieBatchRows } from "../../utils/stokPrintUtils";
 import { useEffect } from "react";
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  transitions,
+} from "@/theme/designTokens";
 
 const PAGE_SIZE = 25;
 
@@ -16,7 +29,9 @@ const computeStatus = (dateString) => {
   const exp = new Date(dateString);
   if (isNaN(exp.getTime())) return "AMAN";
   if (exp < now) return "EXPIRED";
-  const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(
+    (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return diffDays <= 30 ? "PERINGATAN" : "AMAN";
 };
 
@@ -43,24 +58,22 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       });
     });
 
-    return rows.sort(
-      (a, b) => new Date(a.exp || 0) - new Date(b.exp || 0)
-    );
+    return rows.sort((a, b) => new Date(a.exp || 0) - new Date(b.exp || 0));
   }, [produk]);
 
   const expiredCount = useMemo(
     () => data.filter((item) => item.status === "EXPIRED").length,
-    [data]
+    [data],
   );
 
   const warningCount = useMemo(
     () => data.filter((item) => item.status === "PERINGATAN").length,
-    [data]
+    [data],
   );
 
   const amanCount = useMemo(
     () => data.filter((item) => item.status === "AMAN").length,
-    [data]
+    [data],
   );
 
   useEffect(() => {
@@ -71,10 +84,7 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
     });
   }, [expiredCount, warningCount, amanCount, onSummaryChange]);
 
-  const printRows = useMemo(
-    () => normalizeDexieBatchRows(data),
-    [data]
-  );
+  const printRows = useMemo(() => normalizeDexieBatchRows(data), [data]);
 
   const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -85,8 +95,12 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       accessor: "nama",
       render: (row) => (
         <Box>
-          <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{row.nama}</Typography>
-          <Typography sx={{ color: "#94A3B8", fontSize: 12 }}>{row.type}</Typography>
+          <Typography sx={{ fontWeight: 600, fontSize: 14 }}>
+            {row.nama}
+          </Typography>
+          <Typography sx={{ color: colors.textSecondary, fontSize: 12 }}>
+            {row.type}
+          </Typography>
         </Box>
       ),
     },
@@ -94,7 +108,14 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       header: "KODE BATCH",
       accessor: "batch",
       render: (row) => (
-        <Typography sx={{ fontFamily: "monospace", fontSize: 13, fontWeight: 600, color: "#D81B60" }}>
+        <Typography
+          sx={{
+            fontFamily: "monospace",
+            fontSize: 13,
+            fontWeight: 600,
+            color: colors.danger,
+          }}
+        >
           {row.batch}
         </Typography>
       ),
@@ -105,7 +126,11 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       render: (row) => (
         <Typography sx={{ fontSize: 13 }}>
           {row.exp
-            ? new Date(row.exp).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+            ? new Date(row.exp).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
             : "-"}
         </Typography>
       ),
@@ -114,7 +139,9 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       header: "SISA STOK",
       accessor: "stok",
       align: "center",
-      render: (row) => <Typography sx={{ fontWeight: 600 }}>{row.stok}</Typography>,
+      render: (row) => (
+        <Typography sx={{ fontWeight: 600 }}>{row.stok}</Typography>
+      ),
     },
     {
       header: "STATUS",
@@ -122,13 +149,22 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
       align: "center",
       render: (row) => {
         const styles = {
-          EXPIRED: { bg: "#FEE2E2", color: "#DC2626" },
-          PERINGATAN: { bg: "#FEF3C7", color: "#D97706" },
-          AMAN: { bg: "#F1F5F9", color: "#64748B" },
+          EXPIRED: { bg: colors.dangerLight, color: colors.danger },
+          PERINGATAN: { bg: colors.warningLight, color: colors.warning },
+          AMAN: { bg: colors.bgMuted, color: colors.textSecondary },
         };
         const s = styles[row.status] || styles.AMAN;
         return (
-          <span style={{ background: s.bg, color: s.color, padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700 }}>
+          <span
+            style={{
+              background: s.bg,
+              color: s.color,
+              padding: "4px 10px",
+              borderRadius: 8,
+              fontSize: 10,
+              fontWeight: 700,
+            }}
+          >
             {row.status}
           </span>
         );
@@ -138,12 +174,27 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
 
   return (
     <Box>
-
       <Table columns={columns} data={pagedData} />
 
-      <div style={{ padding: "16px 20px", borderTop: "1px solid #F1F5F9", color: "#94A3B8", fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>Menampilkan {pagedData.length} dari {data.length} item stok</div>
-        <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
+      <div
+        style={{
+          padding: "16px 20px",
+          borderTop: "1px solid " + colors.border,
+          color: colors.textSecondary,
+          fontSize: 14,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          Menampilkan {pagedData.length} dari {data.length} item stok
+        </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
       </div>
       {PrintPortal}
     </Box>

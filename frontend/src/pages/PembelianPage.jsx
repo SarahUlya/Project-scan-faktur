@@ -1,83 +1,122 @@
 import React, { useMemo, useState, useEffect } from "react";
 import FakturTable from "../components/pembelian/FakturTable";
-import { Box, Typography, TextField, InputAdornment } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+  Skeleton,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import usePembelianDb from "../hooks/usePembelianDb";
 import PaginationControls from "../components/ui/PaginationControls";
 import Button from "../components/ui/Button";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
-import { colors, pageHeaderSx, statCardSx } from "../theme/designTokens";
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  zIndex,
+  fieldInputSx,
+  pageHeaderSx,
+  statCardSx,
+} from "@/theme/designTokens";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
-
+import PembelianLoadingSkeleton from "../components/pembelian/PembelianLoadingSkeleton";
 const PAGE_SIZE = 25;
 
 const PembelianPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const { pembelian = [], loading, total = 0, totalPages = 1, loadPembelian } = usePembelianDb();
+  const {
+    pembelian = [],
+    loading,
+    total = 0,
+    totalPages = 1,
+    loadPembelian,
+  } = usePembelianDb();
 
   useEffect(() => {
     loadPembelian(page);
   }, [page]);
-
   const totalPembelian = useMemo(
     () => pembelian.reduce((acc, curr) => acc + Number(curr.total || 0), 0),
-    [pembelian]
+    [pembelian],
   );
 
   const lunas = useMemo(
     () => pembelian.filter((p) => p.status?.toUpperCase() === "LUNAS").length,
-    [pembelian]
+    [pembelian],
   );
 
   const belumBayar = useMemo(
     () => pembelian.filter((p) => p.status?.toUpperCase() !== "LUNAS").length,
-    [pembelian]
+    [pembelian],
   );
 
   const stats = [
     {
       label: "Total Faktur",
-      value: loading ? "-" : total,
+      value: loading ? <Skeleton width={40} /> : total,
       subtitle: "Seluruh invoice",
       color: colors.primary,
       icon: <ReceiptLongOutlinedIcon />,
     },
     {
       label: "Nilai Pembelian",
-      value: loading
-        ? "-"
-        : `Rp ${totalPembelian.toLocaleString("id-ID")}`,
+      value: loading ? (
+        <Skeleton width={80} />
+      ) : (
+        `Rp ${totalPembelian.toLocaleString("id-ID")}`
+      ),
       subtitle: "Total transaksi",
       color: colors.info,
       icon: <PaymentsOutlinedIcon />,
     },
     {
       label: "Sudah Lunas",
-      value: loading ? "-" : lunas,
+      value: loading ? <Skeleton width={40} /> : lunas,
       subtitle: "Pembayaran selesai",
       color: colors.success,
       icon: <CheckCircleOutlineOutlinedIcon />,
     },
     {
       label: "Belum Bayar",
-      value: loading ? "-" : belumBayar,
+      value: loading ? <Skeleton width={40} /> : belumBayar,
       subtitle: "Perlu pembayaran",
       color: colors.danger,
       icon: <PendingActionsOutlinedIcon />,
     },
   ];
-
+    if (loading) {
+    return <PembelianLoadingSkeleton />;
+  }
   return (
     <Box sx={{ width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
         <Box>
-          <Typography sx={pageHeaderSx.title}>Daftar Faktur Pembelian</Typography>
-          <Typography sx={pageHeaderSx.subtitle}>Manajemen invoice pembelian barang ke supplier</Typography>
+          <Typography sx={pageHeaderSx.title}>
+            Daftar Faktur Pembelian
+          </Typography>
+          <Typography sx={pageHeaderSx.subtitle}>
+            Manajemen invoice pembelian barang ke supplier
+          </Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
           <TextField
@@ -92,7 +131,11 @@ const PembelianPage = () => {
               sx: { borderRadius: 2, bgcolor: colors.bgCard, width: 240 },
             }}
           />
-          <Button color="primary" startIcon={<AddIcon />} onClick={() => navigate("/pembelian/tambah")}>
+          <Button
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/pembelian/tambah")}
+          >
             Tambah Faktur
           </Button>
         </Box>
@@ -173,19 +216,46 @@ const PembelianPage = () => {
         ))}
       </Box>
 
-      <Box sx={{ bgcolor: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, overflow: "hidden" }}>
-        <FakturTable
-          data={pembelian}
-          loading={loading}
-          startIndex={(page - 1) * PAGE_SIZE}
-          onView={(row) => navigate(`/pembelian/lihat/${encodeURIComponent(row.id)}`)}
-        />
-        <Box sx={{ px: 2.5, py: 2, borderTop: `1px solid ${colors.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography sx={{ fontSize: 13, color: colors.textMuted }}>
-            Menampilkan {pembelian.length} dari {total} faktur
-          </Typography>
-          <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
-        </Box>
+      <Box
+        sx={{
+          bgcolor: colors.bgCard,
+          borderRadius: 2,
+          border: `1px solid ${colors.borderLight}`,
+          overflow: "hidden",
+        }}
+      >
+        {
+          <>
+            <FakturTable
+              data={pembelian}
+              startIndex={(page - 1) * PAGE_SIZE}
+              onView={(row) =>
+                navigate(`/pembelian/lihat/${encodeURIComponent(row.id)}`)
+              }
+            />
+
+            <Box
+              sx={{
+                px: 2.5,
+                py: 2,
+                borderTop: `1px solid ${colors.borderLight}`,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: colors.textMuted }}>
+                Menampilkan {pembelian.length} dari {total} faktur
+              </Typography>
+
+              <PaginationControls
+                page={page}
+                totalPages={totalPages}
+                onChange={setPage}
+              />
+            </Box>
+          </>
+        }
       </Box>
     </Box>
   );

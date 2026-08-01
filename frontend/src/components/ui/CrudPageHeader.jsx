@@ -3,7 +3,15 @@ import { Box, Typography, TextField, InputAdornment } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import Button from "./Button";
-import { colors, pageHeaderSx } from "../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+ pageHeaderSx,
+} from "@/theme/designTokens";
 
 const CrudPageHeader = ({
   title,
@@ -19,7 +27,7 @@ const CrudPageHeader = ({
   <Box sx={{ bgcolor: colors.bgCard, borderRadius: 2, border: `1px solid ${colors.borderLight}`, p: 2.5, mb: 2.5 }}>
     <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
       <Box sx={{ minWidth: 240, flex: 1 }}>
-        <Typography sx={pageHeaderSx.title}>{title}</Typography>
+        <Typography sx={pageHeaderSx.titletitle}>{title}</Typography>
         <Typography sx={pageHeaderSx.subtitle}>{description}</Typography>
       </Box>
 

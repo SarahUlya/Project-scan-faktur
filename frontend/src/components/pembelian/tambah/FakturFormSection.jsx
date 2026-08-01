@@ -1,20 +1,29 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
 
 const FakturFormSection = ({ title, subtitle, children }) => (
   <Box
     sx={{
-      background: "#fff",
+      background: colors.bgCard,
       borderRadius: 2,
-      border: "1px solid #F1F5F9",
+      border: "1px solid" + colors.bg,
       mb: 2,
       overflow: "hidden",
     }}
   >
-    <Box sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid #F1F5F9" }}>
-      <Typography sx={{ fontWeight: 600, fontSize: 14, color: "#0F172A" }}>{title}</Typography>
+    <Box sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid" + colors.bg }}>
+      <Typography sx={{ fontWeight: 600, fontSize: 14, color: colors.text }}>{title}</Typography>
       {subtitle && (
-        <Typography sx={{ fontSize: 12, color: "#64748B", mt: 0.25 }}>{subtitle}</Typography>
+        <Typography sx={{ fontSize: 12, color: colors.textSecondary, mt: 0.25 }}>{subtitle}</Typography>
       )}
     </Box>
     <Box sx={{ p: 2.5 }}>{children}</Box>
@@ -27,7 +36,7 @@ export const FormField = ({ label, required, children, sx = {} }) => (
       component="label"
       sx={{
         display: "block",
-        color: "#64748B",
+        color: colors.textSecondary,
         fontSize: 11,
         fontWeight: 600,
         textTransform: "uppercase",
@@ -36,7 +45,7 @@ export const FormField = ({ label, required, children, sx = {} }) => (
       }}
     >
       {label}
-      {required && <Box component="span" sx={{ color: "#DC2626", ml: 0.25 }}>*</Box>}
+      {required && <Box component="span" sx={{ color: colors.error, ml: 0.25 }}>*</Box>}
     </Typography>
     {children}
   </Box>

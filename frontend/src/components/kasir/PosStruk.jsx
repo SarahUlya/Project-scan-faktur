@@ -1,6 +1,13 @@
 import React from "react";
-import { APOTEK_INFO } from "../../config/apotekConfig";
+import { APOTEK_INFO } from "../../config/apotek";
 import { formatRupiahPos } from "../../utils/posCalculations";
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+} from "@/theme/designTokens";
 
 const PosStruk = ({ data }) => {
   if (!data) return null;
@@ -21,18 +28,28 @@ const PosStruk = ({ data }) => {
   });
 
   return (
-    <div className="struk-print-area" style={{
-      maxWidth: 300,
-      margin: "0 auto",
-      fontFamily: "'Courier New', monospace",
-      fontSize: 11,
-      color: "#000",
-      padding: 0,
-      background: "#fff",
-      lineHeight: 1.3,
-    }}>
+    <div
+      className="struk-print-area"
+      style={{
+        maxWidth: 300,
+        margin: "0 auto",
+        fontFamily: "'Courier New', monospace",
+        fontSize: 11,
+        color: colors.text,
+        padding: 0,
+        background: colors.bgCard,
+        lineHeight: 1.3,
+      }}
+    >
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: 8,
+          borderBottom: `1px dashed ${colors.border}`,
+          paddingBottom: 8,
+        }}
+      >
         <div style={{ fontWeight: 900, fontSize: 12, marginBottom: 2 }}>
           {APOTEK_INFO.nama.toUpperCase()}
         </div>
@@ -41,8 +58,20 @@ const PosStruk = ({ data }) => {
       </div>
 
       {/* Nomor & Waktu */}
-      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
+      <div
+        style={{
+          marginBottom: 8,
+          borderBottom: "1px dashed colors.border",
+          paddingBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 10,
+          }}
+        >
           <span>No: {header?.no_transaksi}</span>
           <span>Kasir: {header?.kasir}</span>
         </div>
@@ -52,56 +81,102 @@ const PosStruk = ({ data }) => {
       </div>
 
       {/* Items */}
-      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+      <div
+        style={{
+          marginBottom: 8,
+          borderBottom: `1px dashed ${colors.border}`,
+          paddingBottom: 8,
+        }}
+      >
         {items.map((it, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
             <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
               {it.nama_produk || it.nama}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
-              <span>{it.qty} × Rp {formatRupiahPos(it.harga)}</span>
-              <span style={{ fontWeight: 700 }}>Rp {formatRupiahPos(it.subtotal || it.qty * it.harga)}</span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 9,
+              }}
+            >
+              <span>
+                {it.qty} × Rp {formatRupiahPos(it.harga)}
+              </span>
+              <span style={{ fontWeight: 700 }}>
+                Rp {formatRupiahPos(it.subtotal || it.qty * it.harga)}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Total */}
-      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2 }}>
+      <div
+        style={{
+          marginBottom: 8,
+          borderBottom: `1px dashed ${colors.border}`,
+          paddingBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 10,
+            marginBottom: 2,
+          }}
+        >
           <span>Subtotal</span>
           <span>Rp {formatRupiahPos(header?.subtotal)}</span>
         </div>
         {header?.diskon_nominal > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2, color: "#DC2626" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 10,
+              marginBottom: 2,
+              color: colors.danger,
+            }}
+          >
             <span>Diskon</span>
             <span>- Rp {formatRupiahPos(header?.diskon_nominal)}</span>
           </div>
         )}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontWeight: 900,
-          fontSize: 12,
-          borderTop: "1px dashed #000",
-          paddingTop: 4,
-        }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: 900,
+            fontSize: 12,
+            borderTop: `1px dashed ${colors.border}`,
+            paddingTop: 4,
+          }}
+        >
           <span>TOTAL</span>
           <span>Rp {formatRupiahPos(header?.total)}</span>
         </div>
       </div>
 
       {/* Pembayaran */}
-      <div style={{ marginBottom: 8, borderBottom: "1px dashed #000", paddingBottom: 8 }}>
+      <div
+        style={{
+          marginBottom: 8,
+          borderBottom: `1px dashed ${colors.border}`,
+          paddingBottom: 8,
+        }}
+      >
         <div style={{ fontSize: 9, marginBottom: 2 }}>
           <span style={{ fontWeight: 700 }}>Metode:</span> {header?.metode}
         </div>
         {header?.metode === "TUNAI" && (
           <>
             <div style={{ fontSize: 9, marginBottom: 2 }}>
-              <span style={{ fontWeight: 700 }}>Diterima:</span> Rp {formatRupiahPos(header?.uang_diterima)}
+              <span style={{ fontWeight: 700 }}>Diterima:</span> Rp{" "}
+              {formatRupiahPos(header?.uang_diterima)}
             </div>
-            <div style={{ fontSize: 9, color: "#10B981", fontWeight: 700 }}>
+            <div style={{ fontSize: 9, color: colors.success, fontWeight: 700 }}>
               <span>Kembalian:</span> Rp {formatRupiahPos(header?.kembalian)}
             </div>
           </>
@@ -112,11 +187,19 @@ const PosStruk = ({ data }) => {
       <div style={{ textAlign: "center", marginBottom: 4, fontSize: 9 }}>
         Terima kasih atas kunjungan Anda
       </div>
-      <div style={{ textAlign: "center", fontSize: 8, color: "#666" }}>
+      <div style={{ textAlign: "center", fontSize: 8, color: colors.textSecondary }}>
         Semoga lekas sembuh
       </div>
       {!cetakStruk && (
-        <div style={{ textAlign: "center", fontSize: 8, color: "#999", marginTop: 6, fontStyle: "italic" }}>
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: 8,
+            color: colors.textSecondary,
+            marginTop: 6,
+            fontStyle: "italic",
+          }}
+        >
           (Preview — cetak opsional)
         </div>
       )}
@@ -125,4 +208,3 @@ const PosStruk = ({ data }) => {
 };
 
 export default PosStruk;
-

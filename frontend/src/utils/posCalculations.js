@@ -16,5 +16,6 @@ export const hitungTotalBayar = (subtotal, diskon) => {
 export const hitungKembalian = (uangDiterima, totalBayar) =>
   Math.max(0, (Number(uangDiterima) || 0) - totalBayar);
 
-export const formatRupiahPos = (n) =>
-  (n || 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
+export const formatRupiahPos = (value) => {
+  return Number(value || 0).toLocaleString("id-ID");
+};

@@ -4,6 +4,14 @@ import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
 import useLaporanTransaksi from "../../hooks/useLaporanTransaksi";
 import formatCurrency from "../../utils/formatCurrency";
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  transitions,
+} from "@/theme/designTokens";
 
 const PAGE_SIZE = 25;
 
@@ -11,7 +19,11 @@ const formatDate = (value) => {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const LaporanPenjualan = () => {
@@ -36,42 +48,48 @@ const LaporanPenjualan = () => {
       header: "TANGGAL",
       accessor: "tanggal",
       render: (row) => (
-        <Typography sx={{ color: '#475569', fontSize: 14 }}>
+        <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>
           {formatDate(row.tanggal)}
         </Typography>
-      )
+      ),
     },
     {
       header: "No Transaksi",
       accessor: "noFaktur",
       render: (row) => (
-        <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 14 }}>{row.noFaktur || "-"}</Typography>
-      )
+        <Typography sx={{ fontWeight: 800, color: colors.text, fontSize: 14 }}>
+          {row.noFaktur || "-"}
+        </Typography>
+      ),
     },
     {
       header: "ITEM TERJUAL",
       accessor: "itemTerjual",
       render: (row) => (
-        <Typography sx={{ color: '#475569', fontSize: 14 }}>{row.itemTerjual || "-"}</Typography>
-      )
+        <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>
+          {row.itemTerjual || "-"}
+        </Typography>
+      ),
     },
     {
       header: "TOTAL TRANSAKSI",
       accessor: "total",
       render: (row) => (
-        <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 14 }}>
+        <Typography sx={{ fontWeight: 800, color: colors.text, fontSize: 14 }}>
           {formatCurrency(row.total)}
         </Typography>
       ),
-      align: 'center'
+      align: "center",
     },
     {
       header: "METODE",
       accessor: "metode",
       render: (row) => (
-        <Typography sx={{ color: '#64748B', fontSize: 14 }}>{row.metode || "-"}</Typography>
+        <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>
+          {row.metode || "-"}
+        </Typography>
       ),
-      align: 'center'
+      align: "center",
     },
     {
       header: "STATUS",
@@ -79,29 +97,47 @@ const LaporanPenjualan = () => {
       render: (row) => {
         const isSukses = row.status === "Sukses";
         return (
-          <span style={{
-            background: isSukses ? '#DCFCE7' : '#FEE2E2',
-            color: isSukses ? '#16A34A' : '#EF4444',
-            padding: '4px 12px',
-            borderRadius: 16,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: 0.5
-          }}>
+          <span
+            style={{
+              background: isSukses ? colors.successLight : colors.dangerLight,
+              color: isSukses ? colors.success : colors.danger,
+              padding: "4px 12px",
+              borderRadius: 16,
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: 0.5,
+            }}
+          >
             {row.status || "Sukses"}
           </span>
-        )
+        );
       },
-      align: 'center'
+      align: "center",
     },
   ];
 
   return (
     <Box>
       <Table columns={columns} data={pagedData} />
-      <div style={{ padding: '20px 24px', borderTop: '1px solid #F1F5F9', color: '#94A3B8', fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>Menampilkan {pagedData.length} dari {data.length} transaksi</div>
-        <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
+      <div
+        style={{
+          padding: "20px 24px",
+          borderTop: "1px solid " + colors.border,
+          color: colors.textSecondary,
+          fontSize: 14,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          Menampilkan {pagedData.length} dari {data.length} transaksi
+        </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
       </div>
     </Box>
   );

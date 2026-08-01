@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { Box } from "@mui/material";
+import { Box, Typography, Button, Stack } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import FakturPrintView from "../components/pembelian/FakturPrintView";
 import usePembelianDb from "../hooks/usePembelianDb";
 import "../styles/faktur-print.css";
+import { colors } from "@/theme/designTokens";
 
 const LihatFakturPage = () => {
   const params = useParams();
@@ -24,7 +24,7 @@ const LihatFakturPage = () => {
     }
   };
 
-  const rawFakturId = params.fakturId || params['*'];
+  const rawFakturId = params.fakturId || params["*"];
   const fakturId = rawFakturId
     ? safeDecode(rawFakturId)
     : safeDecode(location.pathname.replace(/^\/pembelian\/lihat\//, ""));
@@ -49,104 +49,109 @@ const LihatFakturPage = () => {
     };
   }, [fakturId, getPembelianDetail]);
 
-  const handlePrint = () => window.print();
-
   return (
-    <Box className="faktur-preview-page">
-      <div className="faktur-preview-actions no-print">
-        <button
-          type="button"
-          onClick={() => navigate("/pembelian")}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 12,
-            border: "1px solid #E2E8F0",
-            background: "#fff",
-            color: "#64748B",
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
+    <Box className="faktur-preview-page" sx={{ p: 3 }}>
+      {/* HEADER PAGE: BREADCRUMB & JUDUL + TOMBOL KEMBALI */}
+      <Box className="no-print" sx={{ mb: 3 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          spacing={2}
         >
-          <ArrowBackIcon fontSize="small" />
-          Kembali
-        </button>
-        <button
-          type="button"
-          onClick={handlePrint}
-          disabled={!faktur}
-          style={{
-            padding: "12px 20px",
-            borderRadius: 12,
-            border: "none",
-            background: faktur ? "#0F766E" : "#F1F5F9",
-            color: faktur ? "#fff" : "#94A3B8",
-            fontWeight: 700,
-            cursor: faktur ? "pointer" : "not-allowed",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: faktur ? "0 4px 12px rgba(15, 118, 110, 0.2)" : "none",
-          }}
-        >
-          <PrintOutlinedIcon fontSize="small" />
-          Cetak Printer
-        </button>
-      </div>
-
-      <div className="no-print" style={{ marginBottom: 16 }}>
-        <div
-          style={{
-            color: "#0D9488",
-            fontSize: 13,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            marginBottom: 8,
-          }}
-        >
-          <span style={{ cursor: "pointer" }} onClick={() => navigate("/pembelian")}>
-            PEMBELIAN
-          </span>
-          <span style={{ color: "#94A3B8", margin: "0 8px" }}>&gt;</span>
-          <span>LIHAT FAKTUR</span>
-        </div>
-        <h2 style={{ margin: 0, fontWeight: 800, fontSize: 28, color: "#1E293B" }}>
-          Preview Faktur Pembelian
-        </h2>
-      </div>
-
-      {loading && (
-        <div style={{ textAlign: "center", padding: 48, color: "#94A3B8" }}>
-          Memuat data faktur...
-        </div>
-      )}
-
-      {!loading && notFound && (
-        <div style={{ textAlign: "center", padding: 48, color: "#94A3B8" }}>
-          Faktur tidak ditemukan.
-          <div style={{ marginTop: 16 }}>
-            <button
-              type="button"
-              onClick={() => navigate("/pembelian")}
-              style={{
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "none",
-                background: "#0F766E",
-                color: "#fff",
+          {/* SISI KIRI: Breadcrumb & Title */}
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.textMuted || "#64748b",
+                fontSize: 12,
                 fontWeight: 700,
-                cursor: "pointer",
+                letterSpacing: 1,
+                display: "block",
+                mb: 0.5,
               }}
             >
-              Kembali ke Daftar
-            </button>
-          </div>
-        </div>
+              <span
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate("/pembelian")}
+              >
+                PEMBELIAN
+              </span>
+              <span style={{ margin: "0 8px" }}>&gt;</span>
+              <span>LIHAT FAKTUR</span>
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, color: colors.text || "#0f172a" }}
+            >
+              Preview Faktur Pembelian
+            </Typography>
+          </Box>
+
+          {/* SISI KANAN: Tombol Kembali (Diisikan di sebelah Dropdown Ekspor) */}
+          <Button
+            variant="contained"
+            onClick={() => navigate("/pembelian")}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              bgcolor: "#ffffff",
+              color: colors.text || "#0f172a",
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: "8px",
+              px: 2.5,
+              py: 1,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              border: "1px solid #e2e8f0",
+              "&:hover": { bgcolor: "#f8fafc" },
+            }}
+          >
+            Kembali
+          </Button>
+        </Stack>
+      </Box>
+
+      {/* STATE LOADING */}
+      {loading && (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 6,
+            color: colors.textMuted || "#64748b",
+          }}
+        >
+          Memuat data faktur...
+        </Box>
       )}
 
+      {/* STATE NOT FOUND */}
+      {!loading && notFound && (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 6,
+            color: colors.textMuted || "#64748b",
+          }}
+        >
+          <Typography variant="body1">Faktur tidak ditemukan.</Typography>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/pembelian")}
+            sx={{
+              mt: 2,
+              bgcolor: colors.primary,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: "8px",
+            }}
+          >
+            Kembali ke Daftar
+          </Button>
+        </Box>
+      )}
+
+      {/* TAMPILAN FAKTUR */}
       {!loading && faktur && <FakturPrintView faktur={faktur} />}
     </Box>
   );

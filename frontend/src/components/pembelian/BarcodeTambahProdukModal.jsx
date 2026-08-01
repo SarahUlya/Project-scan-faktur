@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../ui/Modal";
-import { SATUAN_OPTIONS } from "../../config/fakturFormConfig";
+import { SATUAN_OPTIONS } from "../../config/apotek";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
   padding: "12px 14px",
   borderRadius: 10,
-  border: "1px solid #E2E8F0",
+  border: "1px solid " + colors.border,
   fontSize: 15,
-  color: "#1E293B",
+  color: colors.text,
   outline: "none",
 };
 
 const labelStyle = {
   display: "block",
-  color: "#64748B",
+  color: colors.textSecondary,
   fontSize: 11,
   fontWeight: 700,
   textTransform: "uppercase",
@@ -66,8 +75,8 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
             width: 56,
             height: 56,
             borderRadius: 16,
-            background: "#F0FDFA",
-            color: "#0F766E",
+            background: colors.bgMuted,
+            color: colors.primary,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -76,27 +85,27 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
         >
           <QrCodeScannerIcon />
         </div>
-        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1E293B" }}>
+        <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: colors.text, marginBottom: 6 }}>
           Konfirmasi Barang
         </h3>
-        <p style={{ margin: "8px 0 0", color: "#64748B", fontSize: 14 }}>
+        <p style={{ margin: "8px 0 0", color: colors.textSecondary, fontSize: 14 }}>
           Pastikan produk yang discan sesuai, lalu isi kuantitas dan satuan.
         </p>
       </div>
 
       <div
         style={{
-          background: "#F8FAFC",
+          background: colors.bgMuted,
           borderRadius: 12,
           padding: 16,
           marginBottom: 20,
-          border: "1px solid #E2E8F0",
+          border: "1px solid " + colors.border,
         }}
       >
-        <div style={{ fontWeight: 800, fontSize: 16, color: "#1E293B", marginBottom: 4 }}>
+        <div style={{ fontWeight: 800, fontSize: 16, color: colors.text, marginBottom: 4 }}>
           {produk.nama_produk}
         </div>
-        <div style={{ fontSize: 13, color: "#64748B" }}>
+        <div style={{ fontSize: 13, color: colors.textSecondary }}>
           Barcode: <strong>{produk.barcode || "-"}</strong>
         </div>
       </div>
@@ -160,9 +169,9 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
               flex: 1,
               padding: "14px 0",
               borderRadius: 12,
-              border: "1px solid #E2E8F0",
-              background: "#fff",
-              color: "#64748B",
+              border: "1px solid " + colors.border,
+              background: colors.bgMuted,
+              color: colors.textSecondary,
               fontWeight: 700,
               cursor: "pointer",
             }}
@@ -176,11 +185,11 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
               padding: "14px 0",
               borderRadius: 12,
               border: "none",
-              background: "#0F766E",
-              color: "#fff",
+              background: colors.primary,
+              color: colors.white,
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(15, 118, 110, 0.25)",
+              boxShadow: "0 4px 12px " + colors.primary40,
             }}
           >
             Tambahkan ke Faktur

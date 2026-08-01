@@ -1,5 +1,13 @@
 import React from "react";
 import { Box, Typography, Switch } from "@mui/material";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 /**
  * Reusable Status Toggle Component

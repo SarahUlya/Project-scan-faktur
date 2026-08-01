@@ -1,6 +1,13 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import { colors } from "../../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 const steps = [
   { value: "informasi", label: "Informasi Faktur" },

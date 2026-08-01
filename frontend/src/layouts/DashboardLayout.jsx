@@ -1,8 +1,18 @@
 import { Box } from "@mui/material";
 import Sidebar from "../components/navigation/Sidebar";
 import { Outlet } from "react-router-dom";
-import { colors } from "../theme/designTokens";
-
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  zIndex,
+  fieldInputSx,
+  pageHeaderSx,
+  statCardSx,
+} from "../theme/designTokens";
 const DashboardLayout = () => {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: colors.bg }}>

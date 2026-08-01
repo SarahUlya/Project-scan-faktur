@@ -1,50 +1,38 @@
+// src/components/ui/Modal.jsx
 import React from "react";
+import { Box, Modal as MuiModal, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { colors, radii, shadows, transitions } from "@/theme/designTokens";
 
-const Modal = ({ open, onClose, children, width = 420 }) => {
-	if (!open) return null;
-	return (
-		<div style={{
-			position: "fixed",
-			top: 0,
-			left: 0,
-			width: "100vw",
-			height: "100vh",
-			zIndex: 1300,
-			background: "rgba(0,0,0,0.15)",
-			backdropFilter: "blur(4px)",
-			display: "flex",
-			alignItems: "center",
-			justifyContent: "center"
-		}}>
-			<div style={{
-				background: "#fff",
-				borderRadius: 20,
-				boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
-				minWidth: width,
-				maxWidth: "95vw",
-				padding: 0,
-				position: "relative"
-			}}>
-				<button
-					onClick={onClose}
-					style={{
-						position: "absolute",
-						top: 18,
-						right: 18,
-						background: "none",
-						border: "none",
-						fontSize: 22,
-						color: "#B0B0B0",
-						cursor: "pointer"
-					}}
-					aria-label="Tutup"
-				>
-					×
-				</button>
-				<div style={{ padding: 36, paddingTop: 28 }}>{children}</div>
-			</div>
-		</div>
-	);
+const Modal = ({ open, onClose, children, width = 500 }) => {
+  return (
+    <MuiModal
+      open={open}
+      onClose={onClose}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
+      }}
+    >
+      <Box
+        sx={{
+          bgcolor: colors.bgCard,
+          borderRadius: radii.s,
+          boxShadow: shadows.floating,
+          width: "100%",
+          maxWidth: width,
+          maxHeight: "90vh",
+          overflow: "auto",
+          position: "relative",
+          outline: "none",
+        }}
+      >
+        {children}
+      </Box>
+    </MuiModal>
+  );
 };
 
 export default Modal;

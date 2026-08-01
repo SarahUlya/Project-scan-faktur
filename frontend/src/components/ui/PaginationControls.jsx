@@ -1,6 +1,15 @@
 import React from "react";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
 
 const PaginationControls = ({ page, totalPages, onChange }) => {
   if (totalPages <= 1) return null;
@@ -62,10 +71,10 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fff",
-          border: "1px solid #F1F5F9",
+          background: colors.bg,
+          border: `1px solid ${colors.border}`,
           borderRadius: 8,
-          color: page <= 1 ? "#CBD5E1" : "#64748B",
+          color: page <= 1 ? colors.textSecondary : colors.text,
           cursor: page <= 1 ? "not-allowed" : "pointer",
         }}
       >
@@ -81,7 +90,7 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
               key={index}
               style={{
                 padding: "0 4px",
-                color: "#64748B",
+                color: colors.textSecondary,
                 fontWeight: 600,
               }}
             >
@@ -102,10 +111,10 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: isCurrent ? "rgb(233, 30, 99)" : "#fff",
-              border: isCurrent ? "none" : "1px solid #F1F5F9",
+              background: isCurrent ? "rgb(233, 30, 99)" : colors.bg,
+              border: isCurrent ? "none" : `1px solid ${colors.border}`,
               borderRadius: 8,
-              color: isCurrent ? "#fff" : "#64748B",
+              color: isCurrent ? colors.bgCard : colors.text,
               fontWeight: 600,
               fontSize: 14,
               cursor: "pointer",
@@ -127,10 +136,10 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fff",
-          border: "1px solid #F1F5F9",
+          background: colors.bg,
+          border: `1px solid ${colors.border}`,
           borderRadius: 8,
-          color: page >= totalPages ? "#CBD5E1" : "#64748B",
+          color: page >= totalPages ? colors.textSecondary : colors.text,
           cursor: page >= totalPages ? "not-allowed" : "pointer",
         }}
       >

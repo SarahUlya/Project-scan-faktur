@@ -4,7 +4,7 @@ import { getKategori } from "../api/kategoriApi";
 import { getSatuan } from "../api/satuanApi";
 import {
   getStokFromBatches,
-  getStokProduk
+  getStokProduk,
 } from "../services/stockService";
 
 export default function usePosProducts() {
@@ -14,8 +14,8 @@ export default function usePosProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    (async () => {
+  const fetchProducts = async () => {
+    try {
       setLoading(true);
 
       const [katResult, satResult, prodResult] =
@@ -32,25 +32,18 @@ export default function usePosProducts() {
         ]);
 
       const kategoriData =
-        katResult.status === "fulfilled" &&
-          Array.isArray(katResult.value?.data)
-          ? katResult.value.data
+        katResult.status === "fulfilled"
+          ? katResult.value.data || []
           : [];
 
       const satuanRaw =
         satResult.status === "fulfilled"
-          ? satResult.value?.data
+          ? satResult.value.data || []
           : [];
-
-      const satuanData = Array.isArray(
-        satuanRaw
-      )
-        ? satuanRaw
-        : [];
 
       const productList =
         prodResult.status === "fulfilled"
-          ? prodResult.value.data?.data || []
+          ? prodResult.value.data.data || []
           : [];
 
       if (
@@ -58,164 +51,84 @@ export default function usePosProducts() {
         satResult.status !== "fulfilled" ||
         prodResult.status !== "fulfilled"
       ) {
-        const errorMessages = [];
-
-        if (
-          katResult.status !==
-          "fulfilled"
-        )
-          errorMessages.push(
-            "kategori"
-          );
-
-        if (
-          satResult.status !==
-          "fulfilled"
-        )
-          errorMessages.push(
-            "satuan"
-          );
-
-        if (
-          prodResult.status !==
-          "fulfilled"
-        )
-          errorMessages.push(
-            "produk"
-          );
-
-        setError(
-          `Gagal memuat data: ${errorMessages.join(
-            ", "
-          )}`
-        );
+        setError("Gagal memuat data.");
       } else {
         setError(null);
       }
 
-      try {
-        const enriched = await Promise.all(
-          productList.map(async (p) => {
-            const batchData =
-              p.batch ||
-              p.batchproduk ||
-              [];
+      const enriched = await Promise.all(
+        productList.map(async (p) => {
+          const batchData = p.batch || p.batchproduk || [];
 
-            const stok = await getStokProduk(
-              p.id_produk,
-              batchData
-            );
-
-            return {
-              ...p,
-              batch: batchData,
-              stok,
-              is_active: p.is_active !== false,
-            };
-          })
-        );
-
-        setProduk(enriched);
-      } catch (error) {
-        console.warn(
-          "Gagal memperkaya produk:",
-          error
-        );
-
-        setProduk(productList);
-      }
-
-      const normalizedSatuan =
-        satuanData.map((s) => {
-          if (
-            typeof s ===
-            "string"
-          ) {
-            return {
-              id: s,
-              nama: s,
-            };
-          }
+          const stok = await getStokProduk(
+            p.id_produk,
+            batchData
+          );
 
           return {
-            id:
-              s.id_satuan ??
-              s.id,
-            nama:
-              s.nama_satuan ??
-              s.nama ??
-              s.label ??
-              "",
-            raw: s,
+            ...p,
+            batch: batchData,
+            stok,
+            is_active: p.is_active !== false,
           };
-        });
+        })
+      );
+
+      setProduk(enriched);
 
       setKategori(kategoriData);
+
       setSatuanList(
-        normalizedSatuan
+        satuanRaw.map((s) => ({
+          id: s.id_satuan ?? s.id,
+          nama:
+            s.nama_satuan ??
+            s.nama ??
+            "",
+        }))
       );
+    } catch (err) {
+      console.error(err);
+      setError("Gagal memuat data.");
+    } finally {
       setLoading(false);
-    })();
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  const getNamaKategori = (
-    id
-  ) => {
-    const found =
-      kategori.find(
-        (k) =>
-          String(
-            k.id_kategori
-          ) === String(id)
-      );
+  const reloadProducts = () => fetchProducts();
 
-    return found
-      ? found.nama_kategori
-      : "-";
-  };
-
-  const getNamaSatuan = (
-    id
-  ) => {
-    const found =
-      satuanList.find(
-        (s) =>
-          String(s.id) ===
-          String(id)
-      );
-
-    return found
-      ? found.nama
-      : "Pcs";
-  };
-
-  const produkWithMeta =
-    useMemo(
-      () =>
-        produk.map((p) => ({
-          ...p,
-          nama_satuan:
-            getNamaSatuan(
-              p.id_satuan
-            ),
-
-          nama_kategori:
-            getNamaKategori(
-              p.id_kategori
-            ),
-
-          stok:
-            p.stok ??
-            getStokFromBatches(
-              p.batch
-            ),
-        })),
-      [
-        produk,
-        kategori,
-        satuanList,
-      ]
+  const getNamaKategori = (id) => {
+    const found = kategori.find(
+      (k) => String(k.id_kategori) === String(id)
     );
+
+    return found ? found.nama_kategori : "-";
+  };
+
+  const getNamaSatuan = (id) => {
+    const found = satuanList.find(
+      (s) => String(s.id) === String(id)
+    );
+
+    return found ? found.nama : "Pcs";
+  };
+
+  const produkWithMeta = useMemo(
+    () =>
+      produk.map((p) => ({
+        ...p,
+        nama_satuan: getNamaSatuan(p.id_satuan),
+        nama_kategori: getNamaKategori(p.id_kategori),
+        stok:
+          p.stok ??
+          getStokFromBatches(p.batch),
+      })),
+    [produk, kategori, satuanList]
+  );
 
   return {
     produk: produkWithMeta,
@@ -224,5 +137,6 @@ export default function usePosProducts() {
     error,
     getNamaKategori,
     getNamaSatuan,
+    reloadProducts,
   };
 }

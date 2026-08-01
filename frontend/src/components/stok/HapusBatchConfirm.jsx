@@ -10,7 +10,7 @@ const HapusBatchConfirm = ({ batchId, onClose }) => {
         <button onClick={onClose} style={{ marginRight: 12 }}>
           Batal
         </button>
-        <button style={{ background: "#ff4d4f", color: "#fff" }}>
+        <button style={{ background: colors.danger, color: colors.textOnDark }}>
           Hapus
         </button>
       </div>

@@ -1,13 +1,20 @@
 import React from "react";
 import { Button as MuiButton } from "@mui/material";
-import { colors } from "../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 const Button = ({ children, color = "primary", variant = "contained", sx = {}, ...props }) => {
   const colorStyles =
     color === "primary"
       ? {
           background: colors.primary,
-          color: "#FFFFFF",
+          color: colors.textOnDark,
           fontWeight: 600,
           boxShadow: "none",
           "&:hover": { background: colors.primaryHover },
@@ -15,7 +22,7 @@ const Button = ({ children, color = "primary", variant = "contained", sx = {}, .
       : color === "pink"
         ? {
             background: colors.primary,
-            color: "#FFFFFF",
+            color: colors.textOnDark,
             fontWeight: 600,
             boxShadow: "none",
             "&:hover": { background: colors.primaryHover },

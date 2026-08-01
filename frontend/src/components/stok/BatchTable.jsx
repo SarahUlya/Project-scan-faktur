@@ -2,15 +2,15 @@ import React from "react";
 import Table from "../ui/Table";
 import { IconButton, Typography, Box } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { colors } from "../../theme/designTokens";
+import { colors, radii, spacing, typography } from "@/theme/designTokens";
 
 const checkStatus = (expiredDateStr) => {
   const expiredDate = new Date(expiredDateStr);
   const now = new Date();
   const diffDays = Math.ceil((expiredDate - now) / (1000 * 60 * 60 * 24));
 
-  if (diffDays <= 0) return { label: "Expired", color: colors.danger, bg: "#FEE2E2" };
-  if (diffDays <= 30) return { label: "Hampir ED", color: colors.warning, bg: "#FEF3C7" };
+  if (diffDays <= 0) return { label: "Expired", color: colors.danger, bg: colors.dangerLight };
+  if (diffDays <= 30) return { label: "Hampir ED", color: colors.warning, bg: colors.warningLight };
   return { label: "Aman", color: colors.textSecondary, bg: colors.bgMuted };
 };
 

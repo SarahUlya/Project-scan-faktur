@@ -3,7 +3,14 @@ import { Box, Typography, Divider } from "@mui/material";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Button from "../../ui/Button";
-import { colors } from "../../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 const SummaryRow = ({ label, value, highlight, mono }) => (
   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.5 }}>
@@ -39,7 +46,7 @@ const FakturSummaryPanel = ({
         <Typography sx={{ color: colors.textMuted, fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>
           Grand Total
         </Typography>
-        <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 20, mt: 0.25 }}>
+        <Typography sx={{ color: colors.bgCard, fontWeight: 700, fontSize: 20, mt: 0.25 }}>
           Rp {grandTotal.toLocaleString("id-ID")}
         </Typography>
       </Box>
@@ -74,7 +81,7 @@ const FakturSummaryPanel = ({
         <Button fullWidth onClick={onSimpan} startIcon={<SaveOutlinedIcon />} color="primary" sx={{ py: 0.8, fontWeight: 600 }}>
           Simpan Faktur
         </Button>
-        <Button fullWidth variant="outlined" onClick={onBatal} startIcon={<ArrowBackIcon />} sx={{ py: 1, borderColor: colors.border, color: colors.textSecondary }}>
+        <Button fullWidth variant="outlined" onClick={onBatal} startIcon={<ArrowBackIcon />} sx={{ py: 1, borderColor: colors.textOnDark, color: colors.textOnDark, "&:hover": { borderColor: colors.textOnDark } }}>
           Batal
         </Button>
       </Box>

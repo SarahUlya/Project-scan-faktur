@@ -3,6 +3,15 @@ import Button from "../ui/Button";
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Typography } from "@mui/material";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
+
 
 const HapusSupplierConfirm = ({ open, onClose, onDelete, supplier }) => {
   if (!open) return null;
@@ -20,14 +29,14 @@ const HapusSupplierConfirm = ({ open, onClose, onDelete, supplier }) => {
           mb: 1,
           border: '8px solid #CCFBF1'
         }}>
-          <DeleteOutlineIcon sx={{ fontSize: 32, color: "#0F766E" }} />
+          <DeleteOutlineIcon sx={{ fontSize: 32, color: colors.primary }} />
         </Box>
         
-        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', m: 0 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: colors.text, m: 0 }}>
           Konfirmasi Hapus Supplier
         </Typography>
         
-        <Typography sx={{ color: "#64748B", fontSize: 14, px: 2, lineHeight: 1.6 }}>
+        <Typography sx={{ color: colors.textSecondary, fontSize: 14, px: 2, lineHeight: 1.6 }}>
           Apakah Anda yakin ingin menghapus supplier ini? Tindakan ini tidak dapat dibatalkan.
         </Typography>
 
@@ -44,26 +53,26 @@ const HapusSupplierConfirm = ({ open, onClose, onDelete, supplier }) => {
           mb: 3
         }}>
           <Box sx={{ width: 40, height: 40, borderRadius: 2, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: '#0F766E', background: '#CCFBF1', width: '100%', height: '100%', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: colors.primary, background: '#CCFBF1', width: '100%', height: '100%', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {supplier?.inisial || 'SP'}
             </span>
           </Box>
           <Box sx={{ textAlign: 'left' }}>
-            <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: 15 }}>{supplier?.nama}</Typography>
-            <Typography sx={{ color: "#94A3B8", fontSize: 13, fontWeight: 600 }}>ID: {supplier?.id}</Typography>
+            <Typography sx={{ fontWeight: 800, color: colors.text, fontSize: 15 }}>{supplier?.nama}</Typography>
+            <Typography sx={{ color: colors.textSecondary, fontSize: 13, fontWeight: 600 }}>ID: {supplier?.id}</Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
-          <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: '#1E293B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
+          <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: colors.text, '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
             Batal
           </Button>
-          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#0F766E', color: '#fff', '&:hover': { bgcolor: '#0D5C56' }, boxShadow: '0 4px 14px rgba(15, 118, 110,0.3)' }} onClick={() => onDelete && onDelete(supplier.id)}>
+          <Button type="button" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: colors.primary, color: '#fff', '&:hover': { bgcolor: colors.primaryDark }, boxShadow: '0 4px 14px rgba(15, 118, 110,0.3)' }} onClick={() => onDelete && onDelete(supplier.id)}>
             Hapus Supplier
           </Button>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: "#0F766E", mt: 3, bgcolor: '#F0FDFA', py: 1, px: 2, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: colors.primary, mt: 3, bgcolor: '#F0FDFA', py: 1, px: 2, borderRadius: 2 }}>
           <InfoOutlinedIcon sx={{ fontSize: 16 }} />
           <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.5 }}>
             AKSI PERMANEN

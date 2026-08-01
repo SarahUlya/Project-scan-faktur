@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { Box, TextField, FormControl, Select, MenuItem, Typography, Divider } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
+import {
+  Box,
+  TextField,
+  FormControl,
+  Select,
+  MenuItem,
+  Typography,
+  Divider,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
 import Button from "../ui/Button";
 import StatusToggle from "../ui/StatusToggle";
-import { SATUAN_OPTIONS } from "../../config/fakturFormConfig";
+import { SATUAN_OPTIONS } from "../../config/apotek";
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  transitions,
+} from "@/theme/designTokens";
 
 const initialState = {
   nama_produk: "",
@@ -22,7 +38,7 @@ const ProdukForm = ({
   mode = "add",
   initialData,
   kategori,
-  satuanList
+  satuanList,
 }) => {
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState({});
@@ -32,7 +48,11 @@ const ProdukForm = ({
       setForm({
         nama_produk: initialData.nama_produk || "",
         id_kategori: initialData.id_kategori ?? initialData.kategoriId ?? "",
-        satuan_id: initialData.satuan_id ?? initialData.satuanId ?? initialData.satuan ?? "",
+        satuan_id:
+          initialData.satuan_id ??
+          initialData.satuanId ??
+          initialData.satuan ??
+          "",
         stok_minimum: initialData.stok_minimum || 0,
         is_active: initialData.is_active ?? true,
         barcode: initialData.barcode || "",
@@ -53,29 +73,23 @@ const ProdukForm = ({
     : SATUAN_OPTIONS.map((value) => ({ id: value, nama: value }));
 
   const selectedSatuan = satuanOptions?.find(
-    (s) => String(s.id) === String(form.satuan_id)
+    (s) => String(s.id) === String(form.satuan_id),
   );
   const stokUnitLabel = selectedSatuan?.nama || "Unit";
 
   const validate = () => {
     const err = {};
 
-    if (!form.nama_produk.trim())
-      err.nama_produk = "Nama produk wajib diisi";
+    if (!form.nama_produk.trim()) err.nama_produk = "Nama produk wajib diisi";
 
     if (!form.harga_jual || Number(form.harga_jual) <= 0)
       err.harga_jual = "Harga jual wajib diisi";
 
-    if (!form.id_kategori)
-      err.id_kategori = "Kategori wajib dipilih";
+    if (!form.id_kategori) err.id_kategori = "Kategori wajib dipilih";
 
-    if (!form.satuan_id)
-      err.satuan_id = "Satuan wajib diisi";
+    if (!form.satuan_id) err.satuan_id = "Satuan wajib diisi";
 
-    if (
-      form.stok_minimum === "" ||
-      isNaN(form.stok_minimum)
-    )
+    if (form.stok_minimum === "" || isNaN(form.stok_minimum))
       err.stok_minimum = "Stok minimum wajib diisi";
 
     setError(err);
@@ -96,18 +110,35 @@ const ProdukForm = ({
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ minWidth: 340, maxWidth: 520 }}>
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ minWidth: 340, maxWidth: 520 }}
+    >
+      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
         {mode === "edit" && (
-          <Box sx={{ width: 48, height: 48, background: '#FCE4EC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E91E63' }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              background: "#FCE4EC",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#E91E63",
+            }}
+          >
             <EditIcon />
           </Box>
         )}
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#1E293B" }}>
             {mode === "add" ? "Input Produk Baru" : "Edit Detail Produk"}
           </Typography>
-          <Typography sx={{ color: "#64748B", fontSize: 13, mt: 0.5 }}>
+          <Typography
+            sx={{ color: colors.textSecondary, fontSize: 13, mt: 0.5 }}
+          >
             {mode === "add"
               ? "Tambahkan informasi obat ke dalam sistem."
               : "Perbarui informasi produk pada sistem katalog."}
@@ -118,7 +149,17 @@ const ProdukForm = ({
       {mode === "edit" && initialData && (
         <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#94A3B8",
+                fontWeight: 700,
+                mb: 1,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
               ID PRODUK
             </Typography>
             <TextField
@@ -126,15 +167,29 @@ const ProdukForm = ({
               disabled
               fullWidth
               size="small"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, mt: 1, bgcolor: "#F8FAFC" }}
+              sx={{
+                "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                mt: 1,
+                bgcolor: "#F8FAFC",
+              }}
             />
           </Box>
         </Box>
       )}
 
       <Box sx={{ mb: 2 }}>
-        <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-          NAMA PRODUK <span style={{ color: '#EF4444' }}>*</span>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "#94A3B8",
+            fontWeight: 700,
+            mb: 1,
+            display: "block",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          NAMA PRODUK <span style={{ color: "#EF4444" }}>*</span>
         </Typography>
         <TextField
           placeholder="Contoh: Paracetamol 500mg"
@@ -143,14 +198,39 @@ const ProdukForm = ({
           fullWidth
           size="small"
           error={!!error.nama_produk}
-          helperText={error.nama_produk ? <span style={{ color: '#EF4444', fontWeight: 600 }}>{error.nama_produk}</span> : ""}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          helperText={
+            error.nama_produk ? (
+              <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                {error.nama_produk}
+              </span>
+            ) : (
+              ""
+            )
+          }
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
         />
       </Box>
 
-      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: 2 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          mb: 2,
+        }}
+      >
         <Box>
-          <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             KATEGORI OBAT
           </Typography>
           <FormControl fullWidth size="small">
@@ -159,22 +239,15 @@ const ProdukForm = ({
               onChange={(e) =>
                 handleChange(
                   "id_kategori",
-                  e.target.value === ""
-                    ? ""
-                    : Number(e.target.value)
+                  e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
               displayEmpty
             >
-              <MenuItem value="">
-                Pilih Kategori
-              </MenuItem>
+              <MenuItem value="">Pilih Kategori</MenuItem>
 
               {kategori?.map((k) => (
-                <MenuItem
-                  key={k.id_kategori}
-                  value={k.id_kategori}
-                >
+                <MenuItem key={k.id_kategori} value={k.id_kategori}>
                   {k.nama_kategori}
                 </MenuItem>
               ))}
@@ -186,7 +259,7 @@ const ProdukForm = ({
                 sx={{
                   color: "#EF4444",
                   fontWeight: 600,
-                  mt: 0.5
+                  mt: 0.5,
                 }}
               >
                 {error.id_kategori}
@@ -196,7 +269,17 @@ const ProdukForm = ({
         </Box>
 
         <Box>
-          <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             SATUAN DASAR
           </Typography>
           <FormControl fullWidth size="small">
@@ -205,15 +288,10 @@ const ProdukForm = ({
               onChange={(e) => handleChange("satuan_id", e.target.value)}
               displayEmpty
             >
-              <MenuItem value="">
-                Pilih Satuan
-              </MenuItem>
+              <MenuItem value="">Pilih Satuan</MenuItem>
 
               {satuanOptions?.map((s) => (
-                <MenuItem
-                  key={s.id}
-                  value={s.id}
-                >
+                <MenuItem key={s.id} value={s.id}>
                   {s.nama}
                 </MenuItem>
               ))}
@@ -222,10 +300,36 @@ const ProdukForm = ({
         </Box>
       </Box>
 
-      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: 3 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          mb: 3,
+        }}
+      >
         <Box>
-          <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
-            STOK MINIMUM <span style={{ color: '#E91E63', fontWeight: 600, textTransform: 'none' }}>(Peringatan Stok Rendah)</span>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            STOK MINIMUM{" "}
+            <span
+              style={{
+                color: "#E91E63",
+                fontWeight: 600,
+                textTransform: "none",
+              }}
+            >
+              (Peringatan Stok Rendah)
+            </span>
           </Typography>
           <TextField
             type="number"
@@ -234,10 +338,24 @@ const ProdukForm = ({
             fullWidth
             size="small"
             error={!!error.stok_minimum}
-            helperText={error.stok_minimum ? <span style={{ color: '#EF4444', fontWeight: 600 }}>{error.stok_minimum}</span> : ""}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            helperText={
+              error.stok_minimum ? (
+                <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                  {error.stok_minimum}
+                </span>
+              ) : (
+                ""
+              )
+            }
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             InputProps={{
-              endAdornment: <Typography sx={{ color: '#94A3B8', fontSize: 14, fontWeight: 600 }}>{stokUnitLabel}</Typography>
+              endAdornment: (
+                <Typography
+                  sx={{ color: "#94A3B8", fontSize: 14, fontWeight: 600 }}
+                >
+                  {stokUnitLabel}
+                </Typography>
+              ),
             }}
           />
         </Box>
@@ -251,7 +369,14 @@ const ProdukForm = ({
         </Box>
       </Box>
 
-      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mb: 3 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          mb: 3,
+        }}
+      >
         <Box>
           <Typography
             variant="caption"
@@ -275,7 +400,7 @@ const ProdukForm = ({
             error={!!error.harga_jual}
             helperText={
               error.harga_jual ? (
-                <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                <span style={{ color: colors.stockLow, fontWeight: 600 }}>
                   {error.harga_jual}
                 </span>
               ) : (
@@ -290,7 +415,17 @@ const ProdukForm = ({
           />
         </Box>
         <Box>
-          <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 700, mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: colors.textSecondary,
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             BARCODE
           </Typography>
           <TextField
@@ -298,7 +433,7 @@ const ProdukForm = ({
             onChange={(e) => handleChange("barcode", e.target.value)}
             fullWidth
             size="small"
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
         </Box>
       </Box>
@@ -306,10 +441,39 @@ const ProdukForm = ({
       <Divider sx={{ mb: 3 }} />
 
       <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-        <Button type="button" variant="outlined" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, borderColor: '#F1F5F9', color: '#1E293B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#E2E8F0' } }} onClick={onClose}>
+        <Button
+          type="button"
+          variant="outlined"
+          sx={{
+            flex: 1,
+            fontWeight: 700,
+            fontSize: 15,
+            borderRadius: 2,
+            borderColor: colors.border,
+            color: colors.textOnDark,
+            "&:hover": { borderColor: colors.border, bgcolor: colors.bgLight },
+          }}
+          onClick={onClose}
+        >
           Batal
         </Button>
-        <Button type="submit" sx={{ flex: 1, fontWeight: 700, fontSize: 15, borderRadius: 2, bgcolor: '#E91E63', color: '#fff', '&:hover': { bgcolor: '#C2185B' }, boxShadow: '0 4px 14px rgba(233, 30, 99, 0.3)', display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Button
+          type="submit"
+          sx={{
+            flex: 1,
+            fontWeight: 700,
+            fontSize: 15,
+            borderRadius: 2,
+            bgcolor: colors.primary,
+            color: colors.textOnDark,
+            "&:hover": { bgcolor: colors.primaryDark },
+            boxShadow: "0 4px 14px rgba(233, 30, 99, 0.3)",
+            display: "flex",
+            gap: 1,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           {mode === "edit" && <SaveIcon fontSize="small" />}
           {mode === "add" ? "Simpan Produk" : "Simpan Perubahan"}
         </Button>

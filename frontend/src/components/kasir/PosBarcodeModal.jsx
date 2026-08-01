@@ -5,6 +5,7 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import { formatRupiahPos } from "../../utils/posCalculations";
+import { colors, radii } from "@/theme/designTokens";
 
 const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
   const [qty, setQty] = useState(1);
@@ -49,13 +50,13 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             width: 56,
             height: 56,
             borderRadius: 14,
-            background: "linear-gradient(135deg, #0F766E 0%, #EC407A 100%)",
-            color: "#fff",
+            background: `linear-gradient(135deg, ${colors.primary} 100%)`,
+            color: colors.white,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 14,
-            boxShadow: "0 4px 12px rgba(15, 118, 110, 0.25)",
+            boxShadow: `0 4px 12px ` + colors.shadowFocus,
           }}
         >
           <QrCodeScannerIcon sx={{ fontSize: 32 }} />
@@ -65,7 +66,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             margin: 0,
             fontWeight: 800,
             fontSize: 20,
-            color: "#1E293B",
+            color: colors.text,
             marginBottom: 6,
           }}
         >
@@ -74,7 +75,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
         <p
           style={{
             margin: 0,
-            color: "#64748B",
+            color: colors.textSecondary,
             fontSize: 13,
             fontWeight: 500,
           }}
@@ -86,18 +87,19 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
       {/* Detail Produk */}
       <div
         style={{
-          background: "linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)",
+          background:
+            "linear-gradient(135deg, colors.bgCard 0%, colors.bgCard 100%)",
           borderRadius: 12,
           padding: 18,
           marginBottom: 22,
-          border: "1px solid #E2E8F0",
+          border: "1px solid " + colors.border,
         }}
       >
         <div
           style={{
             fontWeight: 800,
             fontSize: 16,
-            color: "#1E293B",
+            color: colors.text,
             marginBottom: 14,
             lineHeight: 1.4,
           }}
@@ -118,7 +120,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#94A3B8",
+                color: colors.textSecondary,
                 textTransform: "uppercase",
                 marginBottom: 4,
                 letterSpacing: 0.5,
@@ -130,7 +132,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               style={{
                 fontWeight: 800,
                 fontSize: 15,
-                color: "#0F766E",
+                color: colors.primary,
               }}
             >
               Rp {formatRupiahPos(produk.harga_jual)}
@@ -141,7 +143,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#94A3B8",
+                color: colors.textSecondary,
                 textTransform: "uppercase",
                 marginBottom: 4,
                 letterSpacing: 0.5,
@@ -153,7 +155,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               style={{
                 fontWeight: 800,
                 fontSize: 15,
-                color: produk.stok > 10 ? "#10B981" : "#F59E0B",
+                color: produk.stok > 10 ? colors.success : colors.warning,
               }}
             >
               {produk.stok ?? 0} Unit
@@ -165,7 +167,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
         <div
           style={{
             height: 1,
-            background: "#E2E8F0",
+            background: colors.border,
             margin: "14px 0",
           }}
         />
@@ -182,7 +184,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             style={{
               fontSize: 12,
               fontWeight: 700,
-              color: "#64748B",
+              color: colors.textSecondary,
               textTransform: "uppercase",
               letterSpacing: 0.5,
             }}
@@ -193,7 +195,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             style={{
               fontWeight: 800,
               fontSize: 16,
-              color: "#1E293B",
+              color: colors.text,
             }}
           >
             Rp {formatRupiahPos(subtotal)}
@@ -208,7 +210,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             display: "block",
             fontSize: 11,
             fontWeight: 700,
-            color: "#94A3B8",
+            color: colors.textSecondary,
             marginBottom: 10,
             textTransform: "uppercase",
             letterSpacing: 0.5,
@@ -231,9 +233,9 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               width: 44,
               height: 44,
               borderRadius: 10,
-              border: "1px solid #E2E8F0",
-              background: qty <= 1 ? "#F8FAFC" : "#fff",
-              color: qty <= 1 ? "#CBD5E1" : "#64748B",
+              border: "1px solid " + colors.border,
+              background: qty <= 1 ? colors.bgCard : colors.white,
+              color: qty <= 1 ? colors.textDisabled : colors.textSecondary,
               fontWeight: 700,
               fontSize: 18,
               cursor: qty <= 1 ? "not-allowed" : "pointer",
@@ -255,7 +257,7 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
             onChange={(e) => {
               const val = Math.max(
                 1,
-                Math.min(produk.stok || 999, parseInt(e.target.value, 10) || 1)
+                Math.min(produk.stok || 999, parseInt(e.target.value, 10) || 1),
               );
               setQty(val);
             }}
@@ -263,20 +265,20 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               flex: 1,
               padding: "12px 14px",
               borderRadius: 10,
-              border: "1px solid #E2E8F0",
+              border: "1px solid " + colors.border,
               fontSize: 15,
               fontWeight: 800,
               textAlign: "center",
-              color: "#1E293B",
+              color: colors.text,
               outline: "none",
               transition: "all 0.2s",
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = "#0F766E";
-              e.target.style.boxShadow = "0 0 0 3px rgba(15, 118, 110, 0.1)";
+              e.target.style.borderColor = colors.primary;
+              e.target.style.boxShadow = `0 0 0 3px ${colors.shadowFocus}`;
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = "#E2E8F0";
+              e.target.style.borderColor = colors.border;
               e.target.style.boxShadow = "none";
             }}
           />
@@ -290,11 +292,20 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
               height: 44,
               borderRadius: 10,
               border: "none",
-              background: qty >= (produk.stok || 999) || noStock ? "#F1F5F9" : "#0F766E",
-              color: qty >= (produk.stok || 999) || noStock ? "#94A3B8" : "#fff",
+              background:
+                qty >= (produk.stok || 999) || noStock
+                  ? colors.bgCard
+                  : colors.primary,
+              color:
+                qty >= (produk.stok || 999) || noStock
+                  ? colors.textDisabled
+                  : colors.white,
               fontWeight: 700,
               fontSize: 18,
-              cursor: qty >= (produk.stok || 999) || noStock ? "not-allowed" : "pointer",
+              cursor:
+                qty >= (produk.stok || 999) || noStock
+                  ? "not-allowed"
+                  : "pointer",
               transition: "all 0.2s",
               display: "flex",
               alignItems: "center",
@@ -311,14 +322,14 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
         <div
           style={{
             marginBottom: 18,
-            color: "#DC2626",
+            color: colors.danger,
             fontSize: 12,
             textAlign: "center",
             fontWeight: 600,
             padding: "10px 12px",
-            background: "#FEE2E2",
+            background: colors.bgDanger,
             borderRadius: 8,
-            border: "1px solid #FECACA",
+            border: "1px solid " + colors.borderDanger,
           }}
         >
           Stok produk kosong. Pilih produk lain.
@@ -336,9 +347,9 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
           borderRadius: 12,
           border: "none",
           background: noStock
-            ? "#F1F5F9"
-            : "linear-gradient(135deg, #0F766E 0%, #EC407A 100%)",
-          color: noStock ? "#94A3B8" : "#fff",
+              ? colors.bgCard
+              : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
+          color: noStock ? colors.textSecondary : colors.white,            
           fontWeight: 800,
           fontSize: 14,
           cursor: noStock ? "not-allowed" : "pointer",
@@ -347,17 +358,17 @@ const PosBarcodeModal = ({ open, produk, onClose, onAdd }) => {
           justifyContent: "center",
           gap: 8,
           transition: "all 0.2s",
-          boxShadow: noStock ? "none" : "0 4px 14px rgba(15, 118, 110, 0.3)",
+          boxShadow: noStock ? "none" : `0 4px 14px ${colors.shadowFocus}`,
         }}
         onMouseEnter={(e) => {
           if (!noStock) {
-            e.target.style.boxShadow = "0 6px 20px rgba(15, 118, 110, 0.4)";
+            e.target.style.boxShadow = `0 6px 20px ${colors.shadowFocus}`;
             e.target.style.transform = "translateY(-2px)";
           }
         }}
         onMouseLeave={(e) => {
           if (!noStock) {
-            e.target.style.boxShadow = "0 4px 14px rgba(15, 118, 110, 0.3)";
+            e.target.style.boxShadow = `0 4px 14px ${colors.shadowFocus}`;
             e.target.style.transform = "translateY(0)";
           }
         }}

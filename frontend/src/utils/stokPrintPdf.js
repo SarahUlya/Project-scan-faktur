@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import { APOTEK_INFO } from "../config/apotekConfig";
+import { APOTEK_INFO } from "../config/apotek";
 import {
   buildLaporanSummary,
   formatExpired,

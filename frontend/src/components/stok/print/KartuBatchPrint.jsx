@@ -1,5 +1,6 @@
 import React from "react";
-import { APOTEK_INFO } from "../../../config/apotekConfig";
+import { colors } from "@/theme/designTokens"; // ← tambahkan ini
+import { APOTEK_INFO } from "../../../config/apotek";
 import { formatExpired, formatJamCetak, formatTanggalCetak } from "../../../utils/stokPrintUtils";
 
 const baseStyle = {
@@ -7,14 +8,14 @@ const baseStyle = {
   margin: "0 auto",
   fontFamily: "'Courier New', monospace",
   fontSize: 11,
-  color: "#000",
+  color: colors.text,
   padding: 0,
-  background: "#fff",
+  background: colors.bg,
   lineHeight: 1.3,
 };
 
 const dashed = {
-  borderBottom: "1px dashed #000",
+  borderBottom: `1px dashed ${colors.border}`,
   paddingBottom: 8,
   marginBottom: 8,
 };
@@ -43,11 +44,11 @@ const KartuBatchPrint = ({ batch }) => {
       </div>
 
       <div style={dashed}>
-        <div style={{ fontWeight: 700, wordBreak: "break-word" }}>{batch.namaProduk || "-"}</div>
-        <div style={{ fontSize: 9, color: "#444", marginBottom: 4 }}>{batch.kategori || "-"}</div>
+        <div style={{ fontWeight: 600, wordBreak: "break-word" }}>{batch.namaProduk || "-"}</div>
+        <div style={{ fontSize: 9, color: colors.textSecondary, marginBottom: 4 }}>{batch.kategori || "-"}</div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
           <span>Batch</span>
-          <span style={{ fontWeight: 700 }}>{kode}</span>
+          <span style={{ fontWeight: 600 }}>{kode}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
           <span>Expired</span>
@@ -55,7 +56,7 @@ const KartuBatchPrint = ({ batch }) => {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
           <span>Sisa stok</span>
-          <span style={{ fontWeight: 700 }}>{batch.stok || 0} unit</span>
+          <span style={{ fontWeight: 600 }}>{batch.stok || 0} unit</span>
         </div>
         {batch.no_faktur && batch.no_faktur !== "-" && (
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
@@ -82,18 +83,18 @@ const KartuBatchPrint = ({ batch }) => {
                 })}
               </div>
               <div style={{ fontSize: 9 }}>{log.aktivitas}</div>
-              {log.referensi && <div style={{ fontSize: 8, color: "#666" }}>{log.referensi}</div>}
+              {log.referensi && <div style={{ fontSize: 8, color: colors.textSecondary }}>{log.referensi}</div>}
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                 <span>Masuk: {log.masuk ? `+${log.masuk}` : "-"}</span>
                 <span>Keluar: {log.keluar ? `-${log.keluar}` : "-"}</span>
               </div>
-              <div style={{ fontSize: 9, fontWeight: 700 }}>Saldo: {log.saldoAkhir}</div>
+              <div style={{ fontSize: 9, fontWeight: 600 }}>Saldo: {log.saldoAkhir}</div>
             </div>
           ))
         )}
       </div>
 
-      <div style={{ textAlign: "center", fontWeight: 900, fontSize: 10 }}>
+      <div style={{ textAlign: "center", fontWeight: 600, fontSize: 10 }}>
         Sisa akhir: {batch.stok || 0} unit
       </div>
     </div>

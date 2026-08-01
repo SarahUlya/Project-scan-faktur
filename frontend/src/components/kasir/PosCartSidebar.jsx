@@ -6,8 +6,10 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import { usePos } from "../../context/PosContext";
 import { formatRupiahPos } from "../../utils/posCalculations";
+import { colors, radii, spacing, typography } from "@/theme/designTokens";
 import PosDiscountModal from "./PosDiscountModal";
 import PosPaymentModal from "./PosPaymentModal";
+import { printReceipt } from "@/utils/print/receiptPrinter";
 
 const PosCartSidebar = ({ onTransaksiSukses }) => {
   const {
@@ -29,21 +31,41 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
       sx={{
         width: 360,
         flexShrink: 0,
-        bgcolor: "#fff",
-        borderRadius: 3,
-        border: "1px solid #F1F5F9",
+        bgcolor: colors.bgCard,
+        borderRadius: `${radii.md}px`,
+        border: `1px solid ${colors.border}`,
         display: "flex",
         flexDirection: "column",
         maxHeight: "calc(100vh - 120px)",
         position: "sticky",
         top: 16,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 8px " + colors.shadow,
       }}
     >
-      <Box sx={{ p: 1.5, borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography sx={{ fontWeight: 800, fontSize: 15, color: "#1E293B" }}>Keranjang</Typography>
+      <Box
+        sx={{
+          p: 1.5,
+          borderBottom: `1px solid ${colors.border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography sx={{ fontWeight: 800, fontSize: 15, color: colors.text }}>
+          Keranjang
+        </Typography>
         {cart.length > 0 && (
-          <Typography onClick={clearCart} sx={{ fontSize: 11, fontWeight: 700, color: "#D81B60", cursor: "pointer", transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}>
+          <Typography
+            onClick={clearCart}
+            sx={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: colors.primary,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              "&:hover": { opacity: 0.7 },
+            }}
+          >
             BERSIHKAN
           </Typography>
         )}
@@ -51,58 +73,199 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
 
       <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
         {cart.length === 0 ? (
-          <Typography sx={{ color: "#94A3B8", textAlign: "center", py: 4, fontSize: 13 }}>
+          <Typography
+            sx={{
+              color: colors.textSecondary,
+              textAlign: "center",
+              py: 4,
+              fontSize: 13,
+            }}
+          >
             Keranjang kosong. Pilih produk atau scan barcode.
           </Typography>
         ) : (
           cart.map((item) => (
-            <Box key={item.cartKey} sx={{ mb: 1.5, pb: 1.5, borderBottom: "1px solid #F8FAFC" }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+            <Box
+              key={item.cartKey}
+              sx={{
+                mb: 1.5,
+                pb: 1.5,
+                borderBottom: `1px solid ${colors.border}`,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 1,
+                }}
+              >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 13, color: "#1E293B", lineHeight: 1.2 }}>{item.nama}</Typography>
-                  <Typography sx={{ fontSize: 10, color: "#94A3B8" }}>{item.barcode || `ID: ${item.produk_id}`}</Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: colors.text,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {item.nama}
+                  </Typography>
+                  <Typography
+                    sx={{ fontSize: 10, color: colors.textSecondary }}
+                  >
+                    {item.barcode || `ID: ${item.produk_id}`}
+                  </Typography>
                 </Box>
-                <IconButton size="small" onClick={() => removeFromCart(item.cartKey)} sx={{ color: "#EF4444", p: 0.4, flexShrink: 0 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => removeFromCart(item.cartKey)}
+                  sx={{ color: colors.danger, p: 0.4, flexShrink: 0 }}
+                >
                   <DeleteOutlineIcon fontSize="small" />
                 </IconButton>
               </Box>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1, marginTop: 1 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, bgcolor: "#F8FAFC", borderRadius: 1, p: 0.3 }}>
-                  <IconButton size="small" onClick={() => updateQty(item.cartKey, item.qty - 1)} disabled={item.qty <= 1} sx={{ p: 0.4, fontSize: 14 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 1,
+                  marginTop: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: spacing.xs,
+                    bgcolor: colors.bgMuted,
+                    borderRadius: `${radii.sm}px`,
+                    p: spacing.xs,
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => updateQty(item.cartKey, item.qty - 1)}
+                    disabled={item.qty <= 1}
+                    sx={{ p: spacing.xs, fontSize: typography.body }}
+                  >
                     <RemoveIcon fontSize="small" />
                   </IconButton>
-                  <Typography sx={{ minWidth: 24, textAlign: "center", fontWeight: 700, fontSize: 12 }}>{item.qty}</Typography>
-                  <IconButton size="small" onClick={() => updateQty(item.cartKey, item.qty + 1)} disabled={item.qty >= item.stok} sx={{ bgcolor: "#D81B60", color: "#fff", p: 0.4, "&:hover": { bgcolor: "#AD1457" } }}>
+                  <Typography
+                    sx={{
+                      minWidth: 24,
+                      textAlign: "center",
+                      fontWeight: 700,
+                      fontSize: typography.body,
+                    }}
+                  >
+                    {item.qty}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => updateQty(item.cartKey, item.qty + 1)}
+                    disabled={item.qty >= item.stok}
+                    sx={{
+                      bgcolor: colors.primary,
+                      color: colors.bgCard,
+                      p: spacing.xs,
+                      "&:hover": { bgcolor: colors.primaryHover },
+                    }}
+                  >
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Box>
-                <Typography sx={{ fontWeight: 800, fontSize: 13, color: "#D81B60", whiteSpace: "nowrap" }}>Rp {formatRupiahPos(item.qty * item.harga)}</Typography>
+                <Typography
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: 13,
+                    color: colors.danger,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Rp {formatRupiahPos(item.qty * item.harga)}
+                </Typography>
               </Box>
             </Box>
           ))
         )}
       </Box>
 
-      <Box sx={{ p: 1.5, borderTop: "1px solid #F1F5F9", bgcolor: "#FAFBFC" }}>
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: `1px solid ${colors.border}`,
+          bgcolor: colors.bgMuted,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.5,
+        }}
+      >
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-          <Typography sx={{ color: "#64748B", fontSize: 12 }}>Subtotal</Typography>
-          <Typography sx={{ fontWeight: 600, fontSize: 12 }}>Rp {formatRupiahPos(subtotal)}</Typography>
+          <Typography sx={{ color: colors.textSecondary, fontSize: 12 }}>
+            Subtotal
+          </Typography>
+          <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
+            Rp {formatRupiahPos(subtotal)}
+          </Typography>
         </Box>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 1,
+            alignItems: "center",
+          }}
+        >
           <Typography
             onClick={() => setDiscountOpen(true)}
-            sx={{ color: "#D81B60", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 0.3, transition: "all 0.2s", "&:hover": { opacity: 0.7 } }}
+            sx={{
+              color: colors.primary,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: spacing.xs,
+              transition: "all 0.2s",
+              "&:hover": { opacity: 0.7 },
+            }}
           >
             <LocalOfferOutlinedIcon sx={{ fontSize: 14 }} /> Diskon
           </Typography>
-          <Typography sx={{ fontWeight: 600, fontSize: 12, color: diskonNominal > 0 ? "#10B981" : "#64748B" }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: 12,
+              color: diskonNominal > 0 ? colors.success : colors.textSecondary,
+            }}
+          >
             - Rp {formatRupiahPos(diskonNominal)}
           </Typography>
         </Box>
-        <Typography sx={{ fontWeight: 800, fontSize: 20, color: "#D81B60", textAlign: "right", mb: 1.5 }}>
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: 20,
+            color: colors.primary,
+            textAlign: "right",
+            mb: 1.5,
+          }}
+        >
           Rp {formatRupiahPos(totalBayar)}
         </Typography>
-        <Typography sx={{ fontSize: 10, color: "#94A3B8", textAlign: "right", mb: 1.5 }}>Total Bayar</Typography>
+        <Typography
+          sx={{
+            fontSize: 10,
+            color: colors.textSecondary,
+            textAlign: "right",
+            mb: 1.5,
+          }}
+        >
+          Total Bayar
+        </Typography>
 
         <button
           type="button"
@@ -111,14 +274,15 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
           style={{
             width: "100%",
             padding: "13px",
-            borderRadius: 10,
+            borderRadius: `${radii.md}px`,
             border: "none",
-            background: cart.length === 0 ? "#F1F5F9" : "#D81B60",
-            color: cart.length === 0 ? "#94A3B8" : "#fff",
+            background: cart.length === 0 ? colors.bg : colors.primary,
+            color: cart.length === 0 ? colors.textSecondary : colors.bgCard,
             fontWeight: 800,
             fontSize: 13,
             cursor: cart.length === 0 ? "not-allowed" : "pointer",
-            boxShadow: cart.length === 0 ? "none" : "0 3px 12px rgba(216, 27, 96, 0.25)",
+            boxShadow:
+              cart.length === 0 ? "none" : `0 3px 12px ${colors.primary}40`,
             transition: "all 0.2s",
           }}
         >
@@ -126,7 +290,10 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
         </button>
       </Box>
 
-      <PosDiscountModal open={discountOpen} onClose={() => setDiscountOpen(false)} />
+      <PosDiscountModal
+        open={discountOpen}
+        onClose={() => setDiscountOpen(false)}
+      />
       <PosPaymentModal
         open={paymentOpen}
         onClose={() => setPaymentOpen(false)}

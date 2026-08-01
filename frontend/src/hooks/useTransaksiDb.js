@@ -2,22 +2,28 @@ import { useState, useEffect, useCallback } from "react";
 import {
   createTransaksi,
   getTransaksi,
-  getTransaksiDetail
+  getTransaksiDetail,
+  cancelTransaksiRequest,
+  approveCancellation,
+  rejectCancellation,
 } from "../api/transaksiApi";
 import { getUser, ROLE } from "../auth/auth";
 
 export default function useTransaksiDb() {
   const [transaksiList, setTransaksiList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const loadTransaksi = useCallback(async () => {
+    setLoading(true);
+
     try {
       const res = await getTransaksi();
-
       console.log("DATA TRANSAKSI API:", res);
-
       setTransaksiList(res);
     } catch (err) {
       console.error("Gagal mengambil transaksi:", err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -31,13 +37,23 @@ export default function useTransaksiDb() {
 
   const processTransaksi = useCallback(
     async (payload) => {
+      const validCart = (payload.cart || []).filter(
+        (item) => item.barcode !== null && item.barcode !== undefined && String(item.barcode).trim() !== ""
+      );
+
+      if (validCart.length === 0) {
+        throw new Error("Tidak ada item dengan barcode valid di keranjang!");
+      }
+
       const body = {
         metode_bayar: payload.metode,
-        items: payload.cart.map((item) => ({
-          barcode: item.barcode,
-          qty: item.qty,
+        items: validCart.map((item) => ({
+          barcode: String(item.barcode),
+          qty: Number(item.qty) || 1,
         })),
       };
+
+      console.log("PAYLOAD SANITIZED YANG DIKIRIM:", body);
 
       const res = await createTransaksi(body);
 
@@ -48,7 +64,21 @@ export default function useTransaksiDb() {
     [loadTransaksi]
   );
 
-  const cancelTransaksi = useCallback(async () => {
+  const requestCancellation = useCallback(async (transaksiId, userId, alasan) => {
+    const user = getUser();
+
+    if (!user) {
+      throw new Error("User belum login");
+    }
+
+    if (user.role !== ROLE.KASIR && user.role !== ROLE.STAFF) {
+      throw new Error("Hanya kasir atau staff yang dapat mengajukan pembatalan");
+    }
+
+    return await cancelTransaksiRequest(transaksiId, userId, alasan);
+  }, []);
+
+  const approveCancellationTransaksi = useCallback(async (transaksiId, adminId) => {
     const user = getUser();
 
     if (!user) {
@@ -56,17 +86,38 @@ export default function useTransaksiDb() {
     }
 
     if (user.role !== ROLE.ADMIN) {
-      throw new Error("Hanya admin yang dapat membatalkan transaksi");
+      throw new Error("Hanya admin yang dapat menyetujui pembatalan");
     }
 
-    throw new Error("Fitur pembatalan transaksi belum tersedia.");
-  }, []);
+    const result = await approveCancellation(transaksiId, adminId);
+    await loadTransaksi();
+    return result;
+  }, [loadTransaksi]);
+
+  const rejectCancellationTransaksi = useCallback(async (transaksiId, adminId) => {
+    const user = getUser();
+
+    if (!user) {
+      throw new Error("User belum login");
+    }
+
+    if (user.role !== ROLE.ADMIN) {
+      throw new Error("Hanya admin yang dapat menolak pembatalan");
+    }
+
+    const result = await rejectCancellation(transaksiId, adminId);
+    await loadTransaksi();
+    return result;
+  }, [loadTransaksi]);
 
   return {
     transaksiList,
+    loading,
     processTransaksi,
     getTransaksiDetail: loadTransaksiDetail,
-    cancelTransaksi,
+    requestCancellation,
+    approveCancellationTransaksi,
+    rejectCancellationTransaksi,
     reloadTransaksi: loadTransaksi,
   };
 }

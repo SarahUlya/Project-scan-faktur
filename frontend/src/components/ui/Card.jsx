@@ -1,6 +1,13 @@
 import React from "react";
 import { Paper } from "@mui/material";
-import { colors, shadows, radii } from "../../theme/designTokens";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 const Card = ({ children, sx = {}, ...props }) => (
   <Paper

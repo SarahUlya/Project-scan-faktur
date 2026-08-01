@@ -1,7 +1,13 @@
 import React from "react";
 import Modal from "../ui/Modal";
 import AlertIcon from "@mui/icons-material/WarningAmber";
-
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+} from "@/theme/designTokens";
 /**
  * Confirmation Modal untuk Batalkan Transaksi
  * Dengan desain yang jelas dan UX yang baik
@@ -19,11 +25,11 @@ const CancelTransactionConfirmModal = ({
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <div
           style={{
-            width: 60,
-            height: 60,
+            width: 70,
+            height: 40,
             borderRadius: 14,
-            background: "rgba(220, 38, 38, 0.1)",
-            color: "#DC2626",
+            background: colors.dangerLight,
+            color: colors.danger,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -37,7 +43,7 @@ const CancelTransactionConfirmModal = ({
             margin: 0,
             fontWeight: 800,
             fontSize: 18,
-            color: "#1E293B",
+            color: colors.text,
             marginBottom: 6,
           }}
         >
@@ -46,7 +52,7 @@ const CancelTransactionConfirmModal = ({
         <p
           style={{
             margin: 0,
-            color: "#64748B",
+            color: colors.textSecondary,
             fontSize: 13,
             marginTop: 6,
           }}
@@ -59,12 +65,12 @@ const CancelTransactionConfirmModal = ({
       {/* Alert Box */}
       <div
         style={{
-          background: "#FEF2F2",
-          border: "1px solid #FECACA",
+          background: colors.dangerLight,
+          border: "1px solid " + colors.danger,
           borderRadius: 10,
           padding: 12,
           marginBottom: 22,
-          color: "#991B1B",
+          color: colors.danger,
           fontSize: 12,
           fontWeight: 600,
         }}
@@ -75,11 +81,11 @@ const CancelTransactionConfirmModal = ({
       {/* Transaksi ID Info */}
       <div
         style={{
-          background: "#F8FAFC",
+          background: colors.bgMuted,
           borderRadius: 10,
           padding: 12,
           marginBottom: 22,
-          border: "1px solid #E2E8F0",
+          border: "1px solid " + colors.border,
         }}
       >
         <div
@@ -143,7 +149,7 @@ const CancelTransactionConfirmModal = ({
             padding: 12,
             borderRadius: 10,
             border: "none",
-            background: "#DC2626",
+            background: colors.danger,
             color: "#fff",
             fontWeight: 700,
             fontSize: 14,
@@ -154,13 +160,13 @@ const CancelTransactionConfirmModal = ({
           }}
           onMouseEnter={(e) => {
             if (!isLoading) {
-              e.target.style.background = "#B91C1C";
+              e.target.style.background = colors.danger;
               e.target.style.boxShadow = "0 6px 16px rgba(220, 38, 38, 0.35)";
             }
           }}
           onMouseLeave={(e) => {
             if (!isLoading) {
-              e.target.style.background = "#DC2626";
+              e.target.style.background = colors.danger;
               e.target.style.boxShadow = "0 4px 12px rgba(220, 38, 38, 0.25)";
             }
           }}

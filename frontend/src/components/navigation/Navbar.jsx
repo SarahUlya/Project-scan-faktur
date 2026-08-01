@@ -5,6 +5,14 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import usePeriodLabel from "../../hooks/usePeriodLabel";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  colors,
+ spacing,
+ typography,
+ radii,
+ shadows,
+ transitions,
+} from "@/theme/designTokens";
 
 
 const NAVBAR_MAP = {
@@ -14,7 +22,7 @@ const NAVBAR_MAP = {
     showPeriod: true,
   },
   "/produk": {
-    title: "Master Data Produk",
+    title: "Data Produk",
     desc: "Manajemen katalog obat dan perlengkapan medis.",
     showPeriod: false,
   },
@@ -111,10 +119,10 @@ const Navbar = () => {
             minWidth: 280,
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "#0F172A" }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: colors.text }}>
             {config.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: "#64748B", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: colors.textSecondary, fontWeight: 500 }}>
             {config.desc}
           </Typography>
         </Box>
@@ -125,23 +133,23 @@ const Navbar = () => {
             config.showPeriod && (
               <Box
                 sx={{
-                  background: "#fff",
+                  background: colors.bgMuted,
                   borderRadius: 3,
                   px: 2.5,
                   py: 1,
                   display: "flex",
                   alignItems: "center",
-                  boxShadow: "0 20px 40px rgba(15, 118, 110, 0.08)",
+                  boxShadow: "0 20px 40px " + colors.shadow,
                 }}
               >
-                <FilterListIcon sx={{ mr: 1, color: "#0F766E" }} />
-                <Typography sx={{ color: "#64748B", fontSize: 14 }}>
+                <FilterListIcon sx={{ mr: 1, color: colors.primary }} />
+                <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>
                   Periode:
                 </Typography>
-                <Box sx={{ fontWeight: 700, color: "#0F766E", ml: 1 }}>
+                <Box sx={{ fontWeight: 700, color: colors.primary, ml: 1 }}>
                   {periodLabel}
                 </Box>
-                <IconButton size="small" sx={{ color: "#0F766E" }}>
+                <IconButton size="small" sx={{ color: colors.primary }}>
                   <KeyboardArrowDownIcon />
                 </IconButton>
               </Box>

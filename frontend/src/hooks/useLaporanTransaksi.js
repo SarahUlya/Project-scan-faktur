@@ -17,6 +17,7 @@ const normalizePenjualan = (item) => ({
 
 export default function useLaporanTransaksi() {
   const [penjualan, setPenjualan] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [produkTerlaris, setProdukTerlaris] = useState([]);
   const [produkTidakLaku, setProdukTidakLaku] = useState([]);
   const [totalOmzet, setTotalOmzet] = useState(0);
@@ -74,7 +75,7 @@ export default function useLaporanTransaksi() {
     };
 
 
-    loadLaporan();
+    loadLaporan().finally(() => setLoading(false));
 
   }, []);
 
@@ -98,5 +99,6 @@ export default function useLaporanTransaksi() {
     getProdukTidakLaku,
     totalOmzet,
     jumlahTransaksi,
+    loading,
   };
 }

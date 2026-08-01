@@ -1,59 +1,61 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import MedicationIcon from "@mui/icons-material/Medication";
+import { colors, radii, spacing, typography } from "@/theme/designTokens";
 
 const ProductCard = ({ item, getNamaKategori, getNamaSatuan }) => {
-	return (
-		<Box
-			sx={{
-				background: "#fff",
-				borderRadius: 4,
-				p: 2,
-				border: "1px solid #F1F5F9",
-			}}
-		>
-			<Box
-				sx={{
-					height: 120,
-					bgcolor: "#F8FAFC",
-					borderRadius: 3,
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					mb: 2,
-				}}
-			>
-				<MedicationIcon
-					sx={{
-						fontSize: 48,
-						color: "#CBD5E1",
-					}}
-				/>
-			</Box>
+  return (
+    <Box
+      sx={{
+        background: colors.bgCard,
+        borderRadius: `${radii.md}px`,
+        p: spacing.sm,
+        border: `1px solid ${colors.border}`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: 200,
+      }}
+    >
+      <Box
+        sx={{
+          height: 120,
+          bgcolor: colors.bgMuted,
+          borderRadius: `${radii.sm}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          mb: spacing.xs,
+          width: "100%",
+        }}
+      >
+        <MedicationIcon sx={{ fontSize: 48, color: colors.border }} />
+      </Box>
 
-			<Typography fontSize={12}>
-				{getNamaKategori(item.id_kategori)}
-			</Typography>
+      <Typography fontSize={typography.body}>
+        {getNamaKategori(item.id_kategori)}
+      </Typography>
 
-			<Typography fontWeight={700}>
-				{item.nama_produk}
-			</Typography>
+      <Typography fontWeight={700}>
+        {item.nama_produk}
+      </Typography>
 
-			<Typography fontSize={13}>
-				{getNamaSatuan(item.id_satuan)}
-			</Typography>
+      <Typography fontSize={typography.body}>
+        {getNamaSatuan(item.id_satuan)}
+      </Typography>
 
-			<Typography
-				sx={{
-					mt: 2,
-					color: "#0F766E",
-					fontWeight: 700,
-				}}
-			>
-				Rp {item.harga_jual}
-			</Typography>
-		</Box>
-	);
+      <Typography
+        sx={{
+          mt: spacing.xs,
+          color: colors.primary,
+          fontWeight: 700,
+        }}
+      >
+        Rp {item.harga_jual}
+      </Typography>
+    </Box>
+  );
 };
 
 export default ProductCard;

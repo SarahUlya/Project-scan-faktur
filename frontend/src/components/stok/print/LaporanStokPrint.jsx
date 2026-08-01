@@ -1,5 +1,6 @@
 import React from "react";
-import { APOTEK_INFO } from "../../../config/apotekConfig";
+import { colors } from "@/theme/designTokens"; // ← tambahkan ini
+import { APOTEK_INFO } from "../../../config/apotek";
 import {
   buildLaporanSummary,
   formatExpired,
@@ -12,14 +13,14 @@ const baseStyle = {
   margin: "0 auto",
   fontFamily: "'Courier New', monospace",
   fontSize: 11,
-  color: "#000",
+  color: colors.text,
   padding: 0,
-  background: "#fff",
+  background: colors.bg,
   lineHeight: 1.3,
 };
 
 const dashed = {
-  borderBottom: "1px dashed #000",
+  borderBottom: `1px dashed ${colors.border}`,
   paddingBottom: 8,
   marginBottom: 8,
 };
@@ -51,13 +52,13 @@ const LaporanStokPrint = ({ rows = [], judul = "LAPORAN STOK & BATCH" }) => {
         ) : (
           rows.map((row, i) => (
             <div key={`${row.kodeBatch}-${i}`} style={{ marginBottom: 6 }}>
-              <div style={{ fontWeight: 700, wordBreak: "break-word" }}>
+              <div style={{ fontWeight: 600, wordBreak: "break-word" }}>
                 {i + 1}. {row.namaProduk}
               </div>
-              <div style={{ fontSize: 9, color: "#444" }}>{row.kategori}</div>
+              <div style={{ fontSize: 9, color: colors.textMuted }}>{row.kategori}</div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                 <span>Batch</span>
-                <span style={{ fontWeight: 700 }}>{row.kodeBatch}</span>
+                <span style={{ fontWeight: 600 }}>{row.kodeBatch}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                 <span>Expired</span>
@@ -65,11 +66,11 @@ const LaporanStokPrint = ({ rows = [], judul = "LAPORAN STOK & BATCH" }) => {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                 <span>Stok</span>
-                <span style={{ fontWeight: 700 }}>{row.stok} unit</span>
+                <span style={{ fontWeight: 600 }}>{row.stok} unit</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                 <span>Status</span>
-                <span style={{ fontWeight: 700 }}>{row.status}</span>
+                <span style={{ fontWeight: 600 }}>{row.status}</span>
               </div>
               {row.no_faktur && row.no_faktur !== "-" && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
@@ -102,7 +103,7 @@ const LaporanStokPrint = ({ rows = [], judul = "LAPORAN STOK & BATCH" }) => {
       </div>
 
       <div style={{ textAlign: "center", fontSize: 9 }}>Laporan stok apotek</div>
-      <div style={{ textAlign: "center", fontSize: 8, color: "#666" }}>Dicetak otomatis oleh sistem</div>
+      <div style={{ textAlign: "center", fontSize: 8, color: colors.textMuted }}>Dicetak otomatis oleh sistem</div>
     </div>
   );
 };
