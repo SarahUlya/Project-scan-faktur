@@ -4,7 +4,7 @@ import { getSupplier, createSupplier } from "../api/supplierApi";
 const normalizeSupplier = (item) => ({
   id: item.id_supplier ?? item.id ?? "",
   nama: item.nama_supplier ?? item.nama ?? "",
-  penanggungJawab: item.penanggung_jawab ?? item.penanggungJawab ?? "",
+  email: item.email ?? "",
   telepon: item.telepon ?? "",
   alamat: item.alamat ?? "",
   status: item.status ?? "AKTIF",
@@ -43,15 +43,14 @@ export default function useSupplierDb() {
     try {
       const payload = {
         nama_supplier: item.nama,
-        email: "supplier@gmail.com",
-        telepon: item.telepon,
-        alamat: item.alamat,
+        email: item.email,
+        telepon: item.telepon || null, // Opsional
+        alamat: item.alamat || null,   // Opsional
       };
 
       console.log("Payload:", payload);
 
       await createSupplier(payload);
-
       await loadSupplier();
     } catch (err) {
       console.error("Response:", err.response?.data);

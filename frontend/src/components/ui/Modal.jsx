@@ -1,8 +1,7 @@
 // src/components/ui/Modal.jsx
 import React from "react";
-import { Box, Modal as MuiModal, IconButton } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { colors, radii, shadows, transitions } from "@/theme/designTokens";
+import { Box, Modal as MuiModal } from "@mui/material";
+import { colors, radii, shadows } from "@/theme/designTokens";
 
 const Modal = ({ open, onClose, children, width = 500 }) => {
   return (
@@ -27,6 +26,7 @@ const Modal = ({ open, onClose, children, width = 500 }) => {
           overflow: "auto",
           position: "relative",
           outline: "none",
+          p: 3, // ← PERBAIKAN: Tambahkan padding 24px di sekeliling modal
         }}
       >
         {children}

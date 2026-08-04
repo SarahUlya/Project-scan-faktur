@@ -9,7 +9,7 @@ import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
 import StokPrintActions from "../stok/StokPrintActions";
 import useStokPrint from "../../hooks/useStokPrint";
-import useProdukDb from "../../hooks/useProdukDb";
+import useProdukBatch from "../../hooks/useProdukBatch";
 import { normalizeDexieBatchRows } from "../../utils/stokPrintUtils";
 import { useEffect } from "react";
 import {
@@ -39,26 +39,41 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
   const [page, setPage] = useState(1);
   const { printLaporan, exportLaporanPdf, PrintPortal } = useStokPrint();
 
-  const { produk } = useProdukDb();
+  const { produk } = useProdukBatch();
+  console.log("DATA PRODUK EXPIRED", produk);
 
   const data = useMemo(() => {
     const rows = [];
 
+    console.log("PRODUK MASUK:", produk);
+
     (produk || []).forEach((p) => {
+      console.log("PRODUK LOOP:", p.nama_produk);
+      console.log("BATCH:", p.batch);
+
       (p.batch || []).forEach((batch) => {
+        console.log("PUSH BATCH:", batch);
+
         rows.push({
-          id: batch.id,
+          id: batch.id_batch,
           nama: p.nama_produk,
           type: p.satuan?.kode || "-",
-          batch: batch.kodeBatch || batch.no_faktur || "-",
-          exp: batch.expired,
-          stok: Number(batch.stok || 0),
-          status: computeStatus(batch.expired),
+          batch: batch.no_batch || "-",
+          exp: batch.expired_date,
+          stok: Number(batch.qty_sisa || 0),
+          status: computeStatus(batch.expired_date),
         });
       });
     });
+    console.log(
+      "jumlah produk:",
+      produk.length,
+      "punya batch:",
+      produk.filter(p => p.batchproduk?.length > 0).length
+    );
+    console.log("HASIL ROWS:", rows);
 
-    return rows.sort((a, b) => new Date(a.exp || 0) - new Date(b.exp || 0));
+    return rows;
   }, [produk]);
 
   const expiredCount = useMemo(
@@ -127,10 +142,10 @@ const LaporanStokExpired = forwardRef(({ onSummaryChange }, ref) => {
         <Typography sx={{ fontSize: 13 }}>
           {row.exp
             ? new Date(row.exp).toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
             : "-"}
         </Typography>
       ),

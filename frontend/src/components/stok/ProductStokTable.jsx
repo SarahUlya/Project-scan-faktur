@@ -5,9 +5,9 @@ import { colors, radii, transitions } from "@/theme/designTokens";
 
 // Helper: ambil expired terdekat dari batch aktif
 const getEarliestExpired = (batches) => {
-  const valid = (batches || []).filter((b) => Number(b.stok) > 0);
+  const valid = (batches || []).filter((b) => Number(b.qty_sisa) > 0);
   if (!valid.length) return null;
-  const sorted = [...valid].sort((a, b) => new Date(a.expired) - new Date(b.expired));
+  const sorted = [...valid].sort((a, b) => new Date(a.expired_date) - new Date(b.expired_date));
   return sorted[0];
 };
 
@@ -116,7 +116,7 @@ const ProductStokTable = ({ products, onDetailClick }) => {
             const activeBatches = (product.batch || []).filter((b) => Number(b.stok) > 0);
             const totalStok = activeBatches.reduce((sum, b) => sum + Number(b.stok), 0);
             const earliest = getEarliestExpired(product.batch);
-            const status = getStatusBadge(earliest?.expired);
+            const status = getStatusBadge(earliest?.expired_date);
 
             return (
               <tr
@@ -134,7 +134,7 @@ const ProductStokTable = ({ products, onDetailClick }) => {
                     {product.nama_produk || "-"}
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: colors.textMuted }}>
-                    {product.nama_kategori || "Tanpa Kategori"} • Kode: {product.barcode || "-"}
+                    {product.kategori?.nama_kategori || "Tanpa Kategori"} • Kode: {product.barcode || "-"}
                   </Typography>
                 </td>
                 <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14, fontWeight: 600, color: colors.text }}>
@@ -147,7 +147,7 @@ const ProductStokTable = ({ products, onDetailClick }) => {
                   {earliest ? (
                     <>
                       <Typography sx={{ fontSize: 13, fontWeight: 500, color: colors.text }}>
-                        {new Date(earliest.expired).toLocaleDateString("id-ID", {
+                        {new Date(earliest.expired_date).toLocaleDateString("id-ID", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",

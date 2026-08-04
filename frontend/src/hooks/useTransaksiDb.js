@@ -3,9 +3,7 @@ import {
   createTransaksi,
   getTransaksi,
   getTransaksiDetail,
-  cancelTransaksiRequest,
-  approveCancellation,
-  rejectCancellation,
+  cancelTransaksi as cancelTransaksiApi, // Impor fungsi API pembatalan langsung
 } from "../api/transaksiApi";
 import { getUser, ROLE } from "../auth/auth";
 
@@ -15,7 +13,6 @@ export default function useTransaksiDb() {
 
   const loadTransaksi = useCallback(async () => {
     setLoading(true);
-
     try {
       const res = await getTransaksi();
       console.log("DATA TRANSAKSI API:", res);
@@ -38,7 +35,10 @@ export default function useTransaksiDb() {
   const processTransaksi = useCallback(
     async (payload) => {
       const validCart = (payload.cart || []).filter(
-        (item) => item.barcode !== null && item.barcode !== undefined && String(item.barcode).trim() !== ""
+        (item) =>
+          item.barcode !== null &&
+          item.barcode !== undefined &&
+          String(item.barcode).trim() !== ""
       );
 
       if (validCart.length === 0) {
@@ -56,68 +56,41 @@ export default function useTransaksiDb() {
       console.log("PAYLOAD SANITIZED YANG DIKIRIM:", body);
 
       const res = await createTransaksi(body);
-
       await loadTransaksi();
-
       return res.data;
     },
     [loadTransaksi]
   );
 
-  const requestCancellation = useCallback(async (transaksiId, userId, alasan) => {
-    const user = getUser();
+  // FUNGSI PEMBATALAN LANGSUNG (Khusus Admin)
+  const cancelTransaksi = useCallback(
+    async (transaksiId) => {
+      const user = getUser();
 
-    if (!user) {
-      throw new Error("User belum login");
-    }
+      if (!user) {
+        throw new Error("User belum login");
+      }
 
-    if (user.role !== ROLE.KASIR && user.role !== ROLE.STAFF) {
-      throw new Error("Hanya kasir atau staff yang dapat mengajukan pembatalan");
-    }
+      if (user.role !== ROLE.ADMIN) {
+        throw new Error("Hanya admin yang dapat membatalkan transaksi");
+      }
 
-    return await cancelTransaksiRequest(transaksiId, userId, alasan);
-  }, []);
+      const result = await cancelTransaksiApi(transaksiId);
 
-  const approveCancellationTransaksi = useCallback(async (transaksiId, adminId) => {
-    const user = getUser();
+      // Reload daftar transaksi setelah pembatalan
+      await loadTransaksi();
 
-    if (!user) {
-      throw new Error("User belum login");
-    }
-
-    if (user.role !== ROLE.ADMIN) {
-      throw new Error("Hanya admin yang dapat menyetujui pembatalan");
-    }
-
-    const result = await approveCancellation(transaksiId, adminId);
-    await loadTransaksi();
-    return result;
-  }, [loadTransaksi]);
-
-  const rejectCancellationTransaksi = useCallback(async (transaksiId, adminId) => {
-    const user = getUser();
-
-    if (!user) {
-      throw new Error("User belum login");
-    }
-
-    if (user.role !== ROLE.ADMIN) {
-      throw new Error("Hanya admin yang dapat menolak pembatalan");
-    }
-
-    const result = await rejectCancellation(transaksiId, adminId);
-    await loadTransaksi();
-    return result;
-  }, [loadTransaksi]);
+      return result;
+    },
+    [loadTransaksi]
+  );
 
   return {
     transaksiList,
     loading,
     processTransaksi,
     getTransaksiDetail: loadTransaksiDetail,
-    requestCancellation,
-    approveCancellationTransaksi,
-    rejectCancellationTransaksi,
+    cancelTransaksi, // Expose fungsi cancelTransaksi
     reloadTransaksi: loadTransaksi,
   };
 }

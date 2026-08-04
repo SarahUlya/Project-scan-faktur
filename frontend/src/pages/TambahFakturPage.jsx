@@ -20,7 +20,7 @@ import {
   fieldInputSx,
   pageHeaderSx,
   statCardSx,
-} from "@/theme/designTokens";import {
+} from "@/theme/designTokens"; import {
   defaultFakturInfo,
   emptyItem,
   hitungSubtotalItem,
@@ -152,7 +152,6 @@ const TambahFakturPage = () => {
             updated.satuan = p.nama_satuan || p.satuan || "Pcs";
             updated.barcode = p.barcode;
             updated.exp_date = getOneYearLater(fakturInfo.tanggal);
-            setTimeout(() => focusRowInput(id, "exp_date"), 100);
           }
         }
 
@@ -197,7 +196,31 @@ const TambahFakturPage = () => {
     });
 
     setBarcodeInput("");
-    setTimeout(() => focusRowInput(newId, "exp_date"), 100);
+
+    setTimeout(() => {
+      barcodeInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleBarcodeBlur = (e) => {
+    const target = e.relatedTarget;
+
+    const isInteractive =
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "BUTTON" ||
+        target.getAttribute("role") === "button" ||
+        target.closest("button") ||
+        target.closest(".MuiSelect-root") ||
+        target.closest(".MuiButtonBase-root"));
+
+    if (!isInteractive && activeTab === "barang") {
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 50);
+    }
   };
 
   const handleTambahBaris = () => {
@@ -330,6 +353,7 @@ const TambahFakturPage = () => {
               barcodeInputRef={barcodeInputRef}
               inputRefs={inputRefs}
               handleBarcodeScan={handleBarcodeScan}
+              handleBarcodeBlur={handleBarcodeBlur}
               handleInputKeyDown={handleInputKeyDown}
               updateItem={updateItem}
               handleTambahBaris={handleTambahBaris}

@@ -113,9 +113,17 @@ const ProdukForm = ({
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ minWidth: 340, maxWidth: 520 }}
+      sx={{
+        width: "100%",
+        maxHeight: "80vh", // 1. Mencegah modal melebihi 80% tinggi layar
+        display: "flex",
+        flexDirection: "column", // 2. Mengatur layout menjadi Flexbox vertikal
+        p: 3,
+        boxSizing: "border-box",
+      }}
     >
-      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+      {/* HEADER (TETAP DI ATAS) */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexShrink: 0 }}>
         {mode === "edit" && (
           <Box
             sx={{
@@ -146,9 +154,88 @@ const ProdukForm = ({
         </Box>
       </Box>
 
-      {mode === "edit" && initialData && (
-        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-          <Box sx={{ flex: 1 }}>
+      {/* AREA INPUT FORM (BISA DI-SCROLL JIKA TINGGI MELEBIHI LAYAR) */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto", // 3. Memungkinkan scrollbar di area input
+          pr: 1, // Padding kanan agar scrollbar tidak menutupi input
+        }}
+      >
+        {mode === "edit" && initialData && (
+          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#94A3B8",
+                  fontWeight: 700,
+                  mb: 1,
+                  display: "block",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                ID PRODUK
+              </Typography>
+              <TextField
+                value={initialData.id_produk}
+                disabled
+                fullWidth
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                  mt: 0.5,
+                  bgcolor: "#F8FAFC",
+                }}
+              />
+            </Box>
+          </Box>
+        )}
+
+        <Box sx={{ mb: 2 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            NAMA PRODUK <span style={{ color: "#EF4444" }}>*</span>
+          </Typography>
+          <TextField
+            placeholder="Contoh: Paracetamol 500mg"
+            value={form.nama_produk}
+            onChange={(e) => handleChange("nama_produk", e.target.value)}
+            fullWidth
+            size="small"
+            error={!!error.nama_produk}
+            helperText={
+              error.nama_produk ? (
+                <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                  {error.nama_produk}
+                </span>
+              ) : (
+                ""
+              )
+            }
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            mb: 2,
+          }}
+        >
+          <Box>
             <Typography
               variant="caption"
               sx={{
@@ -160,323 +247,255 @@ const ProdukForm = ({
                 letterSpacing: 1,
               }}
             >
-              ID PRODUK
+              KATEGORI OBAT
+            </Typography>
+            <FormControl fullWidth size="small">
+              <Select
+                value={form.id_kategori || ""}
+                onChange={(e) =>
+                  handleChange(
+                    "id_kategori",
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                displayEmpty
+              >
+                <MenuItem value="">Pilih Kategori</MenuItem>
+
+                {kategori?.map((k) => (
+                  <MenuItem key={k.id_kategori} value={k.id_kategori}>
+                    {k.nama_kategori}
+                  </MenuItem>
+                ))}
+              </Select>
+
+              {error.id_kategori && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#EF4444",
+                    fontWeight: 600,
+                    mt: 0.5,
+                  }}
+                >
+                  {error.id_kategori}
+                </Typography>
+              )}
+            </FormControl>
+          </Box>
+
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#94A3B8",
+                fontWeight: 700,
+                mb: 1,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              SATUAN DASAR
+            </Typography>
+            <FormControl fullWidth size="small">
+              <Select
+                value={form.satuan_id || ""}
+                onChange={(e) => handleChange("satuan_id", e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="">Pilih Satuan</MenuItem>
+
+                {satuanOptions?.map((s) => (
+                  <MenuItem key={s.id} value={s.id}>
+                    {s.nama}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            mb: 2,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#94A3B8",
+                fontWeight: 700,
+                mb: 1,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              STOK MINIMUM{" "}
+              <span
+                style={{
+                  color: "#E91E63",
+                  fontWeight: 600,
+                  textTransform: "none",
+                }}
+              >
+                (Peringatan Stok Rendah)
+              </span>
             </Typography>
             <TextField
-              value={initialData.id_produk}
-              disabled
+              type="number"
+              value={form.stok_minimum}
+              onChange={(e) => handleChange("stok_minimum", e.target.value)}
               fullWidth
               size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                mt: 1,
-                bgcolor: "#F8FAFC",
+              error={!!error.stok_minimum}
+              helperText={
+                error.stok_minimum ? (
+                  <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                    {error.stok_minimum}
+                  </span>
+                ) : (
+                  ""
+                )
+              }
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              InputProps={{
+                endAdornment: (
+                  <Typography
+                    sx={{ color: "#94A3B8", fontSize: 14, fontWeight: 600 }}
+                  >
+                    {stokUnitLabel}
+                  </Typography>
+                ),
               }}
             />
           </Box>
+          <Box>
+            <StatusToggle
+              value={form.is_active}
+              onChange={(value) => handleChange("is_active", value)}
+              label="STATUS PRODUK"
+              variant="horizontal"
+            />
+          </Box>
         </Box>
-      )}
 
-      <Box sx={{ mb: 2 }}>
-        <Typography
-          variant="caption"
+        <Box
           sx={{
-            color: "#94A3B8",
-            fontWeight: 700,
-            mb: 1,
-            display: "block",
-            textTransform: "uppercase",
-            letterSpacing: 1,
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            mb: 2,
           }}
         >
-          NAMA PRODUK <span style={{ color: "#EF4444" }}>*</span>
-        </Typography>
-        <TextField
-          placeholder="Contoh: Paracetamol 500mg"
-          value={form.nama_produk}
-          onChange={(e) => handleChange("nama_produk", e.target.value)}
-          fullWidth
-          size="small"
-          error={!!error.nama_produk}
-          helperText={
-            error.nama_produk ? (
-              <span style={{ color: "#EF4444", fontWeight: 600 }}>
-                {error.nama_produk}
-              </span>
-            ) : (
-              ""
-            )
-          }
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-        />
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          mb: 2,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#94A3B8",
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            KATEGORI OBAT
-          </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={form.id_kategori || ""}
-              onChange={(e) =>
-                handleChange(
-                  "id_kategori",
-                  e.target.value === "" ? "" : Number(e.target.value),
-                )
-              }
-              displayEmpty
-            >
-              <MenuItem value="">Pilih Kategori</MenuItem>
-
-              {kategori?.map((k) => (
-                <MenuItem key={k.id_kategori} value={k.id_kategori}>
-                  {k.nama_kategori}
-                </MenuItem>
-              ))}
-            </Select>
-
-            {error.id_kategori && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "#EF4444",
-                  fontWeight: 600,
-                  mt: 0.5,
-                }}
-              >
-                {error.id_kategori}
-              </Typography>
-            )}
-          </FormControl>
-        </Box>
-
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#94A3B8",
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            SATUAN DASAR
-          </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={form.satuan_id || ""}
-              onChange={(e) => handleChange("satuan_id", e.target.value)}
-              displayEmpty
-            >
-              <MenuItem value="">Pilih Satuan</MenuItem>
-
-              {satuanOptions?.map((s) => (
-                <MenuItem key={s.id} value={s.id}>
-                  {s.nama}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#94A3B8",
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            STOK MINIMUM{" "}
-            <span
-              style={{
-                color: "#E91E63",
-                fontWeight: 600,
-                textTransform: "none",
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#94A3B8",
+                fontWeight: 700,
+                mb: 1,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: 1,
               }}
             >
-              (Peringatan Stok Rendah)
-            </span>
-          </Typography>
-          <TextField
-            type="number"
-            value={form.stok_minimum}
-            onChange={(e) => handleChange("stok_minimum", e.target.value)}
-            fullWidth
-            size="small"
-            error={!!error.stok_minimum}
-            helperText={
-              error.stok_minimum ? (
-                <span style={{ color: "#EF4444", fontWeight: 600 }}>
-                  {error.stok_minimum}
-                </span>
-              ) : (
-                ""
-              )
-            }
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            InputProps={{
-              endAdornment: (
-                <Typography
-                  sx={{ color: "#94A3B8", fontSize: 14, fontWeight: 600 }}
-                >
-                  {stokUnitLabel}
-                </Typography>
-              ),
-            }}
-          />
-        </Box>
-        <Box>
-          <StatusToggle
-            value={form.is_active}
-            onChange={(value) => handleChange("is_active", value)}
-            label="STATUS PRODUK"
-            variant="horizontal"
-          />
-        </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#94A3B8",
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            HARGA JUAL <span style={{ color: "#EF4444" }}>*</span>
-          </Typography>
-          <TextField
-            type="number"
-            value={form.harga_jual}
-            onChange={(e) => handleChange("harga_jual", e.target.value)}
-            fullWidth
-            size="small"
-            error={!!error.harga_jual}
-            helperText={
-              error.harga_jual ? (
-                <span style={{ color: colors.stockLow, fontWeight: 600 }}>
-                  {error.harga_jual}
-                </span>
-              ) : (
-                ""
-              )
-            }
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 2,
-              },
-            }}
-          />
-        </Box>
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: colors.textSecondary,
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            BARCODE
-          </Typography>
-          <TextField
-            value={form.barcode}
-            onChange={(e) => handleChange("barcode", e.target.value)}
-            fullWidth
-            size="small"
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-          />
+              HARGA JUAL <span style={{ color: "#EF4444" }}>*</span>
+            </Typography>
+            <TextField
+              type="number"
+              value={form.harga_jual}
+              onChange={(e) => handleChange("harga_jual", e.target.value)}
+              fullWidth
+              size="small"
+              error={!!error.harga_jual}
+              helperText={
+                error.harga_jual ? (
+                  <span style={{ color: colors.stockLow, fontWeight: 600 }}>
+                    {error.harga_jual}
+                  </span>
+                ) : (
+                  ""
+                )
+              }
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.textSecondary,
+                fontWeight: 700,
+                mb: 1,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              BARCODE
+            </Typography>
+            <TextField
+              value={form.barcode}
+              onChange={(e) => handleChange("barcode", e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            />
+          </Box>
         </Box>
       </Box>
 
-      <Divider sx={{ mb: 3 }} />
-
-      <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-        <Button
-          type="button"
-          variant="outlined"
-          sx={{
-            flex: 1,
-            fontWeight: 700,
-            fontSize: 15,
-            borderRadius: 2,
-            borderColor: colors.border,
-            color: colors.textOnDark,
-            "&:hover": { borderColor: colors.border, bgcolor: colors.bgLight },
-          }}
-          onClick={onClose}
-        >
-          Batal
-        </Button>
-        <Button
-          type="submit"
-          sx={{
-            flex: 1,
-            fontWeight: 700,
-            fontSize: 15,
-            borderRadius: 2,
-            bgcolor: colors.primary,
-            color: colors.textOnDark,
-            "&:hover": { bgcolor: colors.primaryDark },
-            boxShadow: "0 4px 14px rgba(233, 30, 99, 0.3)",
-            display: "flex",
-            gap: 1,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {mode === "edit" && <SaveIcon fontSize="small" />}
-          {mode === "add" ? "Simpan Produk" : "Simpan Perubahan"}
-        </Button>
+      {/* FOOTER ACTION (TETAP DI BAWAH) */}
+      <Box sx={{ pt: 2, mt: 1, flexShrink: 0 }}>
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            type="button"
+            variant="outlined"
+            sx={{
+              flex: 1,
+              fontWeight: 700,
+              fontSize: 15,
+              borderRadius: 2,
+              borderColor: colors.border,
+              color: colors.textOnDark,
+              "&:hover": { borderColor: colors.border, bgcolor: colors.bgLight },
+            }}
+            onClick={onClose}
+          >
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            sx={{
+              flex: 1,
+              fontWeight: 700,
+              fontSize: 15,
+              borderRadius: 2,
+              bgcolor: colors.primary,
+              color: colors.textOnDark,
+              "&:hover": { bgcolor: colors.primaryDark },
+              boxShadow: "0 4px 14px rgba(233, 30, 99, 0.3)",
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {mode === "edit" && <SaveIcon fontSize="small" />}
+            {mode === "add" ? "Simpan Produk" : "Simpan Perubahan"}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

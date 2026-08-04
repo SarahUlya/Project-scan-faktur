@@ -1,53 +1,37 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../ui/Modal";
+import CancelTransactionConfirmModal from "./CancelTransactionConfirmModal";
 import useTransaksiDb from "../../hooks/useTransaksiDb";
 import PosStruk from "../kasir/PosStruk";
 import { formatRupiahPos } from "../../utils/posCalculations";
+import { getUser, ROLE } from "../../auth/auth";
 import PrintIcon from "@mui/icons-material/Print";
-import CloseIcon from "@mui/icons-material/Close";
-import CheckIcon from "@mui/icons-material/Check";
-import CancelIcon from "@mui/icons-material/Cancel";
-import { getUser, ROLE } from "../../auth/auth"; // ← PASTIKAN INI ADA
-import {
-  Box,
-  Button,
-  Typography,
-  Chip,
-  CircularProgress,
-  Alert,
-  Snackbar,
-} from "@mui/material";
-import {
-  colors,
-  spacing,
-  typography,
-  radii,
-  shadows,
-  transitions,
-} from "@/theme/designTokens";
-import { 
-  cancelTransaksiRequest, 
-  approveCancellation, 
-  rejectCancellation 
-} from "../../api/transaksiApi";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
-const DetailTransaksiModal = ({ open, transaksiId, onClose, onRefresh }) => {
+const DetailTransaksiModal = ({
+  open,
+  transaksiId,
+  onClose,
+  onRefresh
+}) => {
+  const {
+    getTransaksiDetail,
+    cancelTransaksi
+  } = useTransaksiDb();
+
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  const { getTransaksiDetail } = useTransaksiDb();
-  const user = getUser(); // ← PASTIKAN INI ADA
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
-  // ... rest of the code ...
   const loadDetail = async () => {
     if (!open || !transaksiId) return;
     setLoading(true);
     try {
       const d = await getTransaksiDetail(transaksiId);
       setDetail(d);
-    } catch (error) {
-      console.error("Error loading detail:", error);
+    } catch (err) {
+      console.error("Gagal memuat detail transaksi:", err);
     } finally {
       setLoading(false);
     }
@@ -57,67 +41,27 @@ const DetailTransaksiModal = ({ open, transaksiId, onClose, onRefresh }) => {
     loadDetail();
   }, [open, transaksiId]);
 
-  const handleCancelRequest = async () => {
-    if (!user) {
-      setSnackbar({ open: true, message: "Silakan login terlebih dahulu", severity: "error" });
-      return;
-    }
-
-    if (!window.confirm("Apakah Anda yakin ingin mengajukan pembatalan transaksi ini?")) {
-      return;
-    }
-
-    setActionLoading(true);
+  const handleBatalkan = async () => {
+    setCancelLoading(true);
     try {
-      await cancelTransaksiRequest(transaksiId, user.id);
-      setSnackbar({ open: true, message: "Pengajuan pembatalan berhasil dikirim", severity: "success" });
+      await cancelTransaksi(transaksiId);
+      alert("Transaksi berhasil dibatalkan");
+      
       await loadDetail();
+      setCancelConfirmOpen(false);
+      
       if (onRefresh) onRefresh();
-    } catch (error) {
-      setSnackbar({ open: true, message: error.message || "Gagal mengajukan pembatalan", severity: "error" });
+    } catch (err) {
+      alert(err.message || "Gagal membatalkan transaksi");
     } finally {
-      setActionLoading(false);
+      setCancelLoading(false);
     }
   };
 
-  const handleApproveCancellation = async () => {
-    if (!window.confirm("Apakah Anda yakin ingin menyetujui pembatalan transaksi ini?")) {
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      await approveCancellation(transaksiId, user.id);
-      setSnackbar({ open: true, message: "Transaksi berhasil dibatalkan", severity: "success" });
-      await loadDetail();
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      setSnackbar({ open: true, message: error.message || "Gagal membatalkan transaksi", severity: "error" });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRejectCancellation = async () => {
-    if (!window.confirm("Apakah Anda yakin ingin menolak pengajuan pembatalan ini?")) {
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      await rejectCancellation(transaksiId, user.id);
-      setSnackbar({ open: true, message: "Pengajuan pembatalan ditolak", severity: "info" });
-      await loadDetail();
-      if (onRefresh) onRefresh();
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handlePrintStruk = () => {
+  const handlePrint = () => {
     const printWindow = window.open("", "_blank", "width=400,height=600");
     if (!printWindow) {
-      setSnackbar({ open: true, message: "Mohon izinkan pop-up untuk mencetak", severity: "warning" });
+      alert("Mohon izinkan pop-up untuk mencetak struk.");
       return;
     }
 
@@ -135,12 +79,8 @@ const DetailTransaksiModal = ({ open, transaksiId, onClose, onRefresh }) => {
               margin: 0;
               background: white;
             }
-            * { 
-              box-sizing: border-box; 
-            }
-            @media print {
-              body { padding: 10px; }
-            }
+            * { box-sizing: border-box; }
+            @media print { body { padding: 10px; } }
           </style>
         </head>
         <body>
@@ -159,271 +99,275 @@ const DetailTransaksiModal = ({ open, transaksiId, onClose, onRefresh }) => {
 
   if (!open) return null;
 
-  const mappedDetail = detail ? {
-    header: {
-      no_transaksi: detail.no_transaksi,
-      tanggal: detail.tanggal_transaksi,
-      kasir: detail.user?.nama || "-",
-      metode: detail.metode_bayar?.toUpperCase() || "TUNAI",
-      subtotal: Number(detail.subtotal || detail.total),
-      diskon_nominal: Number(detail.diskon_nominal || 0),
-      total: Number(detail.total),
-      uang_diterima: Number(detail.uang_diterima || 0),
-      kembalian: Number(detail.kembalian || 0),
-      status: detail.status || detail.status_transaksi || "SELESAI",
-    },
-    items: detail.transaksidetail?.map((item) => ({
-      id: item.id_transaksi_detail,
-      nama_produk: item.produk?.nama_produk || "-",
-      qty: Number(item.qty),
-      harga: Number(item.harga_jual),
-      subtotal: Number(item.subtotal),
-    })) || [],
-  } : null;
+  // PERBAIKAN: Mengambil status asli dari database (tidak lagi di-hardcode ke "SELESAI")
+  const mappedDetail = detail
+    ? {
+        header: {
+          no_transaksi: detail.no_transaksi,
+          tanggal: detail.tanggal_transaksi,
+          kasir: detail.user?.nama || "-",
+          metode: detail.metode_bayar,
+          total: Number(detail.total),
+          status: (detail.status || detail.status_transaksi || "SELESAI").toUpperCase(),
+        },
+        items: detail.transaksidetail?.map((item) => ({
+          id: item.id_transaksi_detail,
+          nama_produk: item.produk?.nama_produk || "-",
+          qty: item.qty,
+          subtotal: Number(item.subtotal),
+          harga: Number(item.harga_jual),
+        })) || [],
+      }
+    : null;
 
-  const isCancelled = detail?.status === "DIBATALKAN";
-  const isPendingCancellation = detail?.status === "MENUNGGU_PEMBATALAN";
-  const isAdmin = user?.role === ROLE.ADMIN;
-  const isKasirOrStaff = user?.role === ROLE.KASIR || user?.role === ROLE.STAFF;
+  const strukData = mappedDetail
+    ? {
+        header: mappedDetail.header,
+        items: mappedDetail.items,
+        cetakStruk: true,
+      }
+    : null;
 
-  const getStatusChip = () => {
-    if (isCancelled) {
-      return (
-        <Chip
-          label="DIBATALKAN"
-          icon={<CancelIcon sx={{ fontSize: 16 }} />}
-          sx={{
-            backgroundColor: colors.danger,
-            color: "white",
-            fontWeight: 600,
-            fontSize: 11,
-            borderRadius: 1.5,
-            "& .MuiChip-icon": { color: "white" },
-          }}
-        />
-      );
-    }
-    if (isPendingCancellation) {
-      return (
-        <Chip
-          label="MENUNGGU PERSETUJUAN"
-          icon={<CloseIcon sx={{ fontSize: 16 }} />}
-          sx={{
-            backgroundColor: colors.warning,
-            color: "white",
-            fontWeight: 600,
-            fontSize: 11,
-            borderRadius: 1.5,
-            "& .MuiChip-icon": { color: "white" },
-          }}
-        />
-      );
-    }
-    return (
-      <Chip
-        label="SELESAI"
-        icon={<CheckIcon sx={{ fontSize: 14 }} />}
-        sx={{
-          backgroundColor: colors.success,
-          color: "white",
-          fontWeight: 600,
-          fontSize: 11,
-          borderRadius: 1.5,
-          "& .MuiChip-icon": { color: "white" },
-        }}
-      />
-    );
-  };
+  const user = getUser();
+  const isCanceled = mappedDetail?.header.status === "DIBATALKAN";
+  const canCancel = user?.role === ROLE.ADMIN && !isCanceled;
 
   return (
     <>
       <Modal open={open} onClose={onClose} width={500}>
-        <Box sx={{ position: "relative" }}>
-          {loading && (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          )}
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: "#F0FDFA",
+                color: "#0F766E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <PrintIcon />
+            </div>
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontWeight: 800,
+                  fontSize: 18,
+                  color: "#1E293B",
+                }}
+              >
+                Detail Transaksi
+              </h3>
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  color: "#64748B",
+                  fontSize: 12,
+                }}
+              >
+                ID: {transaksiId}
+              </p>
+            </div>
+          </div>
 
-          {!loading && detail && mappedDetail && (
-            <>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    bgcolor: colors.primaryLight,
-                    color: colors.primary,
+          {/* Badge Status */}
+          {isCanceled ? (
+            <span
+              style={{
+                background: "#FEE2E2",
+                color: "#991B1B",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              DIBATALKAN
+            </span>
+          ) : (
+            <span
+              style={{
+                background: "#DCFCE7",
+                color: "#166534",
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              SELESAI
+            </span>
+          )}
+        </div>
+
+        {loading && (
+          <p style={{ color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
+            Memuat...
+          </p>
+        )}
+
+        {!loading && detail && mappedDetail && (
+          <>
+            {/* Items List */}
+            <div
+              style={{
+                background: "#F8FAFC",
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 18,
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#94A3B8",
+                  textTransform: "uppercase",
+                  marginBottom: 12,
+                  letterSpacing: 0.5,
+                }}
+              >
+                Rincian Barang
+              </div>
+              {mappedDetail.items.map((it) => (
+                <div
+                  key={it.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 13,
+                    marginBottom: 8,
+                    color: "#475569",
+                    paddingBottom: 8,
+                    borderBottom: "1px solid #E2E8F0",
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>
+                    {it.nama_produk} × {it.qty}
+                  </span>
+
+                  <span style={{ fontWeight: 700, color: "#1E293B" }}>
+                    Rp {formatRupiahPos(it.subtotal)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Struk Content */}
+            <div
+              id="struk-print-content"
+              style={{
+                marginBottom: 18,
+                background: "#FAFBFC",
+                padding: 14,
+                borderRadius: 10,
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <PosStruk data={strukData} />
+            </div>
+
+            {/* Info Status Batal */}
+            {isCanceled && (
+              <div
+                style={{
+                  background: "#FEE2E2",
+                  border: "1px solid #FECACA",
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 18,
+                  textAlign: "center",
+                  color: "#991B1B",
+                  fontWeight: 700,
+                  fontSize: 13,
+                }}
+              >
+                ✕ Transaksi telah dibatalkan
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 16,
+                marginBottom: 8,
+              }}
+            >
+              {/* Cetak Button */}
+              <button
+                onClick={handlePrint}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: "none",
+                  background: "#0F766E",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                <PrintIcon sx={{ fontSize: 16 }} />
+                Cetak Ulang
+              </button>
+
+              {/* Batalkan Button (Khusus Admin & belum dibatalkan) */}
+              {canCancel && (
+                <button
+                  onClick={() => setCancelConfirmOpen(true)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 10,
+                    border: "1px solid #FECACA",
+                    background: "#FEE2E2",
+                    color: "#DC2626",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    gap: 6,
                   }}
                 >
-                  <PrintIcon />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: 18, color: colors.text }}>
-                    Detail Transaksi
-                  </Typography>
-                  <Typography sx={{ color: colors.textSecondary, fontSize: 12 }}>
-                    ID: {transaksiId}
-                  </Typography>
-                </Box>
-                {getStatusChip()}
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary, mb: 1 }}>
-                  <strong>Waktu:</strong> {new Date(detail.tanggal_transaksi).toLocaleString("id-ID")}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary }}>
-                  <strong>Kasir:</strong> {detail.user?.nama || "-"}
-                </Typography>
-              </Box>
-
-              <Box
-                sx={{
-                  bgcolor: colors.bgCard,
-                  borderRadius: 2,
-                  p: 2,
-                  mb: 2,
-                  border: `1px solid ${colors.border}`,
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: colors.textMuted,
-                    textTransform: "uppercase",
-                    mb: 1.5,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Rincian Barang
-                </Typography>
-                {mappedDetail.items.map((it) => (
-                  <Box
-                    key={it.id}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: 13,
-                      mb: 1,
-                      color: colors.text,
-                      pb: 1,
-                      borderBottom: `1px solid ${colors.border}`,
-                      "&:last-child": { borderBottom: "none", mb: 0, pb: 0 },
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>
-                      {it.nama_produk} × {it.qty}
-                    </span>
-                    <span style={{ fontWeight: 600, color: colors.text }}>
-                      Rp {formatRupiahPos(it.subtotal)}
-                    </span>
-                  </Box>
-                ))}
-              </Box>
-
-              <Box
-                id="struk-print-content"
-                sx={{
-                  mb: 2,
-                  bgcolor: colors.bgCard,
-                  p: 2,
-                  borderRadius: 2,
-                  border: `1px solid ${colors.border}`,
-                }}
-              >
-                <PosStruk data={{ header: mappedDetail.header, items: mappedDetail.items }} />
-              </Box>
-
-              {isCancelled && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  Transaksi ini telah dibatalkan pada {detail.tanggal_pembatalan ? 
-                    new Date(detail.tanggal_pembatalan).toLocaleString("id-ID") : ""}
-                  {detail.dibatalkan_oleh && ` oleh ${detail.dibatalkan_oleh}`}
-                </Alert>
+                  <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                  Batalkan Transaksi
+                </button>
               )}
-
-              {isPendingCancellation && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  Transaksi ini sedang menunggu persetujuan pembatalan.
-                  {detail.alasan_pembatalan && ` Alasan: ${detail.alasan_pembatalan}`}
-                </Alert>
-              )}
-
-              <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
-                <Button
-                  variant="contained"
-                  startIcon={<PrintIcon />}
-                  onClick={handlePrintStruk}
-                  sx={{
-                    flex: 1,
-                    minWidth: 120,
-                    fontWeight: 600,
-                    background: "linear-gradient(135deg, color.textOnDark)",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, color.textOnDark)",
-                    },
-                  }}
-                >
-                  Cetak Ulang
-                </Button>
-
-                {!isCancelled && !isPendingCancellation && isKasirOrStaff && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CancelIcon />}
-                    onClick={handleCancelRequest}
-                    disabled={actionLoading}
-                    sx={{ flex: 1, minWidth: 120, fontWeight: 600 }}
-                  >
-                    Ajukan Pembatalan
-                  </Button>
-                )}
-
-                {isPendingCancellation && isAdmin && (
-                  <>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      startIcon={<CancelIcon />}
-                      onClick={handleApproveCancellation}
-                      disabled={actionLoading}
-                      sx={{ flex: 1, minWidth: 120, fontWeight: 600 }}
-                    >
-                      Setujui
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={handleRejectCancellation}
-                      disabled={actionLoading}
-                      sx={{ flex: 1, minWidth: 120, fontWeight: 600 }}
-                    >
-                      Tolak
-                    </Button>
-                  </>
-                )}
-              </Box>
-            </>
-          )}
-        </Box>
+            </div>
+          </>
+        )}
       </Modal>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {/* Confirmation Modal */}
+      <CancelTransactionConfirmModal
+        open={cancelConfirmOpen}
+        onConfirm={handleBatalkan}
+        onCancel={() => setCancelConfirmOpen(false)}
+        transaksiId={transaksiId}
+        isLoading={cancelLoading}
+      />
     </>
   );
 };

@@ -27,19 +27,26 @@ import {
   pageHeaderSx,
   statCardSx,
 } from "@/theme/designTokens";
+import * as XLSX from "xlsx";
 
-const PAGE_SIZE = 20;
+const PageSize = 10;
 
 const StokBatchPage = () => {
-  const { produk, loading } = useProdukBatch();
-  const [searchQuery, setSearchQuery] = useState("");
+  const {
+    produk,
+    loading,
+  } = useProdukBatch();
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Filter produk dengan stok > 0
   const filteredProducts = useMemo(() => {
     let list = produk.filter((p) => {
-      const totalStok = (p.batch || []).reduce((sum, b) => sum + Number(b.stok || 0), 0);
+      const totalStok = (p.batch || []).reduce(
+        (sum, b) => sum + Number(b.qty_sisa || 0),
+        0
+      );
       return totalStok > 0;
     });
 
@@ -58,19 +65,25 @@ const StokBatchPage = () => {
     // Urutkan berdasarkan expired terdekat (FEFO)
     return list.sort((a, b) => {
       const getEarliest = (batches) => {
-        const valid = (batches || []).filter((b) => Number(b.stok) > 0);
+        const valid = (batches || []).filter((b) => Number(b.qty_sisa) > 0);
+
         if (!valid.length) return Infinity;
-        return Math.min(...valid.map((b) => new Date(b.expired).getTime()));
+
+        return Math.min(
+          ...valid.map((b) => new Date(b.expired_date).getTime())
+        );
       };
       return getEarliest(a.batch) - getEarliest(b.batch);
     });
   }, [produk, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const pagedProducts = filteredProducts.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
+  const totalProducts = filteredProducts.length;
+  const totalPages = Math.ceil(totalProducts / PageSize) || 1;
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (page - 1) * PageSize;
+    return filteredProducts.slice(startIndex, startIndex + PageSize);
+  }, [filteredProducts, page]);
 
   // Statistik ringkasan
   const stats = useMemo(() => {
@@ -80,10 +93,10 @@ const StokBatchPage = () => {
 
     filteredProducts.forEach((p) => {
       (p.batch || []).forEach((b) => {
-        const stok = Number(b.stok || 0);
+        const stok = Number(b.qty_sisa || 0);
         if (stok <= 0) return;
         totalBatch += 1;
-        const days = Math.ceil((new Date(b.expired) - new Date()) / (1000 * 60 * 60 * 24));
+        const days = Math.ceil((new Date(b.expired_date) - new Date()) / (1000 * 60 * 60 * 24));
         if (days <= 0) expired += 1;
         else if (days <= 30) nearExpired += 1;
       });
@@ -98,6 +111,58 @@ const StokBatchPage = () => {
   }, [filteredProducts]);
 
   if (loading) return <StokBatchLoadingSkeleton />;
+
+  const handleExport = () => {
+    if (!filteredProducts.length) return;
+
+    const exportData = filteredProducts.map((p) => {
+      // Handling jika p.kategori berbentuk Object atau String
+      const namaKategori =
+        typeof p.kategori === "object" && p.kategori !== null
+          ? p.kategori.nama || p.kategori.nama_kategori || "-"
+          : p.kategori || "-";
+
+      // Hitung total stok
+      const totalStok = (p.batch || []).reduce(
+        (sum, b) => sum + Number(b.qty_sisa || 0),
+        0
+      );
+
+      // Hitung expired terdekat
+      const validBatches = (p.batch || []).filter((b) => Number(b.qty_sisa) > 0);
+      let expiredTerdekat = "-";
+      if (validBatches.length > 0) {
+        const dates = validBatches
+          .map((b) => new Date(b.expired_date))
+          .filter((d) => !isNaN(d));
+        if (dates.length > 0) {
+          const minDate = new Date(Math.min(...dates));
+          expiredTerdekat = minDate.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+        }
+      }
+
+      return {
+        "Nama Produk": p.nama_produk || "-",
+        "Kategori / Kode": `${namaKategori} • ${p.barcode || "-"}`,
+        "Total Batch": (p.batch || []).length,
+        "Total Stok": totalStok,
+        "Expired Terdekat": expiredTerdekat,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Stok Produk");
+
+    XLSX.writeFile(
+      workbook,
+      `Laporan_Stok_Batch_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, width: "100%" }}>
@@ -118,7 +183,10 @@ const StokBatchPage = () => {
             Monitoring stok per produk dengan manajemen batch (FEFO)
           </Typography>
         </Box>
-        <StokPrintActions disabled={!filteredProducts.length} onExport={() => {}} />
+        <StokPrintActions
+          disabled={!filteredProducts.length}
+          onExport={handleExport}
+        />
       </Box>
 
       {/* Stat Cards */}
@@ -329,7 +397,10 @@ const StokBatchPage = () => {
           </Box>
         ) : (
           <>
-            <ProductStokTable products={pagedProducts} onDetailClick={setSelectedProduct} />
+            <ProductStokTable
+              products={paginatedProducts}
+              onDetailClick={setSelectedProduct}
+            />
 
             <Box
               sx={{
@@ -345,9 +416,8 @@ const StokBatchPage = () => {
               }}
             >
               <Typography sx={{ fontSize: 13, color: colors.textMuted }}>
-                Menampilkan {(page - 1) * PAGE_SIZE + 1}–
-                {Math.min(page * PAGE_SIZE, filteredProducts.length)} dari{" "}
-                {filteredProducts.length} produk
+                Menampilkan {totalProducts === 0 ? 0 : (page - 1) * PageSize + 1}–
+                {Math.min(page * PageSize, totalProducts)} dari {totalProducts} produk
               </Typography>
               <PaginationControls page={page} totalPages={totalPages} onChange={setPage} />
             </Box>

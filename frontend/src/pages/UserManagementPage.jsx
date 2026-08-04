@@ -108,38 +108,44 @@ const ManajemenUserPage = () => {
     {
       header: "AKSI",
       align: "center",
-      render: (row) => (
-        <>
-          <IconButton onClick={(e) => handleOpenMenu(e, row)}>
-            <MoreVertIcon />
-          </IconButton>
+      render: (row) => {
+        if (row.role === "ADMIN") {
+          return "-";
+        }
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl) && selectedUser?.id === row.id}
-            onClose={handleCloseMenu}
-          >
-            <MenuItem
-              onClick={() => {
-                handleToggleStatus(row.id, row.isActive);
-                handleCloseMenu();
-              }}
+        return (
+          <>
+            <IconButton onClick={(e) => handleOpenMenu(e, row)}>
+              <MoreVertIcon />
+            </IconButton>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl) && selectedUser?.id === row.id}
+              onClose={handleCloseMenu}
             >
-              <ListItemIcon>
-                {row.isActive ? (
-                  <ToggleOffIcon fontSize="small" />
-                ) : (
-                  <ToggleOnIcon fontSize="small" />
-                )}
-              </ListItemIcon>
+              <MenuItem
+                onClick={() => {
+                  handleToggleStatus(row.id, row.isActive);
+                  handleCloseMenu();
+                }}
+              >
+                <ListItemIcon>
+                  {row.isActive ? (
+                    <ToggleOffIcon fontSize="small" />
+                  ) : (
+                    <ToggleOnIcon fontSize="small" />
+                  )}
+                </ListItemIcon>
 
-              <ListItemText>
-                {row.isActive ? "Nonaktifkan User" : "Aktifkan User"}
-              </ListItemText>
-            </MenuItem>
-          </Menu>
-        </>
-      ),
+                <ListItemText>
+                  {row.isActive ? "Nonaktifkan User" : "Aktifkan User"}
+                </ListItemText>
+              </MenuItem>
+            </Menu>
+          </>
+        );
+      },
     }
   ];
 

@@ -416,6 +416,7 @@ const FakturItemForm = ({
   barcodeInputRef,
   inputRefs,
   handleBarcodeScan,
+  onBarcodeBlur,
   handleInputKeyDown,
   updateItem,
   handleTambahBaris,
@@ -476,6 +477,7 @@ const FakturItemForm = ({
           value={barcodeInput}
           onChange={(e) => setBarcodeInput(e.target.value)}
           onKeyDown={onBarcodeKeyDown}
+          onBlur={onBarcodeBlur}
           sx={{ ...fieldInputSx, flex: 1, minWidth: 280 }}
           InputProps={{
             startAdornment: (
@@ -603,6 +605,16 @@ const FakturItemForm = ({
                     isOptionEqualToValue={(option, value) =>
                       option.id_produk === value.id_produk
                     }
+                    filterOptions={(options, state) => {
+                      const keyword = state.inputValue.toLowerCase().trim();
+
+                      if (!keyword) return [];
+
+                      return options.filter((p) =>
+                        p.nama_produk?.toLowerCase().includes(keyword) ||
+                        p.barcode?.toLowerCase().includes(keyword)
+                      ).slice(0, 10);
+                    }}
                     onChange={(_, value) =>
                       updateItem(item.id, "produk_id", value?.id_produk || "")
                     }
@@ -610,7 +622,7 @@ const FakturItemForm = ({
                       <TextField
                         {...params}
                         placeholder="Cari nama atau barcode produk..."
-                        sx={{ fieldInputSx, width: 300 }}
+                        sx={{ ...fieldInputSx, width: 300 }}
                       />
                     )}
                   />
@@ -827,20 +839,20 @@ const FakturItemForm = ({
                       InputProps={
                         item.diskon_tipe === "Rp"
                           ? {
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <Typography
-                                    sx={{
-                                      fontWeight: 700,
-                                      fontSize: 13,
-                                      color: colors.textMuted,
-                                    }}
-                                  >
-                                    Rp
-                                  </Typography>
-                                </InputAdornment>
-                              ),
-                            }
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Typography
+                                  sx={{
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    color: colors.textMuted,
+                                  }}
+                                >
+                                  Rp
+                                </Typography>
+                              </InputAdornment>
+                            ),
+                          }
                           : undefined
                       }
                       inputProps={{

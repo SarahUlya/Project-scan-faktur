@@ -72,12 +72,18 @@ export default function useProdukDb() {
         setRefreshing(true);
       }
 
-      const response = await getProduk({
-        search,
+      const PAGE_SIZE = 25;
+
+      const response = await getProduk(
         page,
-      });
+        PAGE_SIZE,
+        search
+      );
+      console.log("HASIL API PRODUK:", response);
 
       setProduk(response.data);
+      setTotal(response.total);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error(error);
     } finally {
@@ -85,10 +91,30 @@ export default function useProdukDb() {
       setRefreshing(false);
     }
   };
+  console.log(produk);
 
   useEffect(() => {
     fetchProduk();
   }, [page, search]);
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const kategoriRes = await getKategori();
+        console.log("Kategori API:", kategoriRes);
+
+        setKategori(kategoriRes.data);
+
+        const satuanRes = await getSatuan();
+        setSatuanList(normalizeSatuan(satuanRes.data));
+      } catch (err) {
+        console.error("Gagal mengambil master data:", err);
+      }
+    };
+
+    fetchMasterData();
+  }, []);
+
 
   const addProduk = async (data) => {
     try {
@@ -130,9 +156,9 @@ export default function useProdukDb() {
         prev.map((item) =>
           item.id_produk === id
             ? {
-                ...item,
-                is_active: false,
-              }
+              ...item,
+              is_active: false,
+            }
             : item,
         ),
       );

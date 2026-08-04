@@ -16,6 +16,8 @@ import {
   Select,
   Divider,
   Badge,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -50,6 +52,62 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { formatRupiahPos } from "../utils/posCalculations";
 
+
+const ID_MONTHS = {
+  jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, jun: 5,
+  jul: 6, agu: 7, sep: 8, okt: 9, nov: 10, des: 11,
+};
+
+const parseIndonesianDateString = (str) => {
+  if (!str || typeof str !== "string") return null;
+  // Matches things like "21 Jul 2026" or "21 Jul 2026 09.21"
+  const match = str
+    .trim()
+    .match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})(?:\s+(\d{1,2})[.:](\d{2}))?/);
+  if (!match) return null;
+
+  const [, day, monthRaw, year, hour = "0", minute = "0"] = match;
+  const monthKey = monthRaw.toLowerCase().slice(0, 3);
+  const monthIndex = ID_MONTHS[monthKey];
+  if (monthIndex === undefined) return null;
+
+  const date = new Date(
+    Number(year),
+    monthIndex,
+    Number(day),
+    Number(hour),
+    Number(minute)
+  );
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const getItemDate = (item) => {
+  if (!item) return null;
+
+  const candidates = [
+    item.tanggal_transaksi,
+    item.tanggal,
+    item.created_at,
+    item.createdAt,
+    item.tanggal_input,
+    item.waktu, // display field used by the WAKTU column — often "21 Jul 2026"
+  ];
+
+  for (const raw of candidates) {
+    if (!raw) continue;
+
+    // Try native parsing first (handles ISO strings, timestamps, etc.)
+    const native = new Date(raw);
+    if (!isNaN(native.getTime())) return native;
+
+    // Fall back to Indonesian display-string parsing ("21 Jul 2026")
+    const parsedId = parseIndonesianDateString(String(raw));
+    if (parsedId) return parsedId;
+  }
+
+  return null;
+};
+
 const RiwayatPage = () => {
   const { data, loading, refreshData } = useRiwayat();
   const [page, setPage] = useState(1);
@@ -58,6 +116,8 @@ const RiwayatPage = () => {
   const [endDate, setEndDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState("SEMUA");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // raw input, debounced into searchQuery
+  const [dateError, setDateError] = useState("");
 
   const PAGE_SIZE = 10; // Jumlah transaksi per halaman
 
@@ -68,26 +128,39 @@ const RiwayatPage = () => {
       console.log("Total data:", data.length);
       console.log("Sample data pertama:", data[0]);
       console.log("Properti yang tersedia:", Object.keys(data[0]));
-      
+
       const statuses = [...new Set(data.map(item => item.status || item.status_transaksi || "undefined"))];
       console.log("Status yang tersedia:", statuses);
     }
   }, [data]);
 
+  // Debounce search input -> searchQuery (300ms)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  // Validate date range whenever it changes
+  useEffect(() => {
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      setDateError("Tanggal Mulai tidak boleh setelah Tanggal Akhir");
+    } else {
+      setDateError("");
+    }
+  }, [startDate, endDate]);
+
   // Format tanggal untuk display
   const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "-";
-      return date.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return "-";
-    }
+    const date = getItemDate({ waktu: dateString }) || new Date(dateString);
+    if (!dateString || isNaN(date?.getTime?.())) return "-";
+    return date.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const formatDateFull = (dateString) => {
@@ -110,10 +183,11 @@ const RiwayatPage = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "-";
-      return date.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+
+      return `${hours}:${minutes}`;
     } catch {
       return "-";
     }
@@ -123,7 +197,7 @@ const RiwayatPage = () => {
   const normalizeStatus = (status) => {
     if (!status) return "SELESAI";
     const statusUpper = String(status).toUpperCase().trim();
-    
+
     if (statusUpper.includes("BATAL") || statusUpper === "CANCELLED" || statusUpper === "CANCEL") {
       return "DIBATALKAN";
     }
@@ -134,6 +208,26 @@ const RiwayatPage = () => {
       return "SELESAI";
     }
     return "SELESAI";
+  };
+
+  // Quick date presets
+  const applyPreset = (preset) => {
+    const now = new Date();
+    let start = new Date();
+    let end = new Date();
+
+    if (preset === "today") {
+      // start/end already today
+    } else if (preset === "7days") {
+      start.setDate(now.getDate() - 6);
+    } else if (preset === "thisMonth") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    }
+
+    setStartDate(start);
+    setEndDate(end);
+    setPage(1);
   };
 
   // Filter data
@@ -157,80 +251,47 @@ const RiwayatPage = () => {
       });
     }
 
-    // Filter by date range
-    if (startDate && endDate) {
+    // Filter by date range (uses unified getItemDate helper)
+    if (startDate && endDate && !dateError) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
 
       filtered = filtered.filter((item) => {
-        const dateStr = item.tanggal_transaksi || item.tanggal || item.created_at;
-        if (!dateStr) return false;
-        try {
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return false;
-          return date >= start && date <= end;
-        } catch {
-          return false;
-        }
+        const date = getItemDate(item);
+        if (!date) return false;
+        return date >= start && date <= end;
       });
     } else if (startDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
       filtered = filtered.filter((item) => {
-        const dateStr = item.tanggal_transaksi || item.tanggal || item.created_at;
-        if (!dateStr) return false;
-        try {
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return false;
-          return date >= start;
-        } catch {
-          return false;
-        }
+        const date = getItemDate(item);
+        if (!date) return false;
+        return date >= start;
       });
     } else if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
       filtered = filtered.filter((item) => {
-        const dateStr = item.tanggal_transaksi || item.tanggal || item.created_at;
-        if (!dateStr) return false;
-        try {
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return false;
-          return date <= end;
-        } catch {
-          return false;
-        }
+        const date = getItemDate(item);
+        if (!date) return false;
+        return date <= end;
       });
     }
 
     return filtered;
-  }, [data, statusFilter, startDate, endDate, searchQuery]);
+  }, [data, statusFilter, startDate, endDate, searchQuery, dateError]);
 
   // Group by date dengan pagination per transaksi
   const groupedData = useMemo(() => {
     const groups = {};
-    
+
     filteredData.forEach((item) => {
-      const dateStr = item.tanggal_transaksi || item.tanggal || item.created_at;
-      let dateKey;
-      
-      if (!dateStr) {
-        dateKey = "no-date";
-      } else {
-        try {
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) {
-            dateKey = "invalid-date";
-          } else {
-            dateKey = date.toISOString().split("T")[0];
-          }
-        } catch {
-          dateKey = "invalid-date";
-        }
-      }
-      
+      const date = getItemDate(item);
+      const dateKey = date ? date.toISOString().split("T")[0] : "no-date";
+
       if (!groups[dateKey]) {
         groups[dateKey] = {
           date: dateKey,
@@ -241,14 +302,14 @@ const RiwayatPage = () => {
           totalCancelledNominal: 0,
         };
       }
-      
+
       groups[dateKey].transactions.push(item);
       groups[dateKey].totalTransactions += 1;
-      
+
       const total = Number(item.total || item.total_bayar || 0);
       const rawStatus = item.status || item.status_transaksi || "SELESAI";
       const normalizedStatus = normalizeStatus(rawStatus);
-      
+
       if (normalizedStatus === "DIBATALKAN") {
         groups[dateKey].totalCancelled += 1;
         groups[dateKey].totalCancelledNominal += total;
@@ -259,8 +320,8 @@ const RiwayatPage = () => {
 
     // Sort dates descending
     return Object.values(groups).sort((a, b) => {
-      if (a.date === "no-date" || a.date === "invalid-date") return 1;
-      if (b.date === "no-date" || b.date === "invalid-date") return -1;
+      if (a.date === "no-date") return 1;
+      if (b.date === "no-date") return -1;
       return b.date.localeCompare(a.date);
     });
   }, [filteredData]);
@@ -277,7 +338,7 @@ const RiwayatPage = () => {
       const total = Number(item.total || item.total_bayar || 0);
       const rawStatus = item.status || item.status_transaksi || "SELESAI";
       const normalizedStatus = normalizeStatus(rawStatus);
-      
+
       if (normalizedStatus === "DIBATALKAN") {
         totalCancelled += 1;
         totalCancelledNominal += total;
@@ -319,10 +380,10 @@ const RiwayatPage = () => {
   // Re-group paginated transactions by date
   const paginatedGroupedData = useMemo(() => {
     const groups = {};
-    
+
     paginatedTransactions.forEach((item) => {
       const dateKey = item._groupDate;
-      
+
       if (!groups[dateKey]) {
         groups[dateKey] = {
           date: dateKey,
@@ -333,14 +394,14 @@ const RiwayatPage = () => {
           totalCancelledNominal: 0,
         };
       }
-      
+
       groups[dateKey].transactions.push(item);
       groups[dateKey].totalTransactions += 1;
-      
+
       const total = Number(item.total || item.total_bayar || 0);
       const rawStatus = item.status || item.status_transaksi || "SELESAI";
       const normalizedStatus = normalizeStatus(rawStatus);
-      
+
       if (normalizedStatus === "DIBATALKAN") {
         groups[dateKey].totalCancelled += 1;
         groups[dateKey].totalCancelledNominal += total;
@@ -351,21 +412,32 @@ const RiwayatPage = () => {
 
     // Sort dates descending
     return Object.values(groups).sort((a, b) => {
-      if (a.date === "no-date" || a.date === "invalid-date") return 1;
-      if (b.date === "no-date" || b.date === "invalid-date") return -1;
+      if (a.date === "no-date") return 1;
+      if (b.date === "no-date") return -1;
       return b.date.localeCompare(a.date);
     });
   }, [paginatedTransactions]);
 
-  const handleRefresh = () => {
-    refreshData();
+  const handleRefresh = async () => {
+    await refreshData();
+    setPage(1);
+  };
+
+  const hasActiveFilters = startDate || endDate || statusFilter !== "SEMUA" || searchQuery;
+
+  const resetFilters = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setStatusFilter("SEMUA");
+    setSearchQuery("");
+    setSearchInput("");
     setPage(1);
   };
 
   const getStatusBadge = (status) => {
     const rawStatus = status || "SELESAI";
     const normalizedStatus = normalizeStatus(rawStatus);
-    
+
     const statusMap = {
       SELESAI: {
         label: "Selesai",
@@ -405,10 +477,16 @@ const RiwayatPage = () => {
     );
   };
 
+  const statusLabelMap = {
+    SELESAI: "Selesai",
+    MENUNGGU_PEMBATALAN: "Menunggu Persetujuan",
+    DIBATALKAN: "Dibatalkan",
+  };
+
   const columns = [
-    { 
-      header: "NO", 
-      accessor: "no", 
+    {
+      header: "NO",
+      accessor: "no",
       width: 50,
       align: "center",
     },
@@ -417,7 +495,7 @@ const RiwayatPage = () => {
       accessor: "no_transaksi",
       render: (row) => (
         <Typography sx={{ fontWeight: 600, fontSize: 13, color: colors.text }}>
-          {row.no_transaksi || row.no_faktur || "-"}
+          {row.no_transaksi || row.raw?.no_transaksi || "-"}
         </Typography>
       ),
     },
@@ -425,10 +503,9 @@ const RiwayatPage = () => {
       header: "WAKTU",
       accessor: "waktu",
       render: (row) => {
-        const dateStr = row.tanggal_transaksi || row.tanggal || row.created_at;
         return (
           <Typography sx={{ fontWeight: 500, fontSize: 13, color: colors.text }}>
-            {formatTime(dateStr)}
+            {row.waktu ? `${row.waktu} • ${row.jam || ""}` : "-"}
           </Typography>
         );
       },
@@ -459,13 +536,13 @@ const RiwayatPage = () => {
               backgroundColor: isQRIS
                 ? colors.primaryLight
                 : isTunai
-                ? colors.successLight
-                : colors.textMutedLight,
+                  ? colors.successLight
+                  : colors.textMutedLight,
               color: isQRIS
                 ? colors.blue
                 : isTunai
-                ? colors.success
-                : colors.textMuted,
+                  ? colors.success
+                  : colors.textMuted,
               fontWeight: 700,
               fontSize: 10,
               borderRadius: 1.5,
@@ -488,6 +565,8 @@ const RiwayatPage = () => {
       accessor: "status",
       align: "center",
       render: (row) => {
+        console.log("STATUS ROW:", row.no_transaksi, row.status);
+
         const rawStatus = row.status || row.status_transaksi || "SELESAI";
         return getStatusBadge(rawStatus);
       },
@@ -536,7 +615,7 @@ const RiwayatPage = () => {
 
     return paginatedGroupedData.map((group) => {
       let dateDisplay = group.date;
-      if (group.date !== "no-date" && group.date !== "invalid-date") {
+      if (group.date !== "no-date") {
         try {
           const date = new Date(group.date);
           if (!isNaN(date.getTime())) {
@@ -547,12 +626,9 @@ const RiwayatPage = () => {
             });
           }
         } catch {
-          // keep existing display
         }
-      } else if (group.date === "no-date") {
-        dateDisplay = "Tanpa Tanggal";
       } else {
-        dateDisplay = "Tanggal Invalid";
+        dateDisplay = "Tanpa Tanggal";
       }
 
       return (
@@ -574,12 +650,12 @@ const RiwayatPage = () => {
             <Typography sx={{ fontWeight: 700, fontSize: 16, color: colors.text }}>
               {dateDisplay}
             </Typography>
-            <Box 
-              sx={{ 
-                display: "flex", 
-                gap: 2, 
-                fontSize: 13, 
-                color: colors.textSecondary, 
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                fontSize: 13,
+                color: colors.textSecondary,
                 flexWrap: "wrap",
                 alignItems: "center",
               }}
@@ -641,9 +717,9 @@ const RiwayatPage = () => {
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Paper 
-              sx={{ 
-                ...statCardSx, 
+            <Paper
+              sx={{
+                ...statCardSx,
                 p: 3,
                 transition: transitions.fast,
                 "&:hover": {
@@ -663,9 +739,9 @@ const RiwayatPage = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Paper 
-              sx={{ 
-                ...statCardSx, 
+            <Paper
+              sx={{
+                ...statCardSx,
                 p: 3,
                 transition: transitions.fast,
                 "&:hover": {
@@ -679,20 +755,6 @@ const RiwayatPage = () => {
                   <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
                     Rp {summary.totalOmzet.toLocaleString("id-ID")}
                   </Typography>
-                  {summary.totalOmzet > 0 && (
-                    <Chip
-                      label="+12.5%"
-                      size="small"
-                      icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
-                      sx={{
-                        backgroundColor: colors.successLight,
-                        color: colors.success,
-                        fontWeight: 700,
-                        fontSize: 10,
-                        borderRadius: 1.5,
-                      }}
-                    />
-                  )}
                 </Box>
                 <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
                   Total Omzet
@@ -701,9 +763,9 @@ const RiwayatPage = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Paper 
-              sx={{ 
-                ...statCardSx, 
+            <Paper
+              sx={{
+                ...statCardSx,
                 p: 3,
                 transition: transitions.fast,
                 "&:hover": {
@@ -717,20 +779,6 @@ const RiwayatPage = () => {
                   <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.danger, lineHeight: 1.2 }}>
                     {summary.totalCancelled}
                   </Typography>
-                  {summary.totalCancelled > 0 && (
-                    <Chip
-                      label="+5.2%"
-                      size="small"
-                      icon={<TrendingUpIcon sx={{ fontSize: 14 }} />}
-                      sx={{
-                        backgroundColor: colors.dangerLight,
-                        color: colors.danger,
-                        fontWeight: 700,
-                        fontSize: 10,
-                        borderRadius: 1.5,
-                      }}
-                    />
-                  )}
                 </Box>
                 <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
                   Transaksi Dibatalkan
@@ -739,9 +787,9 @@ const RiwayatPage = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Paper 
-              sx={{ 
-                ...statCardSx, 
+            <Paper
+              sx={{
+                ...statCardSx,
                 p: 3,
                 transition: transitions.fast,
                 "&:hover": {
@@ -762,12 +810,42 @@ const RiwayatPage = () => {
           </Grid>
         </Grid>
 
-        {/* Filters */}
-        <Card sx={{ p: 2.5, mb: 3, borderRadius: radii.xs }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={2.5}>
+        {/* Filters - Stacked Layout (Anti-Scroll) */}
+        <Card sx={{ p: 2, mb: 3, borderRadius: radii.xs }}>
+          {/* Baris 1: Preset Waktu (Atas) */}
+          <Box sx={{ mb: 1.5, pb: 1.5, borderBottom: `1px solid ${colors.border || "#eaeaea"}` }}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              onChange={(e, preset) => preset && applyPreset(preset)}
+              sx={{
+                "& .MuiToggleButton-root": {
+                  px: 1.75,
+                  py: 0.4,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "0.8rem",
+                  borderColor: colors.border,
+                  "&.Mui-selected": {
+                    backgroundColor: colors.primary,
+                    color: "#fff",
+                    "&:hover": { backgroundColor: colors.primaryHover },
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="today">Hari Ini</ToggleButton>
+              <ToggleButton value="7days">7 Hari Terakhir</ToggleButton>
+              <ToggleButton value="thisMonth">Bulan Ini</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          {/* Baris 2: Controls Filter (Bawah) */}
+          <Grid container spacing={1.5} alignItems="center">
+            {/* Tanggal Mulai */}
+            <Grid item xs={12} sm={6} md={2.5}>
               <DatePicker
-                label="Tanggal Mulai"
+                label="Mulai"
                 value={startDate}
                 onChange={(newValue) => {
                   setStartDate(newValue);
@@ -778,13 +856,16 @@ const RiwayatPage = () => {
                     size: "small",
                     fullWidth: true,
                     sx: fieldInputSx,
+                    error: !!dateError,
                   },
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={2.5}>
+
+            {/* Tanggal Akhir */}
+            <Grid item xs={12} sm={6} md={2.5}>
               <DatePicker
-                label="Tanggal Akhir"
+                label="Akhir"
                 value={endDate}
                 onChange={(newValue) => {
                   setEndDate(newValue);
@@ -795,11 +876,14 @@ const RiwayatPage = () => {
                     size: "small",
                     fullWidth: true,
                     sx: fieldInputSx,
+                    error: !!dateError,
                   },
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={2.5}>
+
+            {/* Filter Status */}
+            <Grid item xs={12} sm={6} md={2.5}>
               <FormControl fullWidth size="small" sx={fieldInputSx}>
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -817,27 +901,29 @@ const RiwayatPage = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={2.5}>
+
+            {/* Input Pencarian */}
+            <Grid item xs={12} sm={6} md={2.5}>
               <TextField
                 fullWidth
                 size="small"
                 placeholder="Cari No. Transaksi..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: colors.textMuted, fontSize: 20 }} />
+                      <SearchIcon sx={{ color: colors.textMuted, fontSize: 18 }} />
                     </InputAdornment>
                   ),
-                  endAdornment: searchQuery && (
+                  endAdornment: searchInput && (
                     <InputAdornment position="end">
                       <IconButton
                         size="small"
-                        onClick={() => setSearchQuery("")}
+                        onClick={() => {
+                          setSearchInput("");
+                          setSearchQuery("");
+                        }}
                         sx={{ p: 0.5 }}
                       >
                         <ClearIcon sx={{ fontSize: 16, color: colors.textMuted }} />
@@ -848,7 +934,9 @@ const RiwayatPage = () => {
                 sx={fieldInputSx}
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+
+            {/* Tombol Refresh */}
+            <Grid item xs={12} md={1.5}>
               <Button
                 variant="contained"
                 onClick={handleRefresh}
@@ -858,28 +946,54 @@ const RiwayatPage = () => {
                 sx={{
                   backgroundColor: colors.primary,
                   "&:hover": { backgroundColor: colors.primaryHover },
-                  py: 1,
+                  py: 0.9,
                   fontWeight: 700,
+                  whiteSpace: "nowrap",
                 }}
               >
                 Refresh
               </Button>
             </Grid>
           </Grid>
-          
-          {(startDate || endDate || statusFilter !== "SEMUA" || searchQuery) && (
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+
+          {/* Alert Error Tanggal */}
+          {dateError && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              {dateError}
+            </Alert>
+          )}
+
+          {/* Active filter chips & Reset Button */}
+          {hasActiveFilters && (
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, pt: 1.5, borderTop: `1px solid ${colors.border || "#eaeaea"}`, flexWrap: "wrap", gap: 1 }}>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {startDate && endDate && (
+                  <Chip
+                    label={`${new Date(startDate).toLocaleDateString("id-ID")} - ${new Date(endDate).toLocaleDateString("id-ID")}`}
+                    onDelete={() => { setStartDate(null); setEndDate(null); }}
+                    size="small"
+                  />
+                )}
+                {statusFilter !== "SEMUA" && (
+                  <Chip
+                    label={`Status: ${statusLabelMap[statusFilter]}`}
+                    onDelete={() => setStatusFilter("SEMUA")}
+                    size="small"
+                  />
+                )}
+                {searchQuery && (
+                  <Chip
+                    label={`Cari: "${searchQuery}"`}
+                    onDelete={() => { setSearchInput(""); setSearchQuery(""); }}
+                    size="small"
+                  />
+                )}
+              </Stack>
               <Button
                 variant="outlined"
-                onClick={() => {
-                  setStartDate(null);
-                  setEndDate(null);
-                  setStatusFilter("SEMUA");
-                  setSearchQuery("");
-                  setPage(1);
-                }}
+                onClick={resetFilters}
                 size="small"
-                sx={{ 
+                sx={{
                   color: colors.textOnDark,
                   borderColor: colors.border,
                   "&:hover": {
@@ -897,7 +1011,7 @@ const RiwayatPage = () => {
         {/* Transaction List */}
         <Card sx={{ p: 0, borderRadius: radii.xs, overflow: "hidden" }}>
           {renderGroupedTransactions()}
-          
+
           <Box
             sx={{
               p: 2.5,

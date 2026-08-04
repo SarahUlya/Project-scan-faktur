@@ -53,10 +53,9 @@ const ProdukPage = () => {
 
   console.log(
   produk.map((item) => ({
-    id: item.id_produk,
     nama: item.nama_produk,
-    status: item.status,
-    aktif: item.is_active,
+    id_kategori: item.id_kategori,
+    kategori_relasi: item.kategori,
   }))
 );
 
@@ -299,7 +298,7 @@ const ProdukPage = () => {
       </Modal>
 
       {/* Modal Detail */}
-      <Modal open={!!detail} onClose={() => setDetail(null)} width={760}>
+      <Modal open={!!detail} onClose={() => setDetail(null)} width={460}>
         <ProdukDetailModal
           product={detail}
           getNamaKategori={getNamaKategori}

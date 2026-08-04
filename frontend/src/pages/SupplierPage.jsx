@@ -7,7 +7,7 @@ import SupplierForm from "../components/supplier/SupplierForm";
 import SupplierLoadingSkeleton from "../components/supplier/SupplierLoadingSkeleton";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import { colors,radii } from "@/theme/designTokens";
+import { colors, radii } from "@/theme/designTokens";
 import {
   Box,
   Typography,
@@ -34,6 +34,7 @@ const SupplierPage = () => {
 
     return (
       (item.nama || "").toLowerCase().includes(query) ||
+      (item.email || "").toLowerCase().includes(query) ||
       (item.alamat || "").toLowerCase().includes(query) ||
       (item.telepon || "").toLowerCase().includes(query)
     );
@@ -43,7 +44,7 @@ const SupplierPage = () => {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pagedSupplier = filteredSupplier.slice(
     (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
+    page * PAGE_SIZE
   );
 
   const handleSearch = (value) => {
@@ -82,9 +83,11 @@ const SupplierPage = () => {
       data: null,
     });
   };
+
   if (loading) {
     return <SupplierLoadingSkeleton />;
   }
+
   return (
     <Box>
       <Box
@@ -127,7 +130,7 @@ const SupplierPage = () => {
           >
             <TextField
               size="small"
-              placeholder="Cari supplier, alamat, atau telepon..."
+              placeholder="Cari nama atau email supplier..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{

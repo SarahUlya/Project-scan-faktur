@@ -30,11 +30,14 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
 import PembelianLoadingSkeleton from "../components/pembelian/PembelianLoadingSkeleton";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 10;
 
 const PembelianPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
   const {
     pembelian = [],
     loading,
@@ -44,8 +47,19 @@ const PembelianPage = () => {
   } = usePembelianDb();
 
   useEffect(() => {
-    loadPembelian(page);
-  }, [page]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    console.log("TRIGGER EFFECT CARI:", debouncedSearch);
+    loadPembelian(page, debouncedSearch);
+  }, [page, debouncedSearch, loadPembelian]);
+
   const totalPembelian = useMemo(
     () => pembelian.reduce((acc, curr) => acc + Number(curr.total || 0), 0),
     [pembelian],
@@ -95,9 +109,11 @@ const PembelianPage = () => {
       icon: <PendingActionsOutlinedIcon />,
     },
   ];
-    if (loading) {
+
+  if (loading && pembelian.length === 0) {
     return <PembelianLoadingSkeleton />;
   }
+
   return (
     <Box sx={{ width: "100%" }}>
       <Box
@@ -121,7 +137,12 @@ const PembelianPage = () => {
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
           <TextField
             size="small"
-            placeholder="Cari faktur..."
+            placeholder="Cari no. faktur / supplier..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
