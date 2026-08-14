@@ -7,7 +7,7 @@ import SupplierForm from "../components/supplier/SupplierForm";
 import SupplierLoadingSkeleton from "../components/supplier/SupplierLoadingSkeleton";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import { colors, radii } from "@/theme/designTokens";
+import { colors, radii, typography } from "@/theme/designTokens";
 import {
   Box,
   Typography,
@@ -110,12 +110,12 @@ const SupplierPage = () => {
           <Box sx={{ flex: 1, minWidth: 280 }}>
             <Typography
               variant="h5"
-              sx={{ fontWeight: 700, color: colors.text }}
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
             >
               Data Supplier
             </Typography>
 
-            <Typography sx={{ color: colors.textSecondary, mt: 1 }}>
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
               Kelola informasi mitra pemasok obat dan alkes.
             </Typography>
           </Box>
@@ -130,7 +130,7 @@ const SupplierPage = () => {
           >
             <TextField
               size="small"
-              placeholder="Cari nama atau email supplier..."
+              placeholder="Cari nama supplier..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{

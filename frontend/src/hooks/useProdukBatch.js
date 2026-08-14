@@ -8,12 +8,10 @@ export default function useProdukBatch() {
     const fetchProduk = async () => {
         setLoading(true);
         try {
-            // Minta seluruh data tanpa limit dari API (sesuaikan param sesuai backend-mu)
             const res = await axiosInstance.get("/produk", {
                 params: { limit: 100000 } 
             });
 
-            // Ambil array data (bisa res.data.data atau res.data)
             const rawData = res.data.data || res.data;
 
             const normalized = rawData.map((p) => ({

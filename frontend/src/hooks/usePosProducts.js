@@ -121,7 +121,9 @@ export default function usePosProducts() {
     () =>
       produk.map((p) => ({
         ...p,
-        nama_satuan: getNamaSatuan(p.id_satuan),
+        nama_satuan:
+        p.satuan?.nama ||
+        getNamaSatuan(p.satuan_id),
         nama_kategori: getNamaKategori(p.id_kategori),
         stok:
           p.stok ??

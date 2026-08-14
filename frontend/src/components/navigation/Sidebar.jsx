@@ -69,8 +69,7 @@ const Sidebar = () => {
   const user = getUser();
   const [openMenus, setOpenMenus] = useState({});
 
-  // Initialize open menus based on the current route. We only depend on location.pathname
-  // to avoid unnecessary re‑renders caused by a constantly new menu array from the hook.
+
   useEffect(() => {
     const initial = {};
     menu.forEach((item) => {
@@ -81,7 +80,6 @@ const Sidebar = () => {
         if (hasActiveSub) initial[item.text] = true;
       }
     });
-    // Replace the whole state – we don't need to merge with previous values here.
     setOpenMenus(initial);
   }, [location.pathname]);
 

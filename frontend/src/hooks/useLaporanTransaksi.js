@@ -22,6 +22,9 @@ export default function useLaporanTransaksi() {
   const [produkTidakLaku, setProdukTidakLaku] = useState([]);
   const [totalOmzet, setTotalOmzet] = useState(0);
   const [jumlahTransaksi, setJumlahTransaksi] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hari, setHari] = useState(30);
 
   useEffect(() => {
     const loadLaporan = async () => {
@@ -33,7 +36,11 @@ export default function useLaporanTransaksi() {
         ] = await Promise.allSettled([
           getLaporanPenjualan({ limit: 100 }),
           getLaporanProdukTerlaris({ limit: 100 }),
-          getLaporanTidakLaku({ limit: 100 }),
+          getLaporanTidakLaku({
+            hari,
+            page: currentPage,
+            limit: 10,
+          }),
         ]);
 
 
@@ -47,6 +54,7 @@ export default function useLaporanTransaksi() {
           setTotalOmzet(
             items.reduce((sum, item) => sum + item.total, 0)
           );
+          console.log("Penjualan:", penjualanRes.value);
         }
 
 
@@ -58,6 +66,7 @@ export default function useLaporanTransaksi() {
           console.log("Produk Terlaris:", items);
 
           setProdukTerlaris(items);
+          console.log("Terlaris:", terlarisRes.value);
         }
 
 
@@ -67,6 +76,10 @@ export default function useLaporanTransaksi() {
             : [];
 
           setProdukTidakLaku(items);
+          setTotalPages(tidakLakuRes.value.totalPages ?? 1);
+          setCurrentPage(tidakLakuRes.value.page ?? 1);
+          console.log(tidakLakuRes.value.data.length);
+          console.log(tidakLakuRes.value.data);
         }
 
       } catch (error) {
@@ -76,8 +89,11 @@ export default function useLaporanTransaksi() {
 
 
     loadLaporan().finally(() => setLoading(false));
-
-  }, []);
+console.log({
+  hari,
+  currentPage,
+});
+  }, [hari, currentPage]);
 
   const getProdukTidakLaku = () => {
     if (!Array.isArray(produkTidakLaku)) {
@@ -92,6 +108,7 @@ export default function useLaporanTransaksi() {
       terakhirTerjual:
         item.terakhir_terjual || item.terakhirTerjual || "-",
     }));
+
   };
   return {
     penjualan,
@@ -100,5 +117,10 @@ export default function useLaporanTransaksi() {
     totalOmzet,
     jumlahTransaksi,
     loading,
+    setHari,
+    hari,
+    totalPages,
+    currentPage,
+    setCurrentPage,
   };
 }

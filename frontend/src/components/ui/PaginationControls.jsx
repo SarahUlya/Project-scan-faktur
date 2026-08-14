@@ -17,21 +17,17 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
   const getPageNumbers = () => {
     const pages = [];
 
-    // Kalau total halaman sedikit, tampilkan semua
     if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Selalu tampilkan halaman pertama
       pages.push(1);
 
-      // Titik kiri
       if (page > 3) {
         pages.push("...");
       }
 
-      // Halaman sekitar current page
       for (
         let i = Math.max(2, page - 1);
         i <= Math.min(totalPages - 1, page + 1);
@@ -40,12 +36,10 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
         pages.push(i);
       }
 
-      // Titik kanan
       if (page < totalPages - 2) {
         pages.push("...");
       }
 
-      // Selalu tampilkan halaman terakhir
       pages.push(totalPages);
     }
 
@@ -83,7 +77,6 @@ const PaginationControls = ({ page, totalPages, onChange }) => {
 
       {/* Nomor halaman */}
       {getPageNumbers().map((item, index) => {
-        // Ellipsis (...)
         if (item === "...") {
           return (
             <span

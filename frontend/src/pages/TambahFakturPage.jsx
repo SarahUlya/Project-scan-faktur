@@ -149,7 +149,8 @@ const TambahFakturPage = () => {
             updated.nama_produk = p.nama_produk;
             updated.harga_beli = p.harga_beli || 0;
             updated.harga_jual = p.harga_jual || 0;
-            updated.satuan = p.nama_satuan || p.satuan || "Pcs";
+            updated.id_satuan = p.satuan_id;
+            updated.satuan = p.satuan?.nama || "";
             updated.barcode = p.barcode;
             updated.exp_date = getOneYearLater(fakturInfo.tanggal);
           }
@@ -295,21 +296,54 @@ const TambahFakturPage = () => {
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+      <Box
+        sx={{
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
           <IconButton
             size="small"
             onClick={() => navigate("/pembelian")}
-            sx={{ bgcolor: colors.borderLight, color: colors.textSecondary, "&:hover": { bgcolor: colors.border } }}
+            sx={{
+              bgcolor: colors.borderLight,
+              color: colors.textSecondary,
+              "&:hover": { bgcolor: colors.border },
+            }}
           >
             <ArrowBackIcon fontSize="small" />
           </IconButton>
-          <Typography sx={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, letterSpacing: 0.5 }}>
+          <Typography
+            sx={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.textMuted,
+              letterSpacing: 0.5,
+            }}
+          >
             Pembelian / Tambah Faktur
           </Typography>
         </Box>
-        <Typography sx={pageHeaderSx.title}>Tambah Penerimaan Barang</Typography>
-        <Typography sx={pageHeaderSx.subtitle}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            fontSize: typography.title,
+            color: colors.text,
+          }}
+        >
+          Tambah Penerimaan Barang
+        </Typography>
+        <Typography
+          sx={{
+            color: colors.textSecondary,
+            fontSize: typography.body,
+            mt: 0.5,
+          }}
+        >
           Isi faktur, tentukan kode batch, lalu tambahkan produk.
         </Typography>
       </Box>

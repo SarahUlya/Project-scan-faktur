@@ -152,12 +152,38 @@ const DashboardPage = () => {
   }
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography sx={pageHeaderSx.title}>Dashboard</Typography>
-        <Typography sx={pageHeaderSx.subtitle}>
-          Ringkasan operasional apotek
-        </Typography>
+      <Box
+        sx={{
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 3,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 280 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
+            >
+              Dashboard
+            </Typography>
+
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+              Pantau ringkasan operasional dan penjualan produk terlaris.
+            </Typography>
+          </Box>
+        </Box>
       </Box>
+
 
       <Box
         sx={{

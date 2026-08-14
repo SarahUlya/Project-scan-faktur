@@ -36,7 +36,7 @@ export const PosProvider = ({ children }) => {
   const addToCart = useCallback((produk, qty = 1) => {
     const stok = produk.stok ?? getStokFromBatches(produk.batch);
     const harga = Number(produk.harga_jual) || 0;
-    const satuan = produk.nama_satuan || produk.satuan || "Pcs";
+    const satuan = produk.id_satuan|| produk.satuan;
 
     if (stok <= 0) {
       alert("Stok produk kosong.");
@@ -70,6 +70,7 @@ export const PosProvider = ({ children }) => {
           qty,
           satuan,
           stok,
+          diskonNominal: 0,
         },
       ];
     });
@@ -86,6 +87,16 @@ export const PosProvider = ({ children }) => {
           return c;
         }
         return { ...c, qty: newQty };
+      })
+    );
+  }, []);
+
+  const updateItemDiscount = useCallback((cartKey, nominalDiskon) => {
+    const newDiscount = Math.max(0, parseFloat(nominalDiskon) || 0);
+    setCart((prev) =>
+      prev.map((c) => {
+        if (c.cartKey !== cartKey) return c;
+        return { ...c, diskonNominal: newDiscount };
       })
     );
   }, []);
@@ -114,6 +125,7 @@ export const PosProvider = ({ children }) => {
     totalBayar,
     addToCart,
     updateQty,
+    updateItemDiscount,
     removeFromCart,
     clearCart,
   };

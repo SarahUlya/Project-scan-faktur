@@ -108,8 +108,8 @@ const columns = [
     },
   },
   {
-    header: "AKSI",
-    accessor: "aksi",
+    header: "DETAIL",
+    accessor: "Detail",
     width: 70,
     align: "center",
     render: (row) => (

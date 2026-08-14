@@ -9,15 +9,12 @@ import {
  transitions,
 } from "@/theme/designTokens";
 
-/**
- * Reusable Status Toggle Component
- * Standardized design untuk aktif/nonaktif di semua form
- */
+
 const StatusToggle = ({
   value = true,
   onChange,
   label = "STATUS",
-  variant = "horizontal", // horizontal atau vertical
+  variant = "horizontal",
   disabled = false,
 }) => {
   const isActive = value;

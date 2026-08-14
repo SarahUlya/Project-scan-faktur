@@ -151,11 +151,37 @@ const ManajemenUserPage = () => {
 
   return (
     <Box sx={{ p: 2, bgcolor: colors.bgPage, minHeight: "100vh" }}>
-      <CrudPageHeader
-        title="Manajemen User"
-        description="Kelola pengguna dan hak akses sistem dengan cepat."
-        hideSearch
-      />
+      <Box
+        sx={{
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 3,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 280 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
+            >
+              Manajemen User
+            </Typography>
+
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+              Kelola pengguna dan hak akses sistem Apotek Ampuh Tayu.
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
       <Card
         sx={{

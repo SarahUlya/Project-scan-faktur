@@ -20,23 +20,35 @@ const KasirLoadingSkeleton = () => {
         pb: spacing.xxl,
       }}
     >
+      {/* ================= HEADER ================= */}
       <Box sx={{ px: 3, pt: 3 }}>
-        {/* HEADER */}
-        <Box sx={{ mb: 4 }}>
+        <Box
+          sx={{
+            bgcolor: colors.bgCard,
+            borderRadius: `${radii.lg}px`,
+            border: `1px solid ${colors.border}`,
+            boxShadow: shadows.card,
+            px: 3,
+            py: 3,
+            mb: 3,
+          }}
+        >
           <Skeleton
             variant="text"
-            width={220}
-            height={42}
+            width={160}
+            height={38}
             sx={{ borderRadius: 1 }}
           />
 
           <Skeleton
             variant="text"
-            width={180}
-            height={22}
+            width={150}
+            height={20}
+            sx={{ mt: 0.5 }}
           />
         </Box>
 
+        {/* ================= MAIN ================= */}
         <Box
           sx={{
             display: "flex",
@@ -44,124 +56,13 @@ const KasirLoadingSkeleton = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* LEFT */}
-          <Box sx={{ flex: 1 }}>
-            {/* SEARCH */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                mb: 3,
-                p: "16px 20px",
-                bgcolor: colors.bgCard,
-                borderRadius: `${radii.md}px`,
-                border: `1px solid ${colors.border}`,
-                boxShadow: shadows.card,
-              }}
-            >
-              <Skeleton
-                variant="rounded"
-                height={46}
-                sx={{ flex: 1 }}
-              />
-
-              <Skeleton
-                variant="rounded"
-                width={220}
-                height={46}
-              />
-
-              <Skeleton
-                variant="rounded"
-                width={90}
-                height={46}
-              />
-            </Box>
-
-            {/* CATEGORY */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1,
-                mb: 3,
-              }}
-            >
-              {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  variant="rounded"
-                  width={95}
-                  height={36}
-                  sx={{ borderRadius: 30 }}
-                />
-              ))}
-            </Box>
-
-            {/* PRODUCT GRID */}
-            <Box
-              sx={{
-                bgcolor: colors.bgCard,
-                borderRadius: `${radii.md}px`,
-                border: `1px solid ${colors.border}`,
-                boxShadow: shadows.card,
-                p: 3,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fill,minmax(180px,1fr))",
-                  gap: 2,
-                }}
-              >
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: radii.md,
-                      p: 2,
-                    }}
-                  >
-                    <Skeleton
-                      variant="rounded"
-                      height={130}
-                    />
-
-                    <Skeleton
-                      width="70%"
-                      height={28}
-                      sx={{ mt: 2 }}
-                    />
-
-                    <Skeleton
-                      width="45%"
-                      height={20}
-                    />
-
-                    <Skeleton
-                      width="55%"
-                      height={24}
-                      sx={{ mt: 1 }}
-                    />
-
-                    <Skeleton
-                      variant="rounded"
-                      height={38}
-                      sx={{ mt: 2 }}
-                    />
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          </Box>
-
-          {/* CART */}
+          {/* ================================================= */}
+          {/* LEFT - KERANJANG */}
+          {/* ================================================= */}
           <Box
             sx={{
-              width: 390,
-              flexShrink: 0,
+              flex: 1,
+              minWidth: 0,
             }}
           >
             <Box
@@ -170,81 +71,257 @@ const KasirLoadingSkeleton = () => {
                 borderRadius: `${radii.md}px`,
                 border: `1px solid ${colors.border}`,
                 boxShadow: shadows.card,
-                p: 3,
+                overflow: "hidden",
+              }}
+            >
+              {/* HEADER KERANJANG */}
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderBottom: `1px solid ${colors.border}`,
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={110}
+                  height={28}
+                />
+              </Box>
+
+              {/* EMPTY CART */}
+              <Box
+                sx={{
+                  height: 103,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderBottom: `1px solid ${colors.border}`,
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={330}
+                  height={22}
+                />
+              </Box>
+
+              {/* SUBTOTAL */}
+              <Box
+                sx={{
+                  px: 2,
+                  pt: 1.5,
+                  pb: 0.5,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={65}
+                  height={22}
+                />
+
+                <Skeleton
+                  variant="text"
+                  width={55}
+                  height={22}
+                />
+              </Box>
+
+              {/* DISKON NOTA */}
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={105}
+                  height={22}
+                />
+
+                <Skeleton
+                  variant="text"
+                  width={55}
+                  height={22}
+                />
+              </Box>
+
+              {/* TOTAL */}
+              <Box
+                sx={{
+                  px: 2,
+                  pt: 1,
+                  pb: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width={65}
+                  height={35}
+                />
+
+                <Skeleton
+                  variant="text"
+                  width={75}
+                  height={18}
+                />
+              </Box>
+
+              {/* PROSES */}
+              <Box sx={{ px: 2, pb: 2 }}>
+                <Skeleton
+                  variant="rounded"
+                  width="100%"
+                  height={50}
+                  sx={{ borderRadius: `${radii.md}px` }}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* ================================================= */}
+          {/* RIGHT - PRODUK */}
+          {/* ================================================= */}
+          <Box
+            sx={{
+              width: 430,
+              flexShrink: 0,
+            }}
+          >
+            {/* SEARCH */}
+            <Box
+              sx={{
+                bgcolor: colors.bgCard,
+                borderRadius: `${radii.md}px`,
+                border: `1px solid ${colors.border}`,
+                boxShadow: shadows.card,
+                p: 2,
+                mb: 2,
               }}
             >
               <Skeleton
-                width={170}
-                height={34}
+                variant="rounded"
+                width="100%"
+                height={60}
+                sx={{
+                  borderRadius: `${radii.md}px`,
+                }}
+              />
+            </Box>
+
+            {/* CATEGORY */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                mb: 2,
+              }}
+            >
+              <Skeleton
+                variant="text"
+                width={90}
+                height={24}
               />
 
               <Skeleton
-                width={100}
-                height={20}
-                sx={{ mb: 3 }}
+                variant="rounded"
+                width={250}
+                height={45}
+                sx={{
+                  borderRadius: `${radii.md}px`,
+                }}
               />
+            </Box>
 
-              {Array.from({ length: 5 }).map((_, i) => (
+            {/* PRODUCT LIST */}
+            <Box
+              sx={{
+                maxHeight: "calc(100vh - 300px)",
+                overflow: "hidden",
+                pr: 0.5,
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
                 <Box
                   key={i}
                   sx={{
+                    bgcolor: colors.bgCard,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: `${radii.md}px`,
+                    p: 1.5,
+                    mb: 1.2,
                     display: "flex",
-                    gap: 2,
-                    mb: 2,
+                    alignItems: "center",
+                    gap: 1.5,
                   }}
                 >
+                  {/* ICON */}
                   <Skeleton
                     variant="rounded"
-                    width={60}
-                    height={60}
+                    width={32}
+                    height={32}
                   />
 
-                  <Box sx={{ flex: 1 }}>
+                  {/* PRODUCT INFO */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
                     <Skeleton
-                      width="80%"
+                      variant="text"
+                      width="75%"
                       height={22}
                     />
 
-                    <Skeleton
-                      width="40%"
-                      height={18}
-                    />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Skeleton
+                        variant="text"
+                        width={75}
+                        height={18}
+                      />
 
-                    <Skeleton
-                      width="60%"
-                      height={18}
-                    />
+                      <Skeleton
+                        variant="text"
+                        width={50}
+                        height={18}
+                      />
+                    </Box>
                   </Box>
+
+                  {/* PRICE */}
+                  <Skeleton
+                    variant="text"
+                    width={85}
+                    height={25}
+                  />
+
+                  {/* PLUS */}
+                  <Skeleton
+                    variant="circular"
+                    width={22}
+                    height={22}
+                  />
                 </Box>
               ))}
-
-              <Skeleton
-                width="100%"
-                height={2}
-                sx={{ my: 3 }}
-              />
-
-              <Skeleton
-                width="50%"
-                height={26}
-              />
-
-              <Skeleton
-                width="65%"
-                height={34}
-                sx={{ mb: 3 }}
-              />
-
-              <Skeleton
-                variant="rounded"
-                height={48}
-              />
-
-              <Skeleton
-                variant="rounded"
-                height={48}
-                sx={{ mt: 2 }}
-              />
             </Box>
           </Box>
         </Box>

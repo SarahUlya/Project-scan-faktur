@@ -1,5 +1,5 @@
 import React from "react";
-import { colors } from "@/theme/designTokens"; // ← tambahkan ini
+import { colors } from "@/theme/designTokens";
 import { APOTEK_INFO } from "../../../config/apotek";
 import {
   buildLaporanSummary,

@@ -31,7 +31,6 @@ import Autocomplete from "@mui/material/Autocomplete";
 
 const fieldInputSx = sharedFieldSx;
 
-// Helper Format Angka ke Rupiah / Ribuan
 const formatNumber = (val) => {
   if (val === "" || val === undefined || val === null) return "";
   const num = Number(val);
@@ -39,7 +38,6 @@ const formatNumber = (val) => {
   return num.toLocaleString("id-ID");
 };
 
-// Helper Parse String Format ke Number
 const parseNumber = (formattedStr) => {
   const clean = String(formattedStr).replace(/[^0-9]/g, "");
   return clean ? parseInt(clean, 10) : 0;
@@ -422,7 +420,6 @@ const FakturItemForm = ({
   handleTambahBaris,
   handleHapusBaris,
 }) => {
-  // EFECT UTAMA: Pastikan kursor MENGUNCI balik ke Barcode Input setiap kali ada penambahan baris baru
   useEffect(() => {
     const timer = setTimeout(() => {
       if (barcodeInputRef?.current) {
@@ -776,21 +773,16 @@ const FakturItemForm = ({
               <Grid item xs={6} md={3}>
                 <FormField label="Satuan">
                   <TextField
-                    select
                     fullWidth
                     size="small"
                     value={item.satuan || ""}
-                    onChange={(e) =>
-                      updateItem(item.id, "satuan", e.target.value)
-                    }
+                    slotProps={{
+                      input: {
+                        readOnly: true,
+                      },
+                    }}
                     sx={{ ...fieldInputSx, width: 300 }}
-                  >
-                    {SATUAN_OPTIONS.map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {s}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  />
                 </FormField>
               </Grid>
 

@@ -60,18 +60,15 @@ const SupplierForm = ({
 
   const validate = () => {
     const err = {};
-    if (!form.nama.trim()) {
+    if (!form.nama?.trim()) {
       err.nama = "Nama supplier wajib diisi";
     }
 
-    if (!form.email.trim()) {
-      err.email = "Email wajib diisi";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    if (form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       err.email = "Format email tidak valid";
     }
 
-    // Telepon opsional, tetapi jika diisi tetap diverifikasi formatnya
-    if (form.telepon.trim() && !validatePhoneNumber(form.telepon)) {
+    if (form.telepon?.trim() && !validatePhoneNumber(form.telepon.trim())) {
       err.telepon = "No. telepon harus 10-13 digit";
     }
 
@@ -229,7 +226,7 @@ const SupplierForm = ({
               letterSpacing: 1,
             }}
           >
-            EMAIL <span style={{ color: "#EF4444" }}>*</span>
+            EMAIL
           </Typography>
           <TextField
             placeholder="supplier@email.com"
@@ -287,48 +284,42 @@ const SupplierForm = ({
         </Box>
       </Box>
 
-      {/* Grid Alamat & Status */}
-      <Box
-        sx={{
-          display: "grid",
-          gap: 2,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#94A3B8",
-              fontWeight: 700,
-              mb: 1,
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-            }}
-          >
-            ALAMAT
-          </Typography>
-          <TextField
-            placeholder="Alamat lengkap (opsional)"
-            value={form.alamat}
-            onChange={(e) => handleChange("alamat", e.target.value)}
-            fullWidth
-            size="small"
-            multiline
-            rows={2}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-          />
-        </Box>
-        <Box>
-          <StatusToggle
-            value={form.status}
-            onChange={(value) => handleChange("status", value)}
-            label="STATUS SUPPLIER"
-            variant="horizontal"
-          />
-        </Box>
+      {/* Alamat */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "#94A3B8",
+            fontWeight: 700,
+            mb: 1,
+            display: "block",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          ALAMAT
+        </Typography>
+
+        <TextField
+          placeholder="Alamat lengkap (opsional)"
+          value={form.alamat}
+          onChange={(e) => handleChange("alamat", e.target.value)}
+          fullWidth
+          size="small"
+          multiline
+          rows={2}
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+        />
+      </Box>
+
+      {/* Status */}
+      <Box sx={{ mb: 3 }}>
+        <StatusToggle
+          value={form.status}
+          onChange={(value) => handleChange("status", value)}
+          label="STATUS SUPPLIER"
+          variant="horizontal"
+        />
       </Box>
 
       <Divider sx={{ mb: 3 }} />
@@ -342,9 +333,9 @@ const SupplierForm = ({
             fontWeight: 700,
             fontSize: 15,
             borderRadius: 2,
-            borderColor: "#F1F5F9",
-            color: "#1E293B",
-            "&:hover": { bgcolor: "#F8FAFC", borderColor: "#E2E8F0" },
+            borderColor: "#E91E63",
+            color: "#ffffff",
+            "&:hover": { bgcolor: "#C2185B" },
           }}
           onClick={onClose}
         >

@@ -86,7 +86,7 @@ const FakturTable = ({ data = [], loading, onView, startIndex = 0 }) => {
               <th style={thStyle}>Jatuh Tempo</th>
               <th style={{ ...thStyle, textAlign: "right" }}>Total</th>
               <th style={{ ...thStyle, textAlign: "center" }}>Status</th>
-              <th style={{ ...thStyle, textAlign: "center" }}>Aksi</th>
+              <th style={{ ...thStyle, textAlign: "center" }}>Detail</th>
             </tr>
           </thead>
           <tbody>

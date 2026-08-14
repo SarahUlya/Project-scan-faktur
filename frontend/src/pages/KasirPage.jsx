@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { Box, Typography, Snackbar, Alert } from "@mui/material";
+import { Box, Typography, Snackbar, Alert, Autocomplete, TextField } from "@mui/material";
 import GridViewIcon from "@mui/icons-material/GridView";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import { PosProvider, usePos } from "../context/PosContext";
@@ -8,7 +8,6 @@ import PosProductGrid from "../components/kasir/PosProductGrid";
 import PosProductList from "../components/kasir/PosProductList";
 import PosCartSidebar from "../components/kasir/PosCartSidebar";
 import PosSuccessModal from "../components/kasir/PosSuccessModal";
-// Reusable UI components
 import SearchBar from "../components/kasir/SearchBar";
 import BarcodeInput from "../components/kasir/BarcodeInput";
 import CategoryFilter from "../components/kasir/CategoryFilter";
@@ -40,36 +39,32 @@ const KasirContent = () => {
   } = usePos();
   const { produk, kategori, loading, error, getNamaKategori, reloadProducts } =
     usePosProducts();
-  const [barcodeInput, setBarcodeInput] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const scanRef = useRef(null);
 
   const focusBarcode = () => {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       if (scanRef.current) {
         scanRef.current.focus();
-        scanRef.current.select();
+        if (typeof scanRef.current.select === "function") {
+          try {
+            scanRef.current.select();
+          } catch (err) {
+          }
+        }
       }
-    });
+    }, 50);
   };
 
   const { reloadTransaksi } = useTransaksiDb();
 
   useEffect(() => {
-    focusBarcode();
-  }, []);
-
-  useEffect(() => {
-    if (!successModalOpen) {
+    if (!loading && !successModalOpen) {
       focusBarcode();
     }
-  }, [successModalOpen]);
-
-  useEffect(() => {
-    focusBarcode();
-  }, [cart]);
+  }, [loading, successModalOpen, cart, snackbarOpen]);
 
   const selectedKategoriLabel =
     kategoriFilter === "semua"
@@ -99,25 +94,33 @@ const KasirContent = () => {
   const handleBarcodeEnter = (e) => {
     if (e.key !== "Enter") return;
 
-    const code = barcodeInput.trim();
+    const inputQuery = search.trim();
 
-    if (!code) {
+    if (!inputQuery) {
       focusBarcode();
       return;
     }
 
-    const found = produk.find((p) => p.barcode === code);
+    const foundByBarcode = produk.find(
+      (p) => p.barcode === inputQuery || p.kode === inputQuery
+    );
 
-    if (!found) {
-      setBarcodeInput("");
+    if (foundByBarcode) {
+      addToCart(foundByBarcode, 1);
+      setSearch("");
       setSnackbarOpen(true);
       focusBarcode();
       return;
     }
 
-    addToCart(found, 1);
-    setBarcodeInput("");
-    setSnackbarOpen(true);
+    if (filtered.length === 1) {
+      addToCart(filtered[0], 1);
+      setSearch("");
+      setSnackbarOpen(true);
+      focusBarcode();
+      return;
+    }
+
     focusBarcode();
   };
 
@@ -147,7 +150,14 @@ const KasirContent = () => {
     >
       <Box sx={{ px: 3, pt: 3 }}>
         {/* Header */}
-        <Box sx={{ mb: 3, pb: 1 }}>
+        <Box
+          sx={{
+            background: colors.bgCard,
+            borderRadius: 3,
+            p: 3,
+            mb: 3,
+          }}
+        >
           <Typography
             sx={{
               fontWeight: typography.bold,
@@ -158,6 +168,7 @@ const KasirContent = () => {
           >
             Kasir Pintar
           </Typography>
+
           <Typography
             sx={{
               color: colors.textSecondary,
@@ -174,7 +185,6 @@ const KasirContent = () => {
           </Typography>
         </Box>
 
-        {/* UTAMA: Menggunakan flex dengan persentase eksplisit */}
         <Box
           sx={{
             display: "flex",
@@ -183,21 +193,41 @@ const KasirContent = () => {
             width: "100%",
           }}
         >
-          {/* AREA KIRI: PRODUK & SEARCH (Dikecilkan jadi 52%) */}
+          {/* AREA KERANJANG (70%) */}
           <Box
             sx={{
-              width: "52%",
+              width: "70%",
+              flexShrink: 0,
+              "& > *": {
+                width: "100% !important",
+                maxWidth: "100% !important",
+                minWidth: "100% !important",
+              },
+            }}
+          >
+            <PosCartSidebar
+              onTransaksiSukses={async (result) => {
+                setSuccessData(result);
+                setSuccessModalOpen(true);
+                await reloadProducts();
+              }}
+            />
+          </Box>
+
+          {/* AREA DAFTAR PRODUK (30%) */}
+          <Box
+            sx={{
+              width: "30%",
               flexShrink: 0,
               minWidth: 0,
             }}
           >
-            {/* Search & Controls */}
+            {/* Search Bar Tunggal */}
             <Box
               sx={{
                 display: "flex",
                 gap: 1.5,
                 mb: 2,
-                flexWrap: "nowrap",
                 alignItems: "center",
                 p: "12px 16px",
                 bgcolor: colors.bgCard,
@@ -207,84 +237,16 @@ const KasirContent = () => {
               }}
             >
               <SearchBar
-                placeholder="Cari obat/barcode..."
+                placeholder="Cari obat atau scan barcode..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-              />
-              <BarcodeInput
-                placeholder="Scan barcode..."
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeEnter}
                 ref={scanRef}
+                autoFocus
               />
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.5,
-                  bgcolor: "rgba(255,255,255,0.8)",
-                  borderRadius: 2.5,
-                  border: "1px solid #E2E8F0",
-                  p: 0.5,
-                  transition: "all 150ms ease",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  flexShrink: 0,
-                }}
-              >
-                <Box
-                  onClick={() => setViewMode("grid")}
-                  sx={{
-                    p: 0.8,
-                    cursor: "pointer",
-                    borderRadius: 2,
-                    bgcolor:
-                      viewMode === "grid"
-                        ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)"
-                        : "transparent",
-                    color: viewMode === "grid" ? "#D81B60" : "#94A3B8",
-                    fontSize: 18,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 150ms ease",
-                    boxShadow:
-                      viewMode === "grid"
-                        ? "0 2px 6px rgba(216,27,96,0.12)"
-                        : "none",
-                    "&:hover": { backgroundColor: "rgba(216,27,96,0.06)" },
-                  }}
-                >
-                  <GridViewIcon fontSize="small" />
-                </Box>
-                <Box
-                  onClick={() => setViewMode("list")}
-                  sx={{
-                    p: 0.8,
-                    cursor: "pointer",
-                    borderRadius: 2,
-                    bgcolor:
-                      viewMode === "list"
-                        ? "linear-gradient(135deg, #FFF5F7 0%, #FFE8ED 100%)"
-                        : "transparent",
-                    color: viewMode === "list" ? "#D81B60" : "#94A3B8",
-                    fontSize: 18,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 150ms ease",
-                    boxShadow:
-                      viewMode === "list"
-                        ? "0 2px 6px rgba(216,27,96,0.12)"
-                        : "none",
-                    "&:hover": { backgroundColor: "rgba(216,27,96,0.06)" },
-                  }}
-                >
-                  <ViewListIcon fontSize="small" />
-                </Box>
-              </Box>
             </Box>
 
-            {/* Category Filter */}
+            {/* Filter Kategori */}
             <Box
               sx={{
                 display: "flex",
@@ -304,18 +266,40 @@ const KasirContent = () => {
                 KATEGORI :
               </Typography>
 
-              <Box sx={{ width: 220 }}>
-                <CategoryFilter
-                  kategori={kategori}
-                  kategoriFilter={kategoriFilter}
-                  setKategoriFilter={setKategoriFilter}
-                  selectedLabel={selectedKategoriLabel}
+              <Box sx={{ width: "100%" }}>
+                <Autocomplete
+                  size="small"
+                  options={kategori}
+                  value={
+                    kategori.find(
+                      (item) => String(item.id_kategori) === String(kategoriFilter)
+                    ) || null
+                  }
+                  getOptionLabel={(option) => option.nama_kategori || ""}
+                  isOptionEqualToValue={(option, value) =>
+                    String(option.id_kategori) === String(value.id_kategori)
+                  }
+                  onChange={(event, newValue) => {
+                    setKategoriFilter(newValue?.id_kategori || "");
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Cari kategori..."
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          fontSize: 13,
+                          borderRadius: `${radii.sm}px`,
+                          backgroundColor: colors.bgCard,
+                        },
+                      }}
+                    />
+                  )}
+                  noOptionsText="Kategori tidak ditemukan"
                 />
               </Box>
             </Box>
 
-            {/* Product Display */}
-            {/* Product Display (Scrollable) */}
             <Box
               sx={{
                 bgcolor: colors.bgCard,
@@ -323,11 +307,8 @@ const KasirContent = () => {
                 border: `1px solid ${colors.border}`,
                 boxShadow: shadows.card,
                 p: 2,
-                // Batasi tinggi kontainer sesuai sisa layar
                 height: "calc(100vh - 220px)",
-                // Aktifkan scroll internal
                 overflowY: "auto",
-                // Opsional: memperhalus tampilan scrollbar (Webkit)
                 "&::-webkit-scrollbar": {
                   width: "6px",
                 },
@@ -360,11 +341,6 @@ const KasirContent = () => {
                 >
                   Tidak ada produk yang cocok dengan pencarian Anda.
                 </Typography>
-              ) : viewMode === "grid" ? (
-                <PosProductGrid
-                  produk={filtered}
-                  getNamaKategori={getNamaKategori}
-                />
               ) : (
                 <PosProductList
                   produk={filtered}
@@ -372,27 +348,6 @@ const KasirContent = () => {
                 />
               )}
             </Box>
-          </Box>
-
-          {/* AREA KANAN: KERANJANG (Diperbesar jadi 48% dan memaksa anak komponen 100%) */}
-          <Box
-            sx={{
-              width: "48%",
-              flexShrink: 0,
-              "& > *": {
-                width: "100% !important",
-                maxWidth: "100% !important",
-                minWidth: "100% !important",
-              },
-            }}
-          >
-            <PosCartSidebar
-              onTransaksiSukses={async (result) => {
-                setSuccessData(result);
-                setSuccessModalOpen(true);
-                await reloadProducts();
-              }}
-            />
           </Box>
         </Box>
       </Box>

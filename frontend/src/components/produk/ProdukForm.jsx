@@ -115,14 +115,14 @@ const ProdukForm = ({
       onSubmit={handleSubmit}
       sx={{
         width: "100%",
-        maxHeight: "80vh", // 1. Mencegah modal melebihi 80% tinggi layar
+        maxHeight: "80vh",
         display: "flex",
-        flexDirection: "column", // 2. Mengatur layout menjadi Flexbox vertikal
+        flexDirection: "column",
         p: 3,
         boxSizing: "border-box",
       }}
     >
-      {/* HEADER (TETAP DI ATAS) */}
+      {/* HEADER  */}
       <Box sx={{ display: "flex", gap: 2, mb: 2, flexShrink: 0 }}>
         {mode === "edit" && (
           <Box
@@ -154,12 +154,12 @@ const ProdukForm = ({
         </Box>
       </Box>
 
-      {/* AREA INPUT FORM (BISA DI-SCROLL JIKA TINGGI MELEBIHI LAYAR) */}
+      {/* AREA INPUT FORM  */}
       <Box
         sx={{
           flex: 1,
-          overflowY: "auto", // 3. Memungkinkan scrollbar di area input
-          pr: 1, // Padding kanan agar scrollbar tidak menutupi input
+          overflowY: "auto",
+          pr: 1,
         }}
       >
         {mode === "edit" && initialData && (
@@ -336,75 +336,6 @@ const ProdukForm = ({
                 letterSpacing: 1,
               }}
             >
-              STOK MINIMUM{" "}
-              <span
-                style={{
-                  color: "#E91E63",
-                  fontWeight: 600,
-                  textTransform: "none",
-                }}
-              >
-                (Peringatan Stok Rendah)
-              </span>
-            </Typography>
-            <TextField
-              type="number"
-              value={form.stok_minimum}
-              onChange={(e) => handleChange("stok_minimum", e.target.value)}
-              fullWidth
-              size="small"
-              error={!!error.stok_minimum}
-              helperText={
-                error.stok_minimum ? (
-                  <span style={{ color: "#EF4444", fontWeight: 600 }}>
-                    {error.stok_minimum}
-                  </span>
-                ) : (
-                  ""
-                )
-              }
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-              InputProps={{
-                endAdornment: (
-                  <Typography
-                    sx={{ color: "#94A3B8", fontSize: 14, fontWeight: 600 }}
-                  >
-                    {stokUnitLabel}
-                  </Typography>
-                ),
-              }}
-            />
-          </Box>
-          <Box>
-            <StatusToggle
-              value={form.is_active}
-              onChange={(value) => handleChange("is_active", value)}
-              label="STATUS PRODUK"
-              variant="horizontal"
-            />
-          </Box>
-        </Box>
-
-        <Box
-          sx={{
-            display: "grid",
-            gap: 2,
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-            mb: 2,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "#94A3B8",
-                fontWeight: 700,
-                mb: 1,
-                display: "block",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
               HARGA JUAL <span style={{ color: "#EF4444" }}>*</span>
             </Typography>
             <TextField
@@ -453,6 +384,73 @@ const ProdukForm = ({
             />
           </Box>
         </Box>
+
+        <Box sx={{
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          mb: 2,
+        }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#94A3B8",
+              fontWeight: 700,
+              mb: 1,
+              display: "block",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            STOK MINIMUM{" "}
+            <span
+              style={{
+                color: "#E91E63",
+                fontWeight: 600,
+                textTransform: "none",
+              }}
+            >
+              (Peringatan Stok Rendah)
+            </span>
+          </Typography>
+          <TextField
+            type="number"
+            value={form.stok_minimum}
+            onChange={(e) => handleChange("stok_minimum", e.target.value)}
+            fullWidth
+            size="small"
+            error={!!error.stok_minimum}
+            helperText={
+              error.stok_minimum ? (
+                <span style={{ color: "#EF4444", fontWeight: 600 }}>
+                  {error.stok_minimum}
+                </span>
+              ) : (
+                ""
+              )
+            }
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            InputProps={{
+              endAdornment: (
+                <Typography
+                  sx={{ color: "#94A3B8", fontSize: 14, fontWeight: 600 }}
+                >
+                  {stokUnitLabel}
+                </Typography>
+              ),
+            }}
+          />
+        </Box>
+
+        {/* STATUS PRODUK  */}
+        <Box sx={{ mb: 1, pt: 1 }}>
+          <StatusToggle
+            value={form.is_active}
+            onChange={(value) => handleChange("is_active", value)}
+            label="STATUS PRODUK"
+            variant="horizontal"
+          />
+        </Box>
       </Box>
 
       {/* FOOTER ACTION (TETAP DI BAWAH) */}
@@ -483,7 +481,7 @@ const ProdukForm = ({
               fontSize: 15,
               borderRadius: 2,
               bgcolor: colors.primary,
-              color: colors.textOnDark,
+              color: colors.textOnDark || "#FFFFFF",
               "&:hover": { bgcolor: colors.primaryDark },
               boxShadow: "0 4px 14px rgba(233, 30, 99, 0.3)",
               display: "flex",

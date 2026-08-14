@@ -1,5 +1,12 @@
 export const hitungSubtotalKeranjang = (cart = []) =>
-  cart.reduce((acc, item) => acc + (item.qty || 0) * (item.harga || 0), 0);
+  cart.reduce((acc, item) => {
+    const totalHargaItem = (item.qty || 0) * (item.harga || 0);
+    const diskonItem = Number(item.diskonNominal) || 0;
+
+    const subtotalItem = Math.max(0, totalHargaItem - diskonItem);
+
+    return acc + subtotalItem;
+  }, 0);
 
 export const hitungNominalDiskon = (subtotal, diskon = { tipe: "%", nilai: 0 }) => {
   const nilai = Number(diskon.nilai) || 0;

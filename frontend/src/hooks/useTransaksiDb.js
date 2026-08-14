@@ -3,7 +3,6 @@ import {
   createTransaksi,
   getTransaksi,
   getTransaksiDetail,
-  cancelTransaksi as cancelTransaksiApi, // Impor fungsi API pembatalan langsung
 } from "../api/transaksiApi";
 import { getUser, ROLE } from "../auth/auth";
 
@@ -34,63 +33,52 @@ export default function useTransaksiDb() {
 
   const processTransaksi = useCallback(
     async (payload) => {
-      const validCart = (payload.cart || []).filter(
-        (item) =>
-          item.barcode !== null &&
-          item.barcode !== undefined &&
-          String(item.barcode).trim() !== ""
-      );
-
-      if (validCart.length === 0) {
-        throw new Error("Tidak ada item dengan barcode valid di keranjang!");
+      const rawCart = payload.cart || [];
+      rawCart.forEach((item, index) => {
+        console.log(`Item ${index}:`, item);
+      });
+      if (rawCart.length === 0) {
+        throw new Error("Keranjang belanja masih kosong!");
       }
 
       const body = {
         metode_bayar: payload.metode,
-        items: validCart.map((item) => ({
-          barcode: String(item.barcode),
-          qty: Number(item.qty) || 1,
-        })),
+        items: rawCart.map((item) => {
+          const hasBarcode =
+            item.barcode !== null &&
+            item.barcode !== undefined &&
+            String(item.barcode).trim() !== "";
+
+          return {
+            id: item.produk_id,
+            produk_id: item.produk_id,
+            barcode: hasBarcode ? String(item.barcode).trim() : null,
+            qty: Number(item.qty) || 1,
+          };
+        }),
       };
 
-      console.log("PAYLOAD SANITIZED YANG DIKIRIM:", body);
+      console.log("PAYLOAD FIX YANG DIKIRIM:", body);
 
-      const res = await createTransaksi(body);
-      await loadTransaksi();
-      return res.data;
+      try {
+        const res = await createTransaksi(body);
+        await loadTransaksi();
+        return res.data;
+      } catch (err) {
+        console.error("Detail Error 400 dari Backend:", err.response?.data);
+        throw err;
+      }
     },
     [loadTransaksi]
   );
 
-  // FUNGSI PEMBATALAN LANGSUNG (Khusus Admin)
-  const cancelTransaksi = useCallback(
-    async (transaksiId) => {
-      const user = getUser();
 
-      if (!user) {
-        throw new Error("User belum login");
-      }
-
-      if (user.role !== ROLE.ADMIN) {
-        throw new Error("Hanya admin yang dapat membatalkan transaksi");
-      }
-
-      const result = await cancelTransaksiApi(transaksiId);
-
-      // Reload daftar transaksi setelah pembatalan
-      await loadTransaksi();
-
-      return result;
-    },
-    [loadTransaksi]
-  );
 
   return {
     transaksiList,
     loading,
     processTransaksi,
     getTransaksiDetail: loadTransaksiDetail,
-    cancelTransaksi, // Expose fungsi cancelTransaksi
     reloadTransaksi: loadTransaksi,
   };
 }

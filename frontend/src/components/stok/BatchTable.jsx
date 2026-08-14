@@ -85,7 +85,7 @@ const BatchTable = ({ batch, onShowDetail }) => {
     },
     {
       header: "",
-      accessor: "aksi",
+      accessor: "Detail",
       align: "center",
       render: (row) => (
         <IconButton

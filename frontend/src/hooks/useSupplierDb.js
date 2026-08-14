@@ -44,8 +44,8 @@ export default function useSupplierDb() {
       const payload = {
         nama_supplier: item.nama,
         email: item.email,
-        telepon: item.telepon || null, // Opsional
-        alamat: item.alamat || null,   // Opsional
+        telepon: item.telepon || null, 
+        alamat: item.alamat || null,   
       };
 
       console.log("Payload:", payload);

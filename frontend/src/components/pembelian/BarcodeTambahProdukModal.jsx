@@ -42,7 +42,7 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
   useEffect(() => {
     if (produk) {
       setQty(1);
-      setSatuan(produk.satuan || produk.nama_satuan || "Pcs");
+      setSatuan(produk.id_satuan || produk.nama_satuan || "Pcs");
       setHargaBeli(produk.harga_beli || 0);
       setHargaJual(produk.harga_jual || 0);
     }
@@ -60,7 +60,7 @@ const BarcodeTambahProdukModal = ({ open, produk, onClose, onConfirm }) => {
       produk_id: produk.id_produk,
       nama_produk: produk.nama_produk,
       qty: Number(qty),
-      satuan,
+      satuan : produk.id_satuan || produk.nama_satuan || satuan || "Pcs",
       harga_beli: Number(hargaBeli) || 0,
       harga_jual: Number(hargaJual) || 0,
     });

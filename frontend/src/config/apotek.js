@@ -1,16 +1,9 @@
-// =============================================
-// APOTEK CONFIG
-// =============================================
-
 export const APOTEK_INFO = {
   nama: "APOTEK SEHAT",
   alamat: "Jl. Contoh No.123, Kudus",
   telepon: "081234567890",
 };
 
-// =============================================
-// SATUAN
-// =============================================
 
 export const SATUAN_OPTIONS = [
   "Tablet",
@@ -23,9 +16,6 @@ export const SATUAN_OPTIONS = [
   "Pcs",
 ];
 
-// =============================================
-// GUDANG
-// =============================================
 
 export const GUDANG_OPTIONS = [
   {
@@ -42,9 +32,6 @@ export const GUDANG_OPTIONS = [
   },
 ];
 
-// =============================================
-// PPN
-// =============================================
 
 export const JENIS_PPN_OPTIONS = [
   {
@@ -59,9 +46,7 @@ export const JENIS_PPN_OPTIONS = [
 
 export const NILAI_PPN_OPTIONS = [0, 11];
 
-// =============================================
-// PEMBAYARAN
-// =============================================
+
 
 export const JENIS_PEMBAYARAN_OPTIONS = [
   {
@@ -89,9 +74,6 @@ export const AKUN_KAS_OPTIONS = [
   },
 ];
 
-// =============================================
-// DEFAULT DATA FAKTUR
-// =============================================
 
 export const defaultFakturInfo = () => ({
   supplier_id: "",
@@ -118,10 +100,6 @@ export const defaultFakturInfo = () => ({
   catatan: "",
 });
 
-// =============================================
-// TEMPLATE ITEM
-// =============================================
-
 export const emptyItem = () => ({
   id: Date.now() + Math.random(),
 
@@ -144,9 +122,7 @@ export const emptyItem = () => ({
   total: 0,
 });
 
-// =============================================
-// HITUNG SUBTOTAL ITEM
-// =============================================
+
 
 export function hitungSubtotalItem(item) {
   const qty = Number(item.qty || 0);

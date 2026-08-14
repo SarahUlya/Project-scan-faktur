@@ -22,13 +22,11 @@ export const useLogin = () => {
     try {
       console.log("LOGIN DATA:", username, password);
 
-      // 🔹 1. login
       const res = await login({ username, password });
       const token = res.data.token;
 
       localStorage.setItem("token", token);
 
-      // 🔹 2. ambil user
       const me = await api.get("/auth/login", {
         headers: {
           Authorization: `Bearer ${token}`,

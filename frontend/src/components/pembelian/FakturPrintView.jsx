@@ -5,8 +5,6 @@ import { colors, radii, typography } from "@/theme/designTokens";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-
-// Import Material UI
 import {
   Box,
   Button,
@@ -22,7 +20,7 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-// Helper Formatting
+
 const formatRupiah = (n) =>
   (n || 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
 
@@ -47,7 +45,7 @@ const formatEd = (dateStr) => {
 };
 
 async function saveFile(blob, fileName, mimeType) {
-  // Browser mendukung Save As
+
   if ("showSaveFilePicker" in window) {
     try {
       const handle = await window.showSaveFilePicker({
@@ -71,7 +69,6 @@ async function saveFile(blob, fileName, mimeType) {
     }
   }
 
-  // Fallback browser lama
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
@@ -85,7 +82,6 @@ async function saveFile(blob, fileName, mimeType) {
 const FakturPrintView = ({ faktur }) => {
   const printRef = useRef(null);
 
-  // State Dropdown Menu Action
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
 
@@ -110,7 +106,6 @@ const FakturPrintView = ({ faktur }) => {
     header.total ||
     (header.jenis_ppn === "sudah_termasuk" ? subtotal : subtotal + ppn);
 
-  // Handlers Export & Cetak
   const handlePrint = () => {
     handleCloseMenu();
     setTimeout(() => window.print(), 100);

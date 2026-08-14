@@ -13,7 +13,6 @@ const PosStruk = ({ data }) => {
   if (!data) return null;
   const { header, items = [], cetakStruk } = data;
 
-  // Format tanggal
   const tanggal = new Date(header?.tanggal);
   const tglStr = tanggal.toLocaleDateString("id-ID", {
     weekday: "short",

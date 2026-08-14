@@ -118,47 +118,59 @@ const PembelianPage = () => {
     <Box sx={{ width: "100%" }}>
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
           mb: 3,
-          flexWrap: "wrap",
-          gap: 2,
         }}
       >
-        <Box>
-          <Typography sx={pageHeaderSx.title}>
-            Daftar Faktur Pembelian
-          </Typography>
-          <Typography sx={pageHeaderSx.subtitle}>
-            Manajemen invoice pembelian barang ke supplier
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-          <TextField
-            size="small"
-            placeholder="Cari no. faktur / supplier..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: colors.textMuted, fontSize: 20 }} />
-                </InputAdornment>
-              ),
-              sx: { borderRadius: 2, bgcolor: colors.bgCard, width: 240 },
-            }}
-          />
-          <Button
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => navigate("/pembelian/tambah")}
-          >
-            Tambah Faktur
-          </Button>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 3,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 280 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
+            >
+              Daftar Faktur Pembelian
+            </Typography>
+
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+              Pantau seluruh faktur pembelian, status pembayaran, dan total transaksi.
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+            <TextField
+              size="small"
+              placeholder="Cari no. faktur / supplier..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: colors.textMuted, fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: 2, bgcolor: colors.bgCard, width: 240 },
+              }}
+            />
+            <Button
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => navigate("/pembelian/tambah")}
+            >
+              Tambah Faktur
+            </Button>
+          </Box>
         </Box>
       </Box>
 

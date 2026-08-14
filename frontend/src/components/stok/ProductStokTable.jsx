@@ -3,7 +3,6 @@ import { Box, Typography, Chip, IconButton } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { colors, radii, transitions } from "@/theme/designTokens";
 
-// Helper: ambil expired terdekat dari batch aktif
 const getEarliestExpired = (batches) => {
   const valid = (batches || []).filter((b) => Number(b.qty_sisa) > 0);
   if (!valid.length) return null;
@@ -11,7 +10,6 @@ const getEarliestExpired = (batches) => {
   return sorted[0];
 };
 
-// Helper: status badge
 const getStatusBadge = (expiredDate) => {
   if (!expiredDate) return { label: "Tidak Tersedia", color: colors.textMuted, bg: colors.bgMuted };
   const days = Math.ceil((new Date(expiredDate) - new Date()) / (1000 * 60 * 60 * 24));
@@ -107,7 +105,7 @@ const ProductStokTable = ({ products, onDetailClick }) => {
                 letterSpacing: 0.5,
               }}
             >
-              Aksi
+              Detail
             </th>
           </tr>
         </thead>

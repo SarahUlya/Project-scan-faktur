@@ -12,20 +12,13 @@ import {
   pageHeaderSx,
   statCardSx,
 } from "@/theme/designTokens";
-/**
- * Reusable searchable dropdown for category filtering.
- * Props:
- *   kategori – array of category objects {id_kategori, nama_kategori}
- *   kategoriFilter – currently selected id (string or 'semua')
- *   setKategoriFilter – function to update filter
- *   selectedLabel – display label for the current selection
- */
+
 const CategoryFilter = ({ kategori, kategoriFilter, setKategoriFilter, selectedLabel }) => {
   const [search, setSearch] = React.useState('');
   const [showDropdown, setShowDropdown] = React.useState(false);
   const wrapperRef = useRef(null);
 
-  // Close dropdown on outside click
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {

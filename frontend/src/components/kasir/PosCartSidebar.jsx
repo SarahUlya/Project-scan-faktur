@@ -1,5 +1,17 @@
-import React, { useState } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -11,6 +23,71 @@ import PosDiscountModal from "./PosDiscountModal";
 import PosPaymentModal from "./PosPaymentModal";
 import { printReceipt } from "@/utils/print/receiptPrinter";
 
+
+const DiscountInputCell = ({ value, onSave }) => {
+  const [localValue, setLocalValue] = useState(value ?? 0);
+
+  useEffect(() => {
+    setLocalValue(value ?? 0);
+  }, [value]);
+
+  const handleBlur = () => {
+    const numericValue = Math.max(0, parseFloat(localValue) || 0);
+    onSave(numericValue);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <TextField
+      size="small"
+      type="number"
+      value={localValue === 0 ? "" : localValue}
+      placeholder="0"
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onClick={(e) => e.stopPropagation()}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start" sx={{ mr: 0.3 }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, color: "#888" }}>
+              Rp</span>
+          </InputAdornment>
+        ),
+      }}
+      sx={{
+        width: "85px",
+        "& .MuiOutlinedInput-root": {
+          height: "28px",
+          fontSize: "11px",
+          fontWeight: 600,
+          bgcolor: colors.bgCard,
+          px: 0.8,
+          "& fieldset": {
+            borderColor: colors.border,
+          },
+        },
+        "& .MuiInputBase-input": {
+          p: 0,
+          textAlign: "right",
+          "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button": {
+            WebkitAppearance: "none",
+            margin: 0,
+          },
+          "&[type=number]": {
+            MozAppearance: "textfield",
+          },
+        },
+      }}
+    />
+  );
+};
+
 const PosCartSidebar = ({ onTransaksiSukses }) => {
   const {
     cart,
@@ -18,6 +95,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
     diskonNominal,
     totalBayar,
     updateQty,
+    updateItemDiscount,
     removeFromCart,
     clearCart,
     diskon,
@@ -29,7 +107,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
   return (
     <Box
       sx={{
-        width: 360,
+        width: "100%",
         flexShrink: 0,
         bgcolor: colors.bgCard,
         borderRadius: `${radii.md}px`,
@@ -42,6 +120,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
         boxShadow: "0 2px 8px " + colors.shadow,
       }}
     >
+      {/* Header Keranjang */}
       <Box
         sx={{
           p: 1.5,
@@ -71,7 +150,8 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
         )}
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
+      {/* Area Tabel Item */}
+      <Box sx={{ flex: 1, overflowY: "auto" }}>
         {cart.length === 0 ? (
           <Typography
             sx={{
@@ -84,115 +164,152 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             Keranjang kosong. Pilih produk atau scan barcode.
           </Typography>
         ) : (
-          cart.map((item) => (
-            <Box
-              key={item.cartKey}
-              sx={{
-                mb: 1.5,
-                pb: 1.5,
-                borderBottom: `1px solid ${colors.border}`,
-              }}
-            >
-              <Box
+          <TableContainer>
+            <Table size="small" stickyHeader aria-label="cart table">
+              <TableHead
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 1,
+                  "& th": {
+                    backgroundColor: colors.primary,
+                    color:" #ffffff",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    py: 1.2,
+                    borderBottom: `1px solid ${colors.border}`,
+                  },
                 }}
               >
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: 13,
-                      color: colors.text,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {item.nama}
-                  </Typography>
-                  <Typography
-                    sx={{ fontSize: 10, color: colors.textSecondary }}
-                  >
-                    {item.barcode || `ID: ${item.produk_id}`}
-                  </Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  onClick={() => removeFromCart(item.cartKey)}
-                  sx={{ color: colors.danger, p: 0.4, flexShrink: 0 }}
-                >
-                  <DeleteOutlineIcon fontSize="small" />
-                </IconButton>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 1,
-                  marginTop: 1,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: spacing.xs,
-                    bgcolor: colors.bgMuted,
-                    borderRadius: `${radii.sm}px`,
-                    p: spacing.xs,
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={() => updateQty(item.cartKey, item.qty - 1)}
-                    disabled={item.qty <= 1}
-                    sx={{ p: spacing.xs, fontSize: typography.body }}
-                  >
-                    <RemoveIcon fontSize="small" />
-                  </IconButton>
-                  <Typography
-                    sx={{
-                      minWidth: 24,
-                      textAlign: "center",
-                      fontWeight: 700,
-                      fontSize: typography.body,
-                    }}
-                  >
-                    {item.qty}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => updateQty(item.cartKey, item.qty + 1)}
-                    disabled={item.qty >= item.stok}
-                    sx={{
-                      bgcolor: colors.primary,
-                      color: colors.bgCard,
-                      p: spacing.xs,
-                      "&:hover": { bgcolor: colors.primaryHover },
-                    }}
-                  >
-                    <AddIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-                <Typography
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: 13,
-                    color: colors.danger,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Rp {formatRupiahPos(item.qty * item.harga)}
-                </Typography>
-              </Box>
-            </Box>
-          ))
+                <TableRow>
+                  <TableCell>No</TableCell>
+                  <TableCell>Nama Produk</TableCell>
+                  <TableCell align="center">Qty</TableCell>
+                  <TableCell align="center">Satuan</TableCell>
+                  <TableCell align="center">Diskon</TableCell>
+                  <TableCell align="right">Subtotal</TableCell>
+                  <TableCell align="center">Aksi</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {cart.map((item, index) => {
+                  const itemDiscount = item.diskonNominal || 0;
+                  const lineSubtotal = Math.max(0, item.qty * item.harga - itemDiscount);
+                  console.log("ITEM CART:", item);
+                  
+                  return (
+                    <TableRow key={item.cartKey}>
+                      {/* No */}
+                      <TableCell sx={{ fontSize: 13, fontWeight: 600 }}>{index + 1}</TableCell>
+
+                      {/* Nama Produk & Detail */}
+                      <TableCell sx={{ py: 1 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color: colors.textPrimary,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {item.nama}
+                        </Typography>
+                      </TableCell>
+
+                      {/* Qty */}
+                      <TableCell align="center" sx={{ py: 1 }}>
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: `${radii.sm}px`,
+                            overflow: "hidden",
+                            height: "30px",
+                            bgcolor: colors.bgCard,
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            disabled={item.qty <= 1}
+                            onClick={() => updateQty(item.cartKey, item.qty - 1)}
+                            sx={{
+                              width: 28,
+                              height: 30,
+                              borderRadius: 0,
+                              color: item.qty <= 1
+                                ? colors.textSecondary
+                                : colors.text,
+                              "&:hover": {
+                                bgcolor: colors.bgMuted,
+                              },
+                            }}
+                          >
+                            <RemoveIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+
+                          <Typography
+                            sx={{
+                              minWidth: 30,
+                              textAlign: "center",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: colors.text,
+                            }}
+                          >
+                            {item.qty}
+                          </Typography>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => updateQty(item.cartKey, item.qty + 1)}
+                            sx={{
+                              width: 28,
+                              height: 30,
+                              borderRadius: 0,
+                              color: colors.primary,
+                              "&:hover": {
+                                bgcolor: colors.bgMuted,
+                              },
+                            }}
+                          >
+                            <AddIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+
+                      {/* Satuan */}
+                      <TableCell align="center" sx={{ fontSize: 13, color: colors.textSecondary }}>
+                        {item.satuan?.nama || item.satuan || "-"}
+                      </TableCell>
+
+                      {/* Input Diskon */}
+                      <TableCell align="center" sx={{ py: 0.8, px: 0.5, verticalAlign: "middle", width: "95px" }}>
+                        <DiscountInputCell
+                          value={item.diskonNominal}
+                          onSave={(newDiscount) => updateItemDiscount(item.cartKey, newDiscount)}
+                        />
+                      </TableCell>
+
+                      {/* Subtotal Item */}
+                      <TableCell align="right" sx={{ fontWeight: 700, fontSize: 13, color: colors.primary }}>
+                        Rp {formatRupiahPos(lineSubtotal)}
+                      </TableCell>
+
+                      {/* Aksi Hapus */}
+                      <TableCell align="center">
+                        <IconButton size="small" onClick={() => removeFromCart(item.cartKey)}>
+                          <DeleteOutlineIcon sx={{ fontSize: 18, color: colors.danger }} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </Box>
 
+      {/* Footer Ringkasan Pembayaran */}
       <Box
         sx={{
           p: 1.5,
@@ -211,6 +328,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             Rp {formatRupiahPos(subtotal)}
           </Typography>
         </Box>
+
         <Box
           sx={{
             display: "flex",
@@ -233,7 +351,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
               "&:hover": { opacity: 0.7 },
             }}
           >
-            <LocalOfferOutlinedIcon sx={{ fontSize: 14 }} /> Diskon
+            <LocalOfferOutlinedIcon sx={{ fontSize: 14 }} /> Diskon Nota
           </Typography>
           <Typography
             sx={{
@@ -245,13 +363,14 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             - Rp {formatRupiahPos(diskonNominal)}
           </Typography>
         </Box>
+
         <Typography
           sx={{
             fontWeight: 800,
             fontSize: 20,
             color: colors.primary,
             textAlign: "right",
-            mb: 1.5,
+            mb: 0.5,
           }}
         >
           Rp {formatRupiahPos(totalBayar)}

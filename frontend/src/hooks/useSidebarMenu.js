@@ -56,12 +56,10 @@ export default function useSidebarMenu() {
 
   if (!user) return [];
 
-  // Filter items based on user roles, and filter subItems if role requirements are added there (if any)
   return menuItems
     .filter((item) => item.roles.includes(user.role))
     .map((item) => {
       if (item.subItems) {
-        // If subItems are present, we make sure they are preserved
         return item;
       }
       return item;

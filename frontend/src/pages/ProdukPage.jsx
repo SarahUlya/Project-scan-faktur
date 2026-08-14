@@ -160,12 +160,12 @@ const ProdukPage = () => {
           <Box sx={{ flex: 1, minWidth: 280 }}>
             <Typography
               variant="h5"
-              sx={{ fontWeight: 600, color: colors.text }}
+              sx={{ fontWeight: 600, fontSize: typography.title, color: colors.text }}
             >
               Data Produk
             </Typography>
 
-            <Typography sx={{ color: colors.textSecondary, mt: 1 }}>
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
               Manajemen katalog obat dan perlengkapan medis.
             </Typography>
           </Box>

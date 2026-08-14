@@ -16,13 +16,10 @@ const DetailTransaksiModal = ({
 }) => {
   const {
     getTransaksiDetail,
-    cancelTransaksi
   } = useTransaksiDb();
 
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
 
   const loadDetail = async () => {
     if (!open || !transaksiId) return;
@@ -40,23 +37,6 @@ const DetailTransaksiModal = ({
   useEffect(() => {
     loadDetail();
   }, [open, transaksiId]);
-
-  const handleBatalkan = async () => {
-    setCancelLoading(true);
-    try {
-      await cancelTransaksi(transaksiId);
-      alert("Transaksi berhasil dibatalkan");
-      
-      await loadDetail();
-      setCancelConfirmOpen(false);
-      
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      alert(err.message || "Gagal membatalkan transaksi");
-    } finally {
-      setCancelLoading(false);
-    }
-  };
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank", "width=400,height=600");
@@ -99,7 +79,6 @@ const DetailTransaksiModal = ({
 
   if (!open) return null;
 
-  // PERBAIKAN: Mengambil status asli dari database (tidak lagi di-hardcode ke "SELESAI")
   const mappedDetail = detail
     ? {
         header: {
@@ -329,45 +308,12 @@ const DetailTransaksiModal = ({
               >
                 <PrintIcon sx={{ fontSize: 16 }} />
                 Cetak Ulang
-              </button>
-
-              {/* Batalkan Button (Khusus Admin & belum dibatalkan) */}
-              {canCancel && (
-                <button
-                  onClick={() => setCancelConfirmOpen(true)}
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    borderRadius: 10,
-                    border: "1px solid #FECACA",
-                    background: "#FEE2E2",
-                    color: "#DC2626",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                  }}
-                >
-                  <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                  Batalkan Transaksi
-                </button>
-              )}
+              </button>           
             </div>
           </>
         )}
       </Modal>
 
-      {/* Confirmation Modal */}
-      <CancelTransactionConfirmModal
-        open={cancelConfirmOpen}
-        onConfirm={handleBatalkan}
-        onCancel={() => setCancelConfirmOpen(false)}
-        transaksiId={transaksiId}
-        isLoading={cancelLoading}
-      />
     </>
   );
 };

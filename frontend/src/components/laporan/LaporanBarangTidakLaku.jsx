@@ -12,12 +12,21 @@ import {
   shadows,
   transitions,
 } from "@/theme/designTokens";
+import {
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
 
-const PAGE_SIZE = 25;
 
 const LaporanBarangTidakLaku = () => {
-  const [page, setPage] = useState(1);
-  const { getProdukTidakLaku } = useLaporanTransaksi();
+  const {
+    getProdukTidakLaku,
+    hari,
+    setHari,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+  } = useLaporanTransaksi();
   const { produk } = usePosProducts();
 
   const data = useMemo(() => {
@@ -27,11 +36,11 @@ const LaporanBarangTidakLaku = () => {
         p.terakhirTerjual === "-" ? null : new Date(p.terakhirTerjual);
       const durasi = terakhir
         ? Math.max(
-            0,
-            Math.ceil(
-              (Date.now() - terakhir.getTime()) / (1000 * 60 * 60 * 24),
-            ),
-          )
+          0,
+          Math.ceil(
+            (Date.now() - terakhir.getTime()) / (1000 * 60 * 60 * 24),
+          ),
+        )
         : "-";
 
       return {
@@ -45,8 +54,7 @@ const LaporanBarangTidakLaku = () => {
     });
   }, [produk, getProdukTidakLaku]);
 
-  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-  const pagedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pagedData = data;
 
   const columns = [
     {
@@ -125,12 +133,66 @@ const LaporanBarangTidakLaku = () => {
   ];
 
   return (
-    <Box>
+    <>
+      <Box sx={{ mb: 2.5 }}>
+        <ToggleButtonGroup
+          value={hari}
+          exclusive
+          onChange={(_, value) => {
+            if (value !== null) {
+              setHari(value);
+              setCurrentPage(1);
+            }
+          }}
+          sx={{
+            backgroundColor: "#F1F5F9",
+            p: 0.5,
+            borderRadius: "12px",
+            border: "none",
+            gap: "4px",
+
+            "& .MuiToggleButtonGroup-grouped": {
+              border: "none !important",
+              borderRadius: "8px !important",
+            },
+
+            "& .MuiToggleButton-root": {
+              px: 2,
+              py: 0.6,
+              height: 34,
+              textTransform: "none",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#64748B",
+              transition: "all 0.2s ease-in-out",
+
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.6)",
+                color: "#1E293B",
+              },
+            },
+
+            "& .Mui-selected": {
+              backgroundColor: "#FFFFFF !important", 
+              color: "#E11D48 !important", 
+              boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.06)",
+              fontWeight: 700,
+            },
+          }}
+        >
+          <ToggleButton value={7}>7 Hari</ToggleButton>
+          <ToggleButton value={30}>30 Hari</ToggleButton>
+          <ToggleButton value={60}>60 Hari</ToggleButton>
+          <ToggleButton value={90}>90 Hari</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
       <Table columns={columns} data={pagedData} />
-      <div
-        style={{
+
+      <Box
+        sx={{
           padding: "20px 24px",
-          borderTop: "1px solid colors.border",
+          borderTop: `1px solid ${colors.border}`,
           color: colors.textSecondary,
           fontSize: 14,
           display: "flex",
@@ -138,16 +200,17 @@ const LaporanBarangTidakLaku = () => {
           alignItems: "center",
         }}
       >
-        <div>
+        <Typography variant="body2">
           Menampilkan {pagedData.length} dari {data.length} item tidak laku
-        </div>
+        </Typography>
+
         <PaginationControls
-          page={page}
+          page={currentPage}
           totalPages={totalPages}
-          onChange={setPage}
+          onChange={setCurrentPage}
         />
-      </div>
-    </Box>
+      </Box>
+    </>
   );
 };
 

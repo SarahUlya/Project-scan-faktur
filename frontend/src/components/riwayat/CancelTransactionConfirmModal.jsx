@@ -8,10 +8,7 @@ import {
   typography,
   shadows,
 } from "@/theme/designTokens";
-/**
- * Confirmation Modal untuk Batalkan Transaksi
- * Dengan desain yang jelas dan UX yang baik
- */
+
 const CancelTransactionConfirmModal = ({
   open,
   onConfirm,

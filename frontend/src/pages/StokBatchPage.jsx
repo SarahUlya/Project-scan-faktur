@@ -40,7 +40,6 @@ const StokBatchPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Filter produk dengan stok > 0
   const filteredProducts = useMemo(() => {
     let list = produk.filter((p) => {
       const totalStok = (p.batch || []).reduce(
@@ -62,7 +61,6 @@ const StokBatchPage = () => {
       });
     }
 
-    // Urutkan berdasarkan expired terdekat (FEFO)
     return list.sort((a, b) => {
       const getEarliest = (batches) => {
         const valid = (batches || []).filter((b) => Number(b.qty_sisa) > 0);
@@ -85,7 +83,6 @@ const StokBatchPage = () => {
     return filteredProducts.slice(startIndex, startIndex + PageSize);
   }, [filteredProducts, page]);
 
-  // Statistik ringkasan
   const stats = useMemo(() => {
     let totalBatch = 0;
     let nearExpired = 0;
@@ -116,19 +113,16 @@ const StokBatchPage = () => {
     if (!filteredProducts.length) return;
 
     const exportData = filteredProducts.map((p) => {
-      // Handling jika p.kategori berbentuk Object atau String
       const namaKategori =
         typeof p.kategori === "object" && p.kategori !== null
           ? p.kategori.nama || p.kategori.nama_kategori || "-"
           : p.kategori || "-";
 
-      // Hitung total stok
       const totalStok = (p.batch || []).reduce(
         (sum, b) => sum + Number(b.qty_sisa || 0),
         0
       );
 
-      // Hitung expired terdekat
       const validBatches = (p.batch || []).filter((b) => Number(b.qty_sisa) > 0);
       let expiredTerdekat = "-";
       if (validBatches.length > 0) {
@@ -169,29 +163,55 @@ const StokBatchPage = () => {
       {/* Header */}
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          mb: 4,
-          flexWrap: "wrap",
-          gap: 2,
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
         }}
       >
-        <Box>
-          <Typography sx={pageHeaderSx.title}>Stok & Batch</Typography>
-          <Typography sx={pageHeaderSx.subtitle}>
-            Monitoring stok per produk dengan manajemen batch (FEFO)
-          </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 3,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 280 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
+            >
+              Stok Produk & Batch
+            </Typography>
+
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+              Pantau stok produk dan batch yang tersedia, termasuk informasi
+              tanggal kadaluarsa.
+            </Typography>
+          </Box>
+          <StokPrintActions
+            disabled={!filteredProducts.length}
+            onExport={handleExport}
+          />
         </Box>
-        <StokPrintActions
-          disabled={!filteredProducts.length}
-          onExport={handleExport}
-        />
       </Box>
 
       {/* Stat Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(4, 1fr)'
+          },
+          gap: 3,
+          mb: 4,
+          width: "100%",
+        }}
+      >
           <Paper
             sx={{
               ...statCardSx,
@@ -226,9 +246,7 @@ const StokBatchPage = () => {
               </Box>
             </Box>
           </Paper>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <Paper
             sx={{
               ...statCardSx,
@@ -263,9 +281,7 @@ const StokBatchPage = () => {
               </Box>
             </Box>
           </Paper>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <Paper
             sx={{
               ...statCardSx,
@@ -300,9 +316,7 @@ const StokBatchPage = () => {
               </Box>
             </Box>
           </Paper>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
           <Paper
             sx={{
               ...statCardSx,
@@ -337,8 +351,7 @@ const StokBatchPage = () => {
               </Box>
             </Box>
           </Paper>
-        </Grid>
-      </Grid>
+      </Box>
 
       {/* Search */}
       <Box sx={{ mb: 3 }}>
@@ -430,7 +443,7 @@ const StokBatchPage = () => {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
       />
-    </Box>
+    </Box >
   );
 };
 

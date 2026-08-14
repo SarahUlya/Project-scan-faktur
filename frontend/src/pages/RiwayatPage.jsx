@@ -60,7 +60,6 @@ const ID_MONTHS = {
 
 const parseIndonesianDateString = (str) => {
   if (!str || typeof str !== "string") return null;
-  // Matches things like "21 Jul 2026" or "21 Jul 2026 09.21"
   const match = str
     .trim()
     .match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})(?:\s+(\d{1,2})[.:](\d{2}))?/);
@@ -90,17 +89,15 @@ const getItemDate = (item) => {
     item.created_at,
     item.createdAt,
     item.tanggal_input,
-    item.waktu, // display field used by the WAKTU column — often "21 Jul 2026"
+    item.waktu,
   ];
 
   for (const raw of candidates) {
     if (!raw) continue;
 
-    // Try native parsing first (handles ISO strings, timestamps, etc.)
     const native = new Date(raw);
     if (!isNaN(native.getTime())) return native;
 
-    // Fall back to Indonesian display-string parsing ("21 Jul 2026")
     const parsedId = parseIndonesianDateString(String(raw));
     if (parsedId) return parsedId;
   }
@@ -114,27 +111,21 @@ const RiwayatPage = () => {
   const [detailId, setDetailId] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("SEMUA");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState(""); // raw input, debounced into searchQuery
+  const [searchInput, setSearchInput] = useState("");
   const [dateError, setDateError] = useState("");
 
-  const PAGE_SIZE = 10; // Jumlah transaksi per halaman
+  const PAGE_SIZE = 10;
 
-  // Debug: Log data untuk melihat struktur
   useEffect(() => {
     if (data && data.length > 0) {
       console.log("=== DATA TRANSAKSI DETAIL ===");
       console.log("Total data:", data.length);
       console.log("Sample data pertama:", data[0]);
       console.log("Properti yang tersedia:", Object.keys(data[0]));
-
-      const statuses = [...new Set(data.map(item => item.status || item.status_transaksi || "undefined"))];
-      console.log("Status yang tersedia:", statuses);
     }
   }, [data]);
 
-  // Debounce search input -> searchQuery (300ms)
   useEffect(() => {
     const handler = setTimeout(() => {
       setSearchQuery(searchInput);
@@ -143,7 +134,6 @@ const RiwayatPage = () => {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
-  // Validate date range whenever it changes
   useEffect(() => {
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
       setDateError("Tanggal Mulai tidak boleh setelah Tanggal Akhir");
@@ -152,7 +142,6 @@ const RiwayatPage = () => {
     }
   }, [startDate, endDate]);
 
-  // Format tanggal untuk display
   const formatDate = (dateString) => {
     const date = getItemDate({ waktu: dateString }) || new Date(dateString);
     if (!dateString || isNaN(date?.getTime?.())) return "-";
@@ -193,31 +182,12 @@ const RiwayatPage = () => {
     }
   };
 
-  // Normalize status
-  const normalizeStatus = (status) => {
-    if (!status) return "SELESAI";
-    const statusUpper = String(status).toUpperCase().trim();
-
-    if (statusUpper.includes("BATAL") || statusUpper === "CANCELLED" || statusUpper === "CANCEL") {
-      return "DIBATALKAN";
-    }
-    if (statusUpper.includes("MENUNGGU") || statusUpper.includes("PENDING") || statusUpper.includes("WAITING")) {
-      return "MENUNGGU_PEMBATALAN";
-    }
-    if (statusUpper.includes("SELESAI") || statusUpper === "COMPLETED" || statusUpper === "DONE" || statusUpper === "SUCCESS") {
-      return "SELESAI";
-    }
-    return "SELESAI";
-  };
-
-  // Quick date presets
   const applyPreset = (preset) => {
     const now = new Date();
     let start = new Date();
     let end = new Date();
 
     if (preset === "today") {
-      // start/end already today
     } else if (preset === "7days") {
       start.setDate(now.getDate() - 6);
     } else if (preset === "thisMonth") {
@@ -230,11 +200,13 @@ const RiwayatPage = () => {
     setPage(1);
   };
 
-  // Filter data
   const filteredData = useMemo(() => {
     let filtered = [...data];
 
-    // Filter by search query (no transaksi)
+    filtered = filtered.filter(
+      (item) => item.status !== "DIBATALKAN"
+    );
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((item) => {
@@ -243,15 +215,6 @@ const RiwayatPage = () => {
       });
     }
 
-    // Filter by status
-    if (statusFilter !== "SEMUA") {
-      filtered = filtered.filter((item) => {
-        const rawStatus = item.status || item.status_transaksi || "SELESAI";
-        return normalizeStatus(rawStatus) === statusFilter;
-      });
-    }
-
-    // Filter by date range (uses unified getItemDate helper)
     if (startDate && endDate && !dateError) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
@@ -282,9 +245,9 @@ const RiwayatPage = () => {
     }
 
     return filtered;
-  }, [data, statusFilter, startDate, endDate, searchQuery, dateError]);
+  }, [data, startDate, endDate, searchQuery, dateError]);
 
-  // Group by date dengan pagination per transaksi
+
   const groupedData = useMemo(() => {
     const groups = {};
 
@@ -298,8 +261,6 @@ const RiwayatPage = () => {
           transactions: [],
           totalTransactions: 0,
           totalOmzet: 0,
-          totalCancelled: 0,
-          totalCancelledNominal: 0,
         };
       }
 
@@ -307,18 +268,10 @@ const RiwayatPage = () => {
       groups[dateKey].totalTransactions += 1;
 
       const total = Number(item.total || item.total_bayar || 0);
-      const rawStatus = item.status || item.status_transaksi || "SELESAI";
-      const normalizedStatus = normalizeStatus(rawStatus);
+      groups[dateKey].totalOmzet += total;
 
-      if (normalizedStatus === "DIBATALKAN") {
-        groups[dateKey].totalCancelled += 1;
-        groups[dateKey].totalCancelledNominal += total;
-      } else {
-        groups[dateKey].totalOmzet += total;
-      }
     });
 
-    // Sort dates descending
     return Object.values(groups).sort((a, b) => {
       if (a.date === "no-date") return 1;
       if (b.date === "no-date") return -1;
@@ -326,36 +279,22 @@ const RiwayatPage = () => {
     });
   }, [filteredData]);
 
-  // Summary statistics
   const summary = useMemo(() => {
     let totalTransactions = 0;
     let totalOmzet = 0;
-    let totalCancelled = 0;
-    let totalCancelledNominal = 0;
 
     filteredData.forEach((item) => {
       totalTransactions += 1;
       const total = Number(item.total || item.total_bayar || 0);
-      const rawStatus = item.status || item.status_transaksi || "SELESAI";
-      const normalizedStatus = normalizeStatus(rawStatus);
-
-      if (normalizedStatus === "DIBATALKAN") {
-        totalCancelled += 1;
-        totalCancelledNominal += total;
-      } else {
-        totalOmzet += total;
-      }
+      totalOmzet += total;
     });
 
     return {
       totalTransactions,
       totalOmzet,
-      totalCancelled,
-      totalCancelledNominal,
     };
   }, [filteredData]);
 
-  // Pagination - semua transaksi yang sudah digroup
   const allTransactions = useMemo(() => {
     const flat = [];
     groupedData.forEach(group => {
@@ -365,7 +304,6 @@ const RiwayatPage = () => {
           _groupDate: group.date,
           _groupTransactions: group.totalTransactions,
           _groupOmzet: group.totalOmzet,
-          _groupCancelled: group.totalCancelled,
         });
       });
     });
@@ -377,7 +315,6 @@ const RiwayatPage = () => {
   const endIndex = startIndex + PAGE_SIZE;
   const paginatedTransactions = allTransactions.slice(startIndex, endIndex);
 
-  // Re-group paginated transactions by date
   const paginatedGroupedData = useMemo(() => {
     const groups = {};
 
@@ -390,8 +327,6 @@ const RiwayatPage = () => {
           transactions: [],
           totalTransactions: 0,
           totalOmzet: 0,
-          totalCancelled: 0,
-          totalCancelledNominal: 0,
         };
       }
 
@@ -399,18 +334,9 @@ const RiwayatPage = () => {
       groups[dateKey].totalTransactions += 1;
 
       const total = Number(item.total || item.total_bayar || 0);
-      const rawStatus = item.status || item.status_transaksi || "SELESAI";
-      const normalizedStatus = normalizeStatus(rawStatus);
-
-      if (normalizedStatus === "DIBATALKAN") {
-        groups[dateKey].totalCancelled += 1;
-        groups[dateKey].totalCancelledNominal += total;
-      } else {
-        groups[dateKey].totalOmzet += total;
-      }
+      groups[dateKey].totalOmzet += total;
     });
 
-    // Sort dates descending
     return Object.values(groups).sort((a, b) => {
       if (a.date === "no-date") return 1;
       if (b.date === "no-date") return -1;
@@ -423,64 +349,14 @@ const RiwayatPage = () => {
     setPage(1);
   };
 
-  const hasActiveFilters = startDate || endDate || statusFilter !== "SEMUA" || searchQuery;
+  const hasActiveFilters = startDate || endDate || searchQuery;
 
   const resetFilters = () => {
     setStartDate(null);
     setEndDate(null);
-    setStatusFilter("SEMUA");
     setSearchQuery("");
     setSearchInput("");
     setPage(1);
-  };
-
-  const getStatusBadge = (status) => {
-    const rawStatus = status || "SELESAI";
-    const normalizedStatus = normalizeStatus(rawStatus);
-
-    const statusMap = {
-      SELESAI: {
-        label: "Selesai",
-        color: colors.success,
-        icon: <CheckCircleIcon sx={{ fontSize: 14 }} />,
-        bgColor: colors.successLight,
-      },
-      MENUNGGU_PEMBATALAN: {
-        label: "Menunggu Persetujuan",
-        color: colors.warning,
-        icon: <PendingIcon sx={{ fontSize: 14 }} />,
-        bgColor: colors.warningLight,
-      },
-      DIBATALKAN: {
-        label: "Dibatalkan",
-        color: colors.danger,
-        icon: <CancelIcon sx={{ fontSize: 14 }} />,
-        bgColor: colors.dangerLight,
-      },
-    };
-
-    const statusInfo = statusMap[normalizedStatus] || statusMap.SELESAI;
-    return (
-      <Chip
-        label={statusInfo.label}
-        icon={statusInfo.icon}
-        size="small"
-        sx={{
-          backgroundColor: statusInfo.bgColor,
-          color: statusInfo.color,
-          fontWeight: 700,
-          fontSize: 10,
-          borderRadius: 1.5,
-          "& .MuiChip-icon": { color: statusInfo.color },
-        }}
-      />
-    );
-  };
-
-  const statusLabelMap = {
-    SELESAI: "Selesai",
-    MENUNGGU_PEMBATALAN: "Menunggu Persetujuan",
-    DIBATALKAN: "Dibatalkan",
   };
 
   const columns = [
@@ -559,17 +435,6 @@ const RiwayatPage = () => {
           {row.user?.nama || row.kasir || row.nama_kasir || "-"}
         </Typography>
       ),
-    },
-    {
-      header: "STATUS",
-      accessor: "status",
-      align: "center",
-      render: (row) => {
-        console.log("STATUS ROW:", row.no_transaksi, row.status);
-
-        const rawStatus = row.status || row.status_transaksi || "SELESAI";
-        return getStatusBadge(rawStatus);
-      },
     },
     {
       header: "AKSI",
@@ -672,14 +537,6 @@ const RiwayatPage = () => {
                   Rp {group.totalOmzet.toLocaleString("id-ID")}
                 </Typography>
               </Box>
-              {group.totalCancelled > 0 && (
-                <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, color: colors.danger }}>
-                  <Typography component="span">Dibatalkan:</Typography>
-                  <Typography component="span" sx={{ fontWeight: 600 }}>
-                    {group.totalCancelled}
-                  </Typography>
-                </Box>
-              )}
             </Box>
           </Box>
 
@@ -705,110 +562,96 @@ const RiwayatPage = () => {
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={id}>
       <Box sx={{ p: 3, width: "100%", maxWidth: "100%", overflow: "hidden" }}>
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography sx={pageHeaderSx.title}>
-            Riwayat Transaksi
-          </Typography>
-          <Typography sx={pageHeaderSx.subtitle}>
-            Daftar rekaman transaksi penjualan Apotek Ampuh Tayu
-          </Typography>
+        <Box
+          sx={{
+            background: colors.bgCard,
+            borderRadius: 3,
+            p: 3,
+            mb: 3,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 3,
+              flexWrap: "wrap",
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 280 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: typography.bold, fontSize: typography.title, color: colors.text }}
+              >
+                Riwayat Transaksi
+              </Typography>
+
+              <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+                Pantau semua transaksi yang telah dilakukan, termasuk status dan detailnya.
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
         {/* Summary Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper
-              sx={{
-                ...statCardSx,
-                p: 3,
-                transition: transitions.fast,
-                "&:hover": {
-                  boxShadow: shadows.hover,
-                  transform: "translateY(-2px)",
-                }
-              }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(4, 1fr)'
+            },
+            gap: 3,
+            mb: 4,
+            width: "100%",
+          }}
+        >
+          <Paper
+            sx={{
+              ...statCardSx,
+              p: 3,
+              transition: transitions.fast,
+              "&:hover": {
+                boxShadow: shadows.hover,
+                transform: "translateY(-2px)",
+              }
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
+                {summary.totalTransactions}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
+                Total Transaksi
+              </Typography>
+            </Box>
+          </Paper>
+
+          <Paper
+            sx={{
+              ...statCardSx,
+              p: 3,
+              transition: transitions.fast,
+              "&:hover": {
+                boxShadow: shadows.hover,
+                transform: "translateY(-2px)",
+              }
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
-                  {summary.totalTransactions}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                  Total Transaksi
+                  Rp {summary.totalOmzet.toLocaleString("id-ID")}
                 </Typography>
               </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper
-              sx={{
-                ...statCardSx,
-                p: 3,
-                transition: transitions.fast,
-                "&:hover": {
-                  boxShadow: shadows.hover,
-                  transform: "translateY(-2px)",
-                }
-              }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
-                    Rp {summary.totalOmzet.toLocaleString("id-ID")}
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                  Total Omzet
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper
-              sx={{
-                ...statCardSx,
-                p: 3,
-                transition: transitions.fast,
-                "&:hover": {
-                  boxShadow: shadows.hover,
-                  transform: "translateY(-2px)",
-                }
-              }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.danger, lineHeight: 1.2 }}>
-                    {summary.totalCancelled}
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                  Transaksi Dibatalkan
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper
-              sx={{
-                ...statCardSx,
-                p: 3,
-                transition: transitions.fast,
-                "&:hover": {
-                  boxShadow: shadows.hover,
-                  transform: "translateY(-2px)",
-                }
-              }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
-                  Rp {summary.totalCancelledNominal.toLocaleString("id-ID")}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                  Nominal Pembatalan
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
+              <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
+                Total Omzet
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Filters - Stacked Layout (Anti-Scroll) */}
         <Card sx={{ p: 2, mb: 3, borderRadius: radii.xs }}>
@@ -880,26 +723,6 @@ const RiwayatPage = () => {
                   },
                 }}
               />
-            </Grid>
-
-            {/* Filter Status */}
-            <Grid item xs={12} sm={6} md={2.5}>
-              <FormControl fullWidth size="small" sx={fieldInputSx}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  label="Status"
-                >
-                  <MenuItem value="SEMUA">Semua Status</MenuItem>
-                  <MenuItem value="SELESAI">Selesai</MenuItem>
-                  <MenuItem value="MENUNGGU_PEMBATALAN">Menunggu Persetujuan</MenuItem>
-                  <MenuItem value="DIBATALKAN">Dibatalkan</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
 
             {/* Input Pencarian */}
@@ -974,13 +797,6 @@ const RiwayatPage = () => {
                     size="small"
                   />
                 )}
-                {statusFilter !== "SEMUA" && (
-                  <Chip
-                    label={`Status: ${statusLabelMap[statusFilter]}`}
-                    onDelete={() => setStatusFilter("SEMUA")}
-                    size="small"
-                  />
-                )}
                 {searchQuery && (
                   <Chip
                     label={`Cari: "${searchQuery}"`}
@@ -1045,7 +861,7 @@ const RiwayatPage = () => {
           onRefresh={handleRefresh}
         />
       </Box>
-    </LocalizationProvider>
+    </LocalizationProvider >
   );
 };
 

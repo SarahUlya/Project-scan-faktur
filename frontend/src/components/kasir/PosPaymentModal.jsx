@@ -40,7 +40,6 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
       return;
     }
 
-    // 1. Filter keranjang dari item yang tidak memiliki barcode / null
     const validCart = [...cart];
 
     if (cart.length === 0) {
@@ -67,7 +66,6 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
 
       const result = await processTransaksi(transactionData);
 
-      // 2. KELOLA PENCETAKAN STRUK THERMAL
       if (cetakStruk) {
   printReceipt({
   apotek: setting,

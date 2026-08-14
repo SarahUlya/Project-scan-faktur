@@ -30,7 +30,7 @@ import LaporanPenjualan from "../components/laporan/LaporanPenjualan";
 import LaporanProdukTerlaris from "../components/laporan/LaporanProdukTerlaris";
 import LaporanBarangTidakLaku from "../components/laporan/LaporanBarangTidakLaku";
 import LaporanStokExpired from "../components/laporan/LaporanStokExpired";
-import useLaporanTransaksi from "../hooks/useLaporanTransaksi";const laporanMenu = [
+import useLaporanTransaksi from "../hooks/useLaporanTransaksi"; const laporanMenu = [
   {
     id: "penjualan",
     title: "Laporan Penjualan",
@@ -43,12 +43,12 @@ import useLaporanTransaksi from "../hooks/useLaporanTransaksi";const laporanMenu
     desc: "Analisis performa produk",
     icon: TrendingUpOutlinedIcon,
   },
-  {
-    id: "tidak-laku",
-    title: "Barang Tidak Laku",
-    desc: "Dead stock & slow moving",
-    icon: AssignmentLateOutlinedIcon,
-  },
+  // {
+  //   id: "tidak-laku",
+  //   title: "Barang Tidak Laku",
+  //   desc: "Dead stock & slow moving",
+  //   icon: AssignmentLateOutlinedIcon,
+  // },
   {
     id: "expired",
     title: "Stok & Expired",
@@ -72,8 +72,8 @@ const LaporanPage = () => {
         return <LaporanPenjualan />;
       case "terlaris":
         return <LaporanProdukTerlaris />;
-      case "tidak-laku":
-        return <LaporanBarangTidakLaku />;
+      // case "tidak-laku":
+      //   return <LaporanBarangTidakLaku />;
       case "expired":
         return (
           <LaporanStokExpired
@@ -106,62 +106,33 @@ const LaporanPage = () => {
     >
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          mb: 4,
+          background: colors.bgCard,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
         }}
       >
-        <Box>
-          <Typography
-            variant="h5"
-            sx={{ fontWeight: 800, color: "#0F172A", mb: 0.5 }}
-          >
-            Laporan & Rekapitulasi
-          </Typography>
-          <Typography sx={{ color: colors.textSecondary, fontSize: 15 }}>
-            Analisis data performa Apotek Ampuh Tayu
-          </Typography>
-        </Box>
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            background: "#fff",
-            px: 2,
-            py: 1.5,
-            borderRadius: 12,
-            border: "1px solid #F1F5F9",
-            cursor: "pointer",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 3,
+            flexWrap: "wrap",
           }}
         >
-          <Box sx={{ color: "#94A3B8" }}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <Box sx={{ flex: 1, minWidth: 280 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
             >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
+              Laporan & Rekapitulasi
+            </Typography>
+
+            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
+            Analisis data performa Apotek Ampuh Tayu
+            </Typography>
           </Box>
-          <Typography
-            sx={{ color: colors.textSecondary, fontSize: 14, fontWeight: 600 }}
-          >
-            Periode:{" "}
-            <span style={{ color: colors.primary, fontWeight: 700 }}>
-              Bulan Januari 2024
-            </span>
-          </Typography>
-          <KeyboardArrowDownIcon sx={{ color: "#94A3B8" }} />
         </Box>
       </Box>
 
@@ -427,9 +398,6 @@ const LaporanPage = () => {
                 sx={{ fontWeight: 800, fontSize: 18, color: "#1E293B" }}
               >
                 Preview Laporan {getActiveTitle()}
-              </Typography>
-              <Typography sx={{ color: "#94A3B8", fontSize: 13, mt: 0.5 }}>
-                Periode: 01 Jan 2024 - 31 Jan 2024
               </Typography>
             </Box>
           </Box>

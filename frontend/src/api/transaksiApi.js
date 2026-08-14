@@ -14,8 +14,3 @@ export const getTransaksiDetail = async (id) => {
   const res = await axiosInstance.get(`/transaksi/${id}`);
   return res.data;
 };
-
-export const cancelTransaksi = async (id) => {
-  const res = await axiosInstance.put(`/transaksi/${id}/batal`);
-  return res.data;
-};

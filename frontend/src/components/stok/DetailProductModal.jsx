@@ -12,7 +12,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import Modal from "../ui/Modal";
 import { colors, radii, spacing, typography, shadows, transitions } from "@/theme/designTokens";
 
-// Helper status
 const getStatus = (expiredDate) => {
   if (!expiredDate) return { label: "Tidak Tersedia", color: colors.textMuted, bg: colors.bgMuted };
   const days = Math.ceil((new Date(expiredDate) - new Date()) / (1000 * 60 * 60 * 24));
@@ -24,7 +23,6 @@ const getStatus = (expiredDate) => {
 const DetailProductModal = ({ open, product, onClose }) => {
   if (!product) return null;
 
-  // Batch aktif (stok > 0) diurutkan FEFO
   const activeBatches = (product.batch || [])
     .filter((b) => Number(b.stok) > 0)
     .sort((a, b) => new Date(a.expired) - new Date(b.expired));
@@ -151,7 +149,7 @@ const DetailProductModal = ({ open, product, onClose }) => {
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {activeBatches.map((batch, idx) => {
-              const status = getStatus(batch.expired);
+              const status = getStatus(batch.expired_date);
               return (
                 <Paper
                   key={batch.id || idx}

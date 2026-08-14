@@ -24,7 +24,7 @@ const LaporanProdukTerlaris = () => {
         nama: p.nama || p.nama_produk || "-",
         kategori: p.kategori || p.nama_kategori || "-",
         terjual: Number(p.terjual || p.total_terjual || 0),
-        omzet: Number(p.omzet || p.subtotal || 0),
+        omzet: Number(p.total_omzet || p.subtotal || 0),
       })),
     [produkTerlaris],
   );
