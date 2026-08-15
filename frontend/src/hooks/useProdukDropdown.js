@@ -8,7 +8,12 @@ export default function useProdukDropdown() {
     const load = async () => {
       try {
         const res = await getProduk(1, 5000, "");
-        setProduk(res.data || []);
+
+        const produkAktif = (res.data || []).filter(
+          (p) => p.is_active !== false
+        );
+        
+        setProduk(produkAktif);
       } catch (err) {
         console.error(err);
       }
