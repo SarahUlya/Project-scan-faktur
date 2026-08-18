@@ -191,7 +191,7 @@ const TambahFakturPage = () => {
       nama_produk: foundProduct.nama_produk,
       exp_date: getOneYearLater(fakturInfo.tanggal),
       qty: 1,
-      satuan: foundProduct.nama_satuan || foundProduct.satuan || "Pcs",
+      satuan: foundProduct.nama_satuan || foundProduct.satuan?.nama || "Pcs",
       harga_beli: foundProduct.harga_beli || 0,
       harga_jual: foundProduct.harga_jual || 0,
       diskon: 0,
