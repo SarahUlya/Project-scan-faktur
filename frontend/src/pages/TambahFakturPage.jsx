@@ -143,9 +143,20 @@ const TambahFakturPage = () => {
 
         const updated = recalcItem({ ...item, [field]: value });
 
+        console.log("VALUE PRODUK:", value);
+        console.log("PRODUK:", produk);
+
         if (field === "produk_id") {
-          const p = produk.find((x) => String(x.id_produk) === String(value));
+          const p = produk.find(
+            (x) => String(x.id_produk) === String(value)
+          );
+
+          console.log("FOUND PRODUK:", p);
+
           if (p) {
+            console.log("SATUAN:", p.satuan);
+            console.log("SATUAN NAMA:", p.satuan?.nama);
+
             updated.nama_produk = p.nama_produk;
             updated.harga_beli = p.harga_beli || 0;
             updated.harga_jual = p.harga_jual || 0;
