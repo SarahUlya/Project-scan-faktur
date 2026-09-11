@@ -1,6 +1,7 @@
 import { Box } from "@mui/material";
 import Sidebar from "../components/navigation/Sidebar";
 import { Outlet } from "react-router-dom";
+import { getUser, ROLE } from "../auth/auth";
 import {
   colors,
   radii,
@@ -14,11 +15,16 @@ import {
   statCardSx,
 } from "../theme/designTokens";
 const DashboardLayout = () => {
+  const user = getUser();
+  const isKasir = user?.role === ROLE.KASIR;
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: colors.bg }}>
-      <Box className="no-print" component="nav">
-        <Sidebar />
-      </Box>
+      {!isKasir && (
+        <Box className="no-print" component="nav">
+          <Sidebar />
+        </Box>
+      )}
 
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <Box

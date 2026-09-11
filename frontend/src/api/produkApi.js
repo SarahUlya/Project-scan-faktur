@@ -24,3 +24,7 @@ export const updateProdukApi = async (id, data) => {
   return res.data;
 };
 
+export const getStokMenipis = async () => {
+  const res = await axiosInstance.get("/produk/stok-menipis");
+  return res.data;
+};

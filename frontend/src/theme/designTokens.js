@@ -68,7 +68,7 @@ export const colors = {
 export const radii = {
   s: 4,
   sm: 6,
-  md: 12,
+  md: 8,
   lg: 16,
   xl: 20,
 };

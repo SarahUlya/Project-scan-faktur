@@ -1,6 +1,14 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import FakturTable from "../components/pembelian/FakturTable";
+import {
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+  Skeleton,
+  IconButton,
+} from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import usePembelianDb from "../hooks/usePembelianDb";
 import useSupplierDb from "../hooks/useSupplierDb";
@@ -9,6 +17,10 @@ import FakturStepIndicator from "../components/pembelian/tambah/FakturStepIndica
 import FakturSummaryPanel from "../components/pembelian/tambah/FakturSummaryPanel";
 import { FakturInfoForm, FakturItemForm } from "../components/pembelian/tambah/FakturFormContent";
 import { generateBatchCode } from "../utils/batchCode";
+import PaginationControls from "../components/ui/PaginationControls";
+import Button from "../components/ui/Button";
+import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   colors,
   radii,
@@ -20,27 +32,36 @@ import {
   fieldInputSx,
   pageHeaderSx,
   statCardSx,
-} from "@/theme/designTokens"; import {
+} from "@/theme/designTokens"; 
+import {
   defaultFakturInfo,
   emptyItem,
   hitungSubtotalItem,
 } from "../config/apotek";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import PembelianLoadingSkeleton from "../components/pembelian/PembelianLoadingSkeleton";
 
 const TambahFakturPage = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Ambil state dari router
+  const stateData = location.state; // Data PO dari Buku Defecta
+
   const { addPembelian } = usePembelianDb();
   const { produk } = useProdukDropdown();
   const { supplier } = useSupplierDb();
 
   const getOneYearLater = (baseDateStr) => {
-    if (!baseDateStr) {
-      const d = new Date();
+    try {
+      const d = baseDateStr ? new Date(baseDateStr) : new Date();
+      if (isNaN(d.getTime())) return ""; // Cegah Invalid Date
       d.setFullYear(d.getFullYear() + 1);
       return d.toISOString().split("T")[0];
+    } catch (e) {
+      return "";
     }
-    const d = new Date(baseDateStr);
-    d.setFullYear(d.getFullYear() + 1);
-    return d.toISOString().split("T")[0];
   };
 
   const initialInfo = defaultFakturInfo();
@@ -66,6 +87,48 @@ const TambahFakturPage = () => {
     diskon: {},
   });
 
+  // --- AUTOMATIC AUTO-FILL DARI BUKU DEFECTA (TARIK DATA PO) ---
+  useEffect(() => {
+    if (stateData && stateData.items && supplier.length > 0) {
+      // 1. Cocokkan dan set Supplier otomatis
+      if (stateData.supplier) {
+        const matchedSupplier = supplier.find(
+          (s) => (s.nama_supplier || s.nama) === stateData.supplier
+        );
+        if (matchedSupplier) {
+          setFakturInfo((prev) => ({
+            ...prev,
+            supplier_id: matchedSupplier.id_supplier || matchedSupplier.id,
+            supplier_name: matchedSupplier.nama_supplier || matchedSupplier.nama,
+          }));
+        }
+      }
+
+      // 2. Petakan item defekta ke dalam baris tabel faktur pembelian
+      const mappedItems = stateData.items.map((item) => {
+        const newId = Date.now() + Math.random();
+        const defaultHpp = 15000; // Harga estimasi
+        const qtyOrder = item.saran_order || 1;
+        
+        return recalcItem({
+          ...emptyItem(),
+          id: newId,
+          produk_id: item.id_produk,
+          nama_produk: item.nama_produk,
+          satuan: item.satuan || "Pcs",
+          qty: qtyOrder,
+          harga_beli: defaultHpp,
+          harga_jual: defaultHpp * 1.3,
+          exp_date: getOneYearLater(initialInfo.tanggal),
+          diskon: 0,
+          diskon_tipe: "%",
+        });
+      });
+
+      setItems(mappedItems);
+    }
+  }, [stateData, supplier]);
+
   useEffect(() => {
     if (activeTab === "barang") {
       setTimeout(() => barcodeInputRef.current?.focus(), 100);
@@ -79,22 +142,21 @@ const TambahFakturPage = () => {
   }, [fakturInfo.no_faktur, fakturInfo.tanggal, batchManual]);
 
   const setInfo = (field, value) => {
-    setFakturInfo((prev) => {
-      const updatedInfo = { ...prev, [field]: value };
-      if (field === "tanggal") {
-        const newExpDate = getOneYearLater(value);
-        setItems((prevItems) =>
-          prevItems.map((item) => {
-            const oldExpDate = getOneYearLater(prev.tanggal);
-            if (!item.exp_date || item.exp_date === oldExpDate) {
-              return { ...item, exp_date: newExpDate };
-            }
-            return item;
-          })
-        );
-      }
-      return updatedInfo;
-    });
+    setFakturInfo((prev) => ({ ...prev, [field]: value }));
+
+    if (field === "tanggal") {
+      const newExpDate = getOneYearLater(value);
+      const oldExpDate = getOneYearLater(fakturInfo.tanggal);
+
+      setItems((prevItems) =>
+        prevItems.map((item) => {
+          if (!item.exp_date || item.exp_date === oldExpDate) {
+            return { ...item, exp_date: newExpDate };
+          }
+          return item;
+        })
+      );
+    }
   };
 
   const handleBatchChange = useCallback((value) => {
@@ -143,20 +205,12 @@ const TambahFakturPage = () => {
 
         const updated = recalcItem({ ...item, [field]: value });
 
-        console.log("VALUE PRODUK:", value);
-        console.log("PRODUK:", produk);
-
         if (field === "produk_id") {
           const p = produk.find(
             (x) => String(x.id_produk) === String(value)
           );
 
-          console.log("FOUND PRODUK:", p);
-
           if (p) {
-            console.log("SATUAN:", p.satuan);
-            console.log("SATUAN NAMA:", p.satuan?.nama);
-
             updated.nama_produk = p.nama_produk;
             updated.harga_beli = p.harga_beli || 0;
             updated.harga_jual = p.harga_jual || 0;
@@ -184,7 +238,7 @@ const TambahFakturPage = () => {
       return;
     }
 
-    const newId = Date.now() + Math.random();
+    const newId = Date.now() + Math.floor(Math.random() * 1000); 
     const newItem = recalcItem({
       id: newId,
       produk_id: foundProduct.id_produk,
@@ -257,9 +311,11 @@ const TambahFakturPage = () => {
   const subtotalBruto = items.reduce((acc, it) => acc + (it.total || 0), 0);
   const nilaiPpn = Number(fakturInfo.nilai_ppn) || 11;
   const ppn =
-    fakturInfo.jenis_ppn === "sudah_termasuk"
-      ? Math.round(subtotalBruto - subtotalBruto / (1 + nilaiPpn / 100))
-      : Math.round(subtotalBruto * (nilaiPpn / 100));
+    fakturInfo.jenis_ppn === "non_ppn"
+      ? 0
+      : (fakturInfo.jenis_ppn === "sudah_termasuk"
+        ? Math.round(subtotalBruto - subtotalBruto / (1 + nilaiPpn / 100))
+        : Math.round(subtotalBruto * (nilaiPpn / 100)));
   const grandTotal =
     fakturInfo.jenis_ppn === "sudah_termasuk" ? subtotalBruto : subtotalBruto + ppn;
   const grandTotalSetelahCashback = Math.max(0, grandTotal - (Number(fakturInfo.cashback) || 0));

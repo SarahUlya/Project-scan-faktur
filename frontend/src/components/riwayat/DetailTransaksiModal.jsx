@@ -1,25 +1,43 @@
 import React, { useEffect, useState } from "react";
 import Modal from "../ui/Modal";
-import CancelTransactionConfirmModal from "./CancelTransactionConfirmModal";
 import useTransaksiDb from "../../hooks/useTransaksiDb";
 import PosStruk from "../kasir/PosStruk";
 import { formatRupiahPos } from "../../utils/posCalculations";
 import { getUser, ROLE } from "../../auth/auth";
 import PrintIcon from "@mui/icons-material/Print";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ReplayIcon from "@mui/icons-material/Replay";
+import { colors } from "@/theme/designTokens";
+
+const STATUS_STYLE = {
+  LUNAS: { bg: colors.successLight, color: colors.success, label: "LUNAS" },
+  SELESAI: { bg: colors.successLight, color: colors.success, label: "LUNAS" },
+  MENUNGGU_PEMBAYARAN: {
+    bg: colors.warningLight,
+    color: colors.warning,
+    label: "MENUNGGU PEMBAYARAN",
+  },
+  DIBATALKAN: {
+    bg: colors.dangerLight,
+    color: colors.danger,
+    label: "DIBATALKAN",
+  },
+};
+
+const normalizeStatus = (status) =>
+  String(status || "LUNAS").toUpperCase().replace(/\s+/g, "_");
 
 const DetailTransaksiModal = ({
   open,
   transaksiId,
   onClose,
-  onRefresh
+  onRefresh,
 }) => {
-  const {
-    getTransaksiDetail,
-  } = useTransaksiDb();
+  const { getTransaksiDetail, verifikasiLunas, returBarang } = useTransaksiDb();
 
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const loadDetail = async () => {
     if (!open || !transaksiId) return;
@@ -77,6 +95,48 @@ const DetailTransaksiModal = ({
     printWindow.document.close();
   };
 
+  const handleVerifikasi = async () => {
+    if (
+      !window.confirm(
+        "Verifikasi transaksi ini sebagai LUNAS? Omzet akan dihitung dan stok dikonfirmasi."
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await verifikasiLunas(transaksiId);
+      await loadDetail();
+      onRefresh?.();
+      alert("Transaksi berhasil diverifikasi lunas.");
+    } catch (err) {
+      alert(err.message || "Gagal verifikasi transaksi.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRetur = async () => {
+    if (
+      !window.confirm(
+        "Proses retur barang untuk transaksi ini? Stok akan dikembalikan."
+      )
+    ) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await returBarang(transaksiId);
+      await loadDetail();
+      onRefresh?.();
+      alert("Retur barang berhasil diproses.");
+    } catch (err) {
+      alert(err.message || "Gagal memproses retur.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (!open) return null;
 
   const mappedDetail = detail
@@ -87,15 +147,18 @@ const DetailTransaksiModal = ({
           kasir: detail.user?.nama || "-",
           metode: detail.metode_bayar,
           total: Number(detail.total),
-          status: (detail.status || detail.status_transaksi || "SELESAI").toUpperCase(),
+          status: normalizeStatus(
+            detail.status || detail.status_transaksi || "LUNAS"
+          ),
         },
-        items: detail.transaksidetail?.map((item) => ({
-          id: item.id_transaksi_detail,
-          nama_produk: item.produk?.nama_produk || "-",
-          qty: item.qty,
-          subtotal: Number(item.subtotal),
-          harga: Number(item.harga_jual),
-        })) || [],
+        items:
+          detail.transaksidetail?.map((item) => ({
+            id: item.id_transaksi_detail,
+            nama_produk: item.produk?.nama_produk || "-",
+            qty: item.qty,
+            subtotal: Number(item.subtotal),
+            harga: Number(item.harga_jual),
+          })) || [],
       }
     : null;
 
@@ -108,213 +171,249 @@ const DetailTransaksiModal = ({
     : null;
 
   const user = getUser();
-  const isCanceled = mappedDetail?.header.status === "DIBATALKAN";
-  const canCancel = user?.role === ROLE.ADMIN && !isCanceled;
+  const status = mappedDetail?.header.status || "LUNAS";
+  const statusStyle = STATUS_STYLE[status] || STATUS_STYLE.LUNAS;
+  const isAdmin = user?.role === ROLE.ADMIN;
+  const canVerify = isAdmin && status === "MENUNGGU_PEMBAYARAN";
+  const canRetur = isAdmin && (status === "LUNAS" || status === "SELESAI");
+  const isCanceled = status === "DIBATALKAN";
 
   return (
-    <>
-      <Modal open={open} onClose={onClose} width={500}>
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: "#F0FDFA",
-                color: "#0F766E",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <PrintIcon />
-            </div>
-            <div>
-              <h3
-                style={{
-                  margin: 0,
-                  fontWeight: 800,
-                  fontSize: 18,
-                  color: "#1E293B",
-                }}
-              >
-                Detail Transaksi
-              </h3>
-              <p
-                style={{
-                  margin: "4px 0 0",
-                  color: "#64748B",
-                  fontSize: 12,
-                }}
-              >
-                ID: {transaksiId}
-              </p>
-            </div>
+    <Modal open={open} onClose={onClose} width={500}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              background: colors.primaryLight,
+              color: colors.primary,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <PrintIcon />
           </div>
-
-          {/* Badge Status */}
-          {isCanceled ? (
-            <span
+          <div>
+            <h3
               style={{
-                background: "#FEE2E2",
-                color: "#991B1B",
-                padding: "4px 10px",
-                borderRadius: 6,
-                fontSize: 11,
-                fontWeight: 700,
+                margin: 0,
+                fontWeight: 800,
+                fontSize: 18,
+                color: colors.text,
               }}
             >
-              DIBATALKAN
-            </span>
-          ) : (
-            <span
+              Detail Transaksi
+            </h3>
+            <p
               style={{
-                background: "#DCFCE7",
-                color: "#166534",
-                padding: "4px 10px",
-                borderRadius: 6,
-                fontSize: 11,
-                fontWeight: 700,
+                margin: "4px 0 0",
+                color: colors.textSecondary,
+                fontSize: 12,
               }}
             >
-              SELESAI
-            </span>
-          )}
+              {mappedDetail?.header.no_transaksi || transaksiId}
+            </p>
+          </div>
         </div>
 
-        {loading && (
-          <p style={{ color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
-            Memuat...
-          </p>
+        {mappedDetail && (
+          <span
+            style={{
+              background: statusStyle.bg,
+              color: statusStyle.color,
+              padding: "4px 10px",
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+            }}
+          >
+            {statusStyle.label}
+          </span>
         )}
+      </div>
 
-        {!loading && detail && mappedDetail && (
-          <>
-            {/* Items List */}
+      {loading && (
+        <p style={{ color: colors.textSecondary, textAlign: "center", padding: "20px 0" }}>
+          Memuat...
+        </p>
+      )}
+
+      {!loading && detail && mappedDetail && (
+        <>
+          <div
+            style={{
+              background: colors.bgMuted,
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 18,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
             <div
               style={{
-                background: "#F8FAFC",
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 18,
-                border: "1px solid #E2E8F0",
+                fontSize: 11,
+                fontWeight: 700,
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                marginBottom: 12,
+                letterSpacing: 0.5,
               }}
             >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#94A3B8",
-                  textTransform: "uppercase",
-                  marginBottom: 12,
-                  letterSpacing: 0.5,
-                }}
-              >
-                Rincian Barang
-              </div>
-              {mappedDetail.items.map((it) => (
-                <div
-                  key={it.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 13,
-                    marginBottom: 8,
-                    color: "#475569",
-                    paddingBottom: 8,
-                    borderBottom: "1px solid #E2E8F0",
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>
-                    {it.nama_produk} × {it.qty}
-                  </span>
-
-                  <span style={{ fontWeight: 700, color: "#1E293B" }}>
-                    Rp {formatRupiahPos(it.subtotal)}
-                  </span>
-                </div>
-              ))}
+              Rincian Barang
             </div>
-
-            {/* Struk Content */}
-            <div
-              id="struk-print-content"
-              style={{
-                marginBottom: 18,
-                background: "#FAFBFC",
-                padding: 14,
-                borderRadius: 10,
-                border: "1px solid #E2E8F0",
-              }}
-            >
-              <PosStruk data={strukData} />
-            </div>
-
-            {/* Info Status Batal */}
-            {isCanceled && (
+            {mappedDetail.items.map((it) => (
               <div
+                key={it.id}
                 style={{
-                  background: "#FEE2E2",
-                  border: "1px solid #FECACA",
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 18,
-                  textAlign: "center",
-                  color: "#991B1B",
-                  fontWeight: 700,
+                  display: "flex",
+                  justifyContent: "space-between",
                   fontSize: 13,
+                  marginBottom: 8,
+                  color: colors.text,
+                  paddingBottom: 8,
+                  borderBottom: `1px solid ${colors.border}`,
                 }}
               >
-                ✕ Transaksi telah dibatalkan
-              </div>
-            )}
+                <span style={{ fontWeight: 600 }}>
+                  {it.nama_produk} × {it.qty}
+                </span>
 
-            {/* Buttons */}
+                <span style={{ fontWeight: 700, color: colors.text }}>
+                  Rp {formatRupiahPos(it.subtotal)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            id="struk-print-content"
+            style={{
+              marginBottom: 18,
+              background: colors.bgMuted,
+              padding: 14,
+              borderRadius: 10,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <PosStruk data={strukData} />
+          </div>
+
+          {isCanceled && (
             <div
               style={{
-                display: "flex",
-                gap: 10,
-                marginTop: 16,
-                marginBottom: 8,
+                background: colors.dangerLight,
+                border: `1px solid ${colors.danger}`,
+                borderRadius: 10,
+                padding: 12,
+                marginBottom: 18,
+                textAlign: "center",
+                color: colors.danger,
+                fontWeight: 700,
+                fontSize: 13,
               }}
             >
-              {/* Cetak Button */}
+              Transaksi telah dibatalkan
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              marginTop: 16,
+              marginBottom: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            {canVerify && (
               <button
-                onClick={handlePrint}
+                type="button"
+                onClick={handleVerifikasi}
+                disabled={actionLoading}
                 style={{
                   flex: 1,
+                  minWidth: 140,
                   padding: 12,
                   borderRadius: 10,
                   border: "none",
-                  background: "#0F766E",
+                  background: colors.warning,
                   color: "#fff",
                   fontWeight: 700,
                   fontSize: 13,
-                  cursor: "pointer",
+                  cursor: actionLoading ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
                 }}
               >
-                <PrintIcon sx={{ fontSize: 16 }} />
-                Cetak Ulang
-              </button>           
-            </div>
-          </>
-        )}
-      </Modal>
-
-    </>
+                <CheckCircleIcon sx={{ fontSize: 16 }} />
+                Verifikasi Lunas
+              </button>
+            )}
+            {canRetur && (
+              <button
+                type="button"
+                onClick={handleRetur}
+                disabled={actionLoading}
+                style={{
+                  flex: 1,
+                  minWidth: 140,
+                  padding: 12,
+                  borderRadius: 10,
+                  border: `1px solid ${colors.danger}`,
+                  background: colors.bgCard,
+                  color: colors.danger,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: actionLoading ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                <ReplayIcon sx={{ fontSize: 16 }} />
+                Retur Barang
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handlePrint}
+              style={{
+                flex: 1,
+                minWidth: 140,
+                padding: 12,
+                borderRadius: 10,
+                border: "none",
+                background: colors.primary,
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <PrintIcon sx={{ fontSize: 16 }} />
+              Cetak Ulang
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 };
 
