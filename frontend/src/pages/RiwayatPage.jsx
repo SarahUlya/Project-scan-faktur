@@ -1,867 +1,253 @@
-import { useState, useEffect, useMemo } from "react";
-import {
-  Box,
-  Typography,
-  Chip,
-  TextField,
-  MenuItem,
-  Grid,
-  Paper,
-  Stack,
-  IconButton,
-  InputAdornment,
-  Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  Divider,
-  Badge,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import id from "date-fns/locale/id";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
-import Table from "../components/ui/Table";
-import useRiwayat from "../hooks/useRiwayat";
-import PaginationControls from "../components/ui/PaginationControls";
-import DetailTransaksiModal from "../components/riwayat/DetailTransaksiModal";
-import {
-  colors,
-  radii,
-  spacing,
-  typography,
-  shadows,
-  transitions,
-  zIndex,
-  fieldInputSx,
-  pageHeaderSx,
-  statCardSx,
-} from "@/theme/designTokens";
-import RiwayatLoadingSkeleton from "../components/riwayat/RiwayatLoadingSkeleton";
-import ReceiptIcon from "@mui/icons-material/Receipt";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import CancelIcon from "@mui/icons-material/Cancel";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PendingIcon from "@mui/icons-material/Pending";
+import React, { useState, useMemo, useEffect } from "react";
+import { Box, Paper, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip, Select, MenuItem, Pagination, Typography } from "@mui/material";
+
+// Icons
 import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import InputBase from "@mui/material/InputBase";
+import TagIcon from "@mui/icons-material/Tag";
+import EventNoteIcon from "@mui/icons-material/EventNote";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+
+// Custom Hooks & Modular Components
+import useTransaksiDb from "../hooks/useTransaksiDb";
+import DetailTransaksiModal from "../components/riwayat/DetailTransaksiModal";
+import CancelTransactionConfirmModal from "../components/riwayat/CancelTransactionConfirmModal";
+import ShiftDetailModal from "../components/riwayat/ShiftDetailModal";
+import RiwayatLoadingSkeleton from "../components/riwayat/RiwayatLoadingSkeleton";
+import RiwayatHeader from "../components/riwayat/RiwayatHeader";
+import RiwayatSummaryCards from "../components/riwayat/RiwayatSummaryCards";
+import RiwayatFilterCollapse from "../components/riwayat/RiwayatFilterCollapse";
 import { formatRupiahPos } from "../utils/posCalculations";
 
-
-const ID_MONTHS = {
-  jan: 0, feb: 1, mar: 2, apr: 3, mei: 4, jun: 5,
-  jul: 6, agu: 7, sep: 8, okt: 9, nov: 10, des: 11,
-};
-
-const parseIndonesianDateString = (str) => {
-  if (!str || typeof str !== "string") return null;
-  const match = str
-    .trim()
-    .match(/^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})(?:\s+(\d{1,2})[.:](\d{2}))?/);
-  if (!match) return null;
-
-  const [, day, monthRaw, year, hour = "0", minute = "0"] = match;
-  const monthKey = monthRaw.toLowerCase().slice(0, 3);
-  const monthIndex = ID_MONTHS[monthKey];
-  if (monthIndex === undefined) return null;
-
-  const date = new Date(
-    Number(year),
-    monthIndex,
-    Number(day),
-    Number(hour),
-    Number(minute)
-  );
-  return isNaN(date.getTime()) ? null : date;
-};
-
-const getItemDate = (item) => {
-  if (!item) return null;
-
-  const candidates = [
-    item.tanggal_transaksi,
-    item.tanggal,
-    item.created_at,
-    item.createdAt,
-    item.tanggal_input,
-    item.waktu,
-  ];
-
-  for (const raw of candidates) {
-    if (!raw) continue;
-
-    const native = new Date(raw);
-    if (!isNaN(native.getTime())) return native;
-
-    const parsedId = parseIndonesianDateString(String(raw));
-    if (parsedId) return parsedId;
-  }
-
-  return null;
-};
-
 const RiwayatPage = () => {
-  const { data, loading, refreshData } = useRiwayat();
+  const { transaksiList, loading, reloadTransaksi, batalkan } = useTransaksiDb();
+  
+  const [tabValue, setTabValue] = useState(0);
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState("terbaru");
+  
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [cancelTxId, setCancelTxId] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [selectedShift, setSelectedShift] = useState(null);
+  
+  const [showFilter, setShowFilter] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  
   const [page, setPage] = useState(1);
-  const [detailId, setDetailId] = useState(null);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [dateError, setDateError] = useState("");
+  const rowsPerPage = 5;
 
-  const PAGE_SIZE = 10;
-
-  useEffect(() => {
-    if (data && data.length > 0) {
-      console.log("=== DATA TRANSAKSI DETAIL ===");
-      console.log("Total data:", data.length);
-      console.log("Sample data pertama:", data[0]);
-      console.log("Properti yang tersedia:", Object.keys(data[0]));
-    }
-  }, [data]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setSearchQuery(searchInput);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchInput]);
-
-  useEffect(() => {
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      setDateError("Tanggal Mulai tidak boleh setelah Tanggal Akhir");
-    } else {
-      setDateError("");
-    }
-  }, [startDate, endDate]);
-
-  const formatDate = (dateString) => {
-    const date = getItemDate({ waktu: dateString }) || new Date(dateString);
-    if (!dateString || isNaN(date?.getTime?.())) return "-";
-    return date.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatDateFull = (dateString) => {
-    if (!dateString) return "-";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "-";
-      return date.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    } catch {
-      return "-";
-    }
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return "-";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "-";
-
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-
-      return `${hours}:${minutes}`;
-    } catch {
-      return "-";
-    }
-  };
-
-  const applyPreset = (preset) => {
-    const now = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    if (preset === "today") {
-    } else if (preset === "7days") {
-      start.setDate(now.getDate() - 6);
-    } else if (preset === "thisMonth") {
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    }
-
-    setStartDate(start);
-    setEndDate(end);
-    setPage(1);
-  };
-
-  const filteredData = useMemo(() => {
-    let filtered = [...data];
-
-    filtered = filtered.filter(
-      (item) => item.status !== "DIBATALKAN"
-    );
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((item) => {
-        const noTransaksi = String(item.no_transaksi || item.no_faktur || "").toLowerCase();
-        return noTransaksi.includes(q);
-      });
-    }
-
-    if (startDate && endDate && !dateError) {
+  const filteredAndSortedList = useMemo(() => {
+    let result = [...transaksiList];
+    if (startDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
+      result = result.filter(t => new Date(t.tanggal_transaksi || t.created_at) >= start);
+    }
+    if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-
-      filtered = filtered.filter((item) => {
-        const date = getItemDate(item);
-        if (!date) return false;
-        return date >= start && date <= end;
-      });
-    } else if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      filtered = filtered.filter((item) => {
-        const date = getItemDate(item);
-        if (!date) return false;
-        return date >= start;
-      });
-    } else if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((item) => {
-        const date = getItemDate(item);
-        if (!date) return false;
-        return date <= end;
+      result = result.filter(t => new Date(t.tanggal_transaksi || t.created_at) <= end);
+    }
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter((row) => {
+        const idMatch = String(row.no_transaksi || "").toLowerCase().includes(searchLower);
+        const kasirMatch = String(row.user?.nama || row.kasir?.nama || "").toLowerCase().includes(searchLower);
+        return idMatch || kasirMatch;
       });
     }
+    result.sort((a, b) => {
+      const dateA = new Date(a.tanggal_transaksi || a.created_at);
+      const dateB = new Date(b.tanggal_transaksi || b.created_at);
+      return sortOrder === "terbaru" ? dateB - dateA : dateA - dateB;
+    });
+    return result;
+  }, [transaksiList, search, sortOrder, startDate, endDate]);
 
-    return filtered;
-  }, [data, startDate, endDate, searchQuery, dateError]);
-
-
-  const groupedData = useMemo(() => {
-    const groups = {};
-
-    filteredData.forEach((item) => {
-      const date = getItemDate(item);
-      const dateKey = date ? date.toISOString().split("T")[0] : "no-date";
-
-      if (!groups[dateKey]) {
-        groups[dateKey] = {
-          date: dateKey,
+  const shiftList = useMemo(() => {
+    const shifts = {};
+    filteredAndSortedList.forEach(t => {
+      const shiftId = t.shift_id || t.id_shift || "SHFT-DEFAULT";
+      if (!shifts[shiftId]) {
+        shifts[shiftId] = {
+          id: shiftId,
+          kasir: t.user?.nama || t.kasir?.nama || "Admin Utama",
+          waktuBuka: t.tanggal_transaksi || t.created_at,
+          waktuTutup: t.tanggal_transaksi || t.created_at,
           transactions: [],
-          totalTransactions: 0,
-          totalOmzet: 0,
+          totalTransaksi: 0,
+          omzet: 0,
         };
       }
+      shifts[shiftId].transactions.push(t);
+      shifts[shiftId].totalTransaksi += 1;
+      
+      const txDate = new Date(t.tanggal_transaksi || t.created_at);
+      if (txDate > new Date(shifts[shiftId].waktuTutup)) shifts[shiftId].waktuTutup = t.tanggal_transaksi || t.created_at;
+      if (txDate < new Date(shifts[shiftId].waktuBuka)) shifts[shiftId].waktuBuka = t.tanggal_transaksi || t.created_at;
 
-      groups[dateKey].transactions.push(item);
-      groups[dateKey].totalTransactions += 1;
-
-      const total = Number(item.total || item.total_bayar || 0);
-      groups[dateKey].totalOmzet += total;
-
-    });
-
-    return Object.values(groups).sort((a, b) => {
-      if (a.date === "no-date") return 1;
-      if (b.date === "no-date") return -1;
-      return b.date.localeCompare(a.date);
-    });
-  }, [filteredData]);
-
-  const summary = useMemo(() => {
-    let totalTransactions = 0;
-    let totalOmzet = 0;
-
-    filteredData.forEach((item) => {
-      totalTransactions += 1;
-      const total = Number(item.total || item.total_bayar || 0);
-      totalOmzet += total;
-    });
-
-    return {
-      totalTransactions,
-      totalOmzet,
-    };
-  }, [filteredData]);
-
-  const allTransactions = useMemo(() => {
-    const flat = [];
-    groupedData.forEach(group => {
-      group.transactions.forEach(transaction => {
-        flat.push({
-          ...transaction,
-          _groupDate: group.date,
-          _groupTransactions: group.totalTransactions,
-          _groupOmzet: group.totalOmzet,
-        });
-      });
-    });
-    return flat;
-  }, [groupedData]);
-
-  const totalPages = Math.max(1, Math.ceil(allTransactions.length / PAGE_SIZE));
-  const startIndex = (page - 1) * PAGE_SIZE;
-  const endIndex = startIndex + PAGE_SIZE;
-  const paginatedTransactions = allTransactions.slice(startIndex, endIndex);
-
-  const paginatedGroupedData = useMemo(() => {
-    const groups = {};
-
-    paginatedTransactions.forEach((item) => {
-      const dateKey = item._groupDate;
-
-      if (!groups[dateKey]) {
-        groups[dateKey] = {
-          date: dateKey,
-          transactions: [],
-          totalTransactions: 0,
-          totalOmzet: 0,
-        };
+      if (t.status === "LUNAS" || t.status === "SELESAI") {
+        shifts[shiftId].omzet += Number(t.total_bayar || t.total || 0);
       }
-
-      groups[dateKey].transactions.push(item);
-      groups[dateKey].totalTransactions += 1;
-
-      const total = Number(item.total || item.total_bayar || 0);
-      groups[dateKey].totalOmzet += total;
     });
+    return Object.values(shifts);
+  }, [filteredAndSortedList]);
 
-    return Object.values(groups).sort((a, b) => {
-      if (a.date === "no-date") return 1;
-      if (b.date === "no-date") return -1;
-      return b.date.localeCompare(a.date);
-    });
-  }, [paginatedTransactions]);
+  const currentDataList = tabValue === 0 ? filteredAndSortedList : shiftList;
+  const totalItems = currentDataList.length;
+  const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+  const startIndex = (page - 1) * rowsPerPage;
+  const paginatedList = currentDataList.slice(startIndex, startIndex + rowsPerPage);
 
-  const handleRefresh = async () => {
-    await refreshData();
-    setPage(1);
-  };
+  const isFilterActive = startDate || endDate;
+  const targetDateString = new Date().toISOString().split('T')[0];
 
-  const hasActiveFilters = startDate || endDate || searchQuery;
+  const omzetDitampilkan = filteredAndSortedList
+    .filter(t => t.status === "LUNAS" || t.status === "SELESAI")
+    .filter(t => {
+      if (isFilterActive) return true;
+      const txDate = new Date(t.tanggal_transaksi || t.created_at).toISOString().split('T')[0];
+      return txDate === targetDateString;
+    })
+    .reduce((acc, curr) => acc + Number(curr.total_bayar || curr.total || 0), 0);
+    
+  const itemTerjual = filteredAndSortedList
+    .filter(t => {
+      if (isFilterActive) return true;
+      const txDate = new Date(t.tanggal_transaksi || t.created_at).toISOString().split('T')[0];
+      return txDate === targetDateString;
+    })
+    .reduce((acc, curr) => acc + (curr.transaksidetail?.length || curr.items?.length || 1), 0);
 
-  const resetFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
-    setSearchQuery("");
-    setSearchInput("");
-    setPage(1);
-  };
+  useEffect(() => { setPage(1); }, [search, tabValue, sortOrder, startDate, endDate]);
+  const handlePageChange = (event, value) => setPage(value);
 
-  const columns = [
-    {
-      header: "NO",
-      accessor: "no",
-      width: 50,
-      align: "center",
-    },
-    {
-      header: "NO. TRANSAKSI",
-      accessor: "no_transaksi",
-      render: (row) => (
-        <Typography sx={{ fontWeight: 600, fontSize: 13, color: colors.text }}>
-          {row.no_transaksi || row.raw?.no_transaksi || "-"}
-        </Typography>
-      ),
-    },
-    {
-      header: "WAKTU",
-      accessor: "waktu",
-      render: (row) => {
-        return (
-          <Typography sx={{ fontWeight: 500, fontSize: 13, color: colors.text }}>
-            {row.waktu ? `${row.waktu} • ${row.jam || ""}` : "-"}
-          </Typography>
-        );
-      },
-    },
-    {
-      header: "TOTAL PEMBAYARAN",
-      accessor: "total",
-      align: "right",
-      render: (row) => (
-        <Typography sx={{ fontWeight: 700, fontSize: 14, color: colors.text }}>
-          Rp {Number(row.total || row.total_bayar || 0).toLocaleString("id-ID")}
-        </Typography>
-      ),
-    },
-    {
-      header: "METODE",
-      accessor: "metode",
-      align: "center",
-      render: (row) => {
-        const metode = row.metode_bayar?.toUpperCase() || row.metode?.toUpperCase() || "TUNAI";
-        const isQRIS = metode === "QRIS";
-        const isTunai = metode === "TUNAI";
-        return (
-          <Chip
-            label={metode}
-            size="small"
-            sx={{
-              backgroundColor: isQRIS
-                ? colors.primaryLight
-                : isTunai
-                  ? colors.successLight
-                  : colors.textMutedLight,
-              color: isQRIS
-                ? colors.blue
-                : isTunai
-                  ? colors.success
-                  : colors.textMuted,
-              fontWeight: 700,
-              fontSize: 10,
-              borderRadius: 1.5,
-            }}
-          />
-        );
-      },
-    },
-    {
-      header: "KASIR",
-      accessor: "kasir",
-      render: (row) => (
-        <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-          {row.user?.nama || row.kasir || row.nama_kasir || "-"}
-        </Typography>
-      ),
-    },
-    {
-      header: "AKSI",
-      align: "center",
-      render: (row) => (
-        <Button
-          onClick={() => setDetailId(row.id)}
-          variant="contained"
-          size="small"
-          sx={{
-            backgroundColor: colors.primary,
-            color: colors.textOnDark,
-            fontSize: 11,
-            borderRadius: 2,
-            px: 2,
-            py: 0.75,
-            minWidth: 100,
-            "&:hover": { backgroundColor: colors.primaryHover },
-          }}
-        >
-          Lihat Detail
-        </Button>
-      ),
-    },
-  ];
-
-  const renderGroupedTransactions = () => {
-    if (paginatedGroupedData.length === 0) {
-      return (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <Box sx={{ mb: 2 }}>
-            <ReceiptIcon sx={{ fontSize: 48, color: colors.textMuted }} />
-          </Box>
-          <Typography sx={{ color: colors.textSecondary, fontSize: 16, fontWeight: 600 }}>
-            Tidak ada transaksi yang ditemukan
-          </Typography>
-          <Typography sx={{ color: colors.textMuted, fontSize: 13, mt: 1 }}>
-            Coba ubah filter atau refresh halaman
-          </Typography>
-        </Box>
-      );
+  const handleConfirmCancel = async () => {
+    if (!cancelTxId) return;
+    setActionLoading(true);
+    try {
+      await batalkan(cancelTxId);
+      setCancelTxId(null);
+      reloadTransaksi();
+      alert("Transaksi berhasil dibatalkan.");
+    } catch (err) {
+      alert(err.message || "Gagal membatalkan transaksi.");
+    } finally {
+      setActionLoading(false);
     }
-
-    return paginatedGroupedData.map((group) => {
-      let dateDisplay = group.date;
-      if (group.date !== "no-date") {
-        try {
-          const date = new Date(group.date);
-          if (!isNaN(date.getTime())) {
-            dateDisplay = date.toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            });
-          }
-        } catch {
-        }
-      } else {
-        dateDisplay = "Tanpa Tanggal";
-      }
-
-      return (
-        <Box key={group.date} sx={{ mb: 4 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-              pb: 1.5,
-              px: 2.5,
-              pt: 2.5,
-              borderBottom: `1px solid ${colors.border}`,
-              flexWrap: "wrap",
-              gap: 1,
-            }}
-          >
-            <Typography sx={{ fontWeight: 700, fontSize: 16, color: colors.text }}>
-              {dateDisplay}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                fontSize: 13,
-                color: colors.textSecondary,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Typography component="span" sx={{ fontWeight: 600, color: colors.text }}>
-                  {group.totalTransactions}
-                </Typography>
-                <Typography component="span">Transaksi</Typography>
-              </Box>
-              <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <Typography component="span">Omzet:</Typography>
-                <Typography component="span" sx={{ fontWeight: 600, color: colors.text }}>
-                  Rp {group.totalOmzet.toLocaleString("id-ID")}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box sx={{ px: 1 }}>
-            <Table
-              columns={columns}
-              data={group.transactions.map((item, index) => ({
-                ...item,
-                no: startIndex + index + 1,
-              }))}
-            />
-          </Box>
-        </Box>
-      );
-    });
   };
 
-  if (loading) {
-    return <RiwayatLoadingSkeleton />;
-  }
+  const handleExportPDF = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`<html><body style="font-family: sans-serif; padding: 20px;"><h2>Laporan</h2><script>window.onload = () => { window.print(); window.close(); }</script></body></html>`);
+    printWindow.document.close();
+  };
+
+  const renderStatus = (status) => {
+    const s = String(status).toUpperCase();
+    if (s.includes("LUNAS") || s.includes("SELESAI")) return <Chip label="LUNAS" sx={{ bgcolor: "#E8F5E9", color: "#2E7D32", fontWeight: 800, height: 24, fontSize: 11 }} />;
+    if (s.includes("MENUNGGU")) return <Chip label="MENUNGGU" sx={{ bgcolor: "#FFF8E1", color: "#F57F17", fontWeight: 800, height: 24, fontSize: 11 }} />;
+    if (s.includes("RETUR")) return <Chip label="RETUR" sx={{ bgcolor: "#FFEBEE", color: "#C62828", fontWeight: 800, height: 24, fontSize: 11 }} />;
+    return <Chip label={s} sx={{ height: 24, fontSize: 11, fontWeight: 800, bgcolor: "#F1F5F9", color: "#64748B" }} />;
+  };
+
+  if (loading && transaksiList.length === 0) return <RiwayatLoadingSkeleton />;
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={id}>
-      <Box sx={{ p: 3, width: "100%", maxWidth: "100%", overflow: "hidden" }}>
-        {/* Header */}
-        <Box
-          sx={{
-            background: colors.bgCard,
-            borderRadius: 3,
-            p: 3,
-            mb: 3,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 3,
-              flexWrap: "wrap",
-            }}
-          >
-            <Box sx={{ flex: 1, minWidth: 280 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: typography.bold, fontSize: typography.title, color: colors.text }}
-              >
-                Riwayat Transaksi
-              </Typography>
+    // Menyamakan background box utama menjadi transparan / mengikuti halaman agar tidak ada kotak terpisah
+    <Box sx={{ p: 4, width: "100%" }}>
+      <RiwayatHeader showFilter={showFilter} onToggleFilter={() => setShowFilter(!showFilter)} onExportPDF={handleExportPDF} />
+      <RiwayatFilterCollapse showFilter={showFilter} startDate={startDate} endDate={endDate} setStartDate={setStartDate} setEndDate={setEndDate} />
+      <RiwayatSummaryCards isFilterActive={isFilterActive} totalTransaksi={filteredAndSortedList.length} omzet={omzetDitampilkan} itemTerjual={itemTerjual} />
 
-              <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
-                Pantau semua transaksi yang telah dilakukan, termasuk status dan detailnya.
-              </Typography>
-            </Box>
-          </Box>
+      <Paper elevation={0} sx={{ borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden", bgcolor: "transparent" }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, pt: 1, bgcolor: "#FFFFFF" }}>
+          <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} TabIndicatorProps={{ style: { backgroundColor: "#D81B60", height: 3 } }}>
+            <Tab label="Semua Transaksi" sx={{ textTransform: "none", fontWeight: 800, color: tabValue === 0 ? "#D81B60 !important" : "#64748B" }} />
+            <Tab label="Buku Shift" sx={{ textTransform: "none", fontWeight: 800, color: tabValue === 1 ? "#D81B60 !important" : "#64748B" }} />
+          </Tabs>
         </Box>
 
-        {/* Summary Cards */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(4, 1fr)'
-            },
-            gap: 3,
-            mb: 4,
-            width: "100%",
-          }}
-        >
-          <Paper
-            sx={{
-              ...statCardSx,
-              p: 3,
-              transition: transitions.fast,
-              "&:hover": {
-                boxShadow: shadows.hover,
-                transform: "translateY(-2px)",
-              }
-            }}
-          >
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
-                {summary.totalTransactions}
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                Total Transaksi
-              </Typography>
-            </Box>
+        <Box sx={{ p: 2.5, display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "#FFFFFF" }}>
+          <Paper elevation={0} sx={{ display: "flex", alignItems: "center", px: 2, py: 0.5, bgcolor: "#F8FAFC", borderRadius: "8px", width: 340, border: "1px solid #E2E8F0" }}>
+            <SearchIcon sx={{ color: "#94A3B8", fontSize: 20, mr: 1 }} />
+            <InputBase placeholder={tabValue === 0 ? "Cari ID atau Kasir..." : "Cari Shift atau Kasir..."} value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flex: 1, fontSize: 13, fontWeight: 600 }} />
           </Paper>
-
-          <Paper
-            sx={{
-              ...statCardSx,
-              p: 3,
-              transition: transitions.fast,
-              "&:hover": {
-                boxShadow: shadows.hover,
-                transform: "translateY(-2px)",
-              }
-            }}
-          >
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                <Typography sx={{ fontWeight: 700, fontSize: 28, color: colors.text, lineHeight: 1.2 }}>
-                  Rp {summary.totalOmzet.toLocaleString("id-ID")}
-                </Typography>
-              </Box>
-              <Typography sx={{ fontSize: 13, color: colors.textSecondary, fontWeight: 500 }}>
-                Total Omzet
-              </Typography>
-            </Box>
-          </Paper>
+          <Select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} size="small" sx={{ fontSize: 13, fontWeight: 700, bgcolor: "#FFFFFF" }}>
+            <MenuItem value="terbaru">Terbaru</MenuItem>
+            <MenuItem value="terlama">Terlama</MenuItem>
+          </Select>
         </Box>
 
-        {/* Filters - Stacked Layout (Anti-Scroll) */}
-        <Card sx={{ p: 2, mb: 3, borderRadius: radii.xs }}>
-          {/* Baris 1: Preset Waktu (Atas) */}
-          <Box sx={{ mb: 1.5, pb: 1.5, borderBottom: `1px solid ${colors.border || "#eaeaea"}` }}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              onChange={(e, preset) => preset && applyPreset(preset)}
-              sx={{
-                "& .MuiToggleButton-root": {
-                  px: 1.75,
-                  py: 0.4,
-                  fontWeight: 600,
-                  textTransform: "none",
-                  fontSize: "0.8rem",
-                  borderColor: colors.border,
-                  "&.Mui-selected": {
-                    backgroundColor: colors.primary,
-                    color: "#fff",
-                    "&:hover": { backgroundColor: colors.primaryHover },
-                  },
-                },
-              }}
-            >
-              <ToggleButton value="today">Hari Ini</ToggleButton>
-              <ToggleButton value="7days">7 Hari Terakhir</ToggleButton>
-              <ToggleButton value="thisMonth">Bulan Ini</ToggleButton>
-            </ToggleButtonGroup>
+        <TableContainer sx={{ bgcolor: "#FFFFFF" }}>
+          <Table>
+            <TableHead sx={{ bgcolor: "#D81B60" }}>
+              {tabValue === 0 ? (
+                <TableRow>{["ID TRANSAKSI", "TANGGAL & WAKTU", "NAMA KASIR", "TOTAL TRANSAKSI", "STATUS", "AKSI"].map((h, i) => <TableCell key={i} sx={{ color: "#FFF", fontWeight: 800, fontSize: 12 }}>{h}</TableCell>)}</TableRow>
+              ) : (
+                <TableRow>{["ID SHIFT", "JAM BUKA & TUTUP", "NAMA KASIR", "TOTAL TRX", "OMZET SHIFT", "AKSI"].map((h, i) => <TableCell key={i} sx={{ color: "#FFF", fontWeight: 800, fontSize: 12 }}>{h}</TableCell>)}</TableRow>
+              )}
+            </TableHead>
+            <TableBody>
+              {paginatedList.length === 0 ? (
+                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6 }}><Typography sx={{ fontWeight: 700, color: "#94A3B8" }}>Tidak ada data ditemukan.</Typography></TableCell></TableRow>
+              ) : (
+                paginatedList.map((row) => (
+                  <TableRow key={row.id || row.no_transaksi} hover>
+                    {tabValue === 0 ? (
+                      <>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><TagIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontWeight: 700, fontSize: 13 }}>{row.no_transaksi}</Typography></Box></TableCell>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><EventNoteIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{new Date(row.tanggal_transaksi || row.created_at).toLocaleString("id-ID", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Typography></Box></TableCell>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><PersonOutlineIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.user?.nama || row.kasir?.nama || "Admin Utama"}</Typography></Box></TableCell>
+                        <TableCell sx={{ fontWeight: 800, fontSize: 14 }}>Rp {formatRupiahPos(row.total_bayar || row.total)}</TableCell>
+                        <TableCell>{renderStatus(row.status)}</TableCell>
+                        <TableCell>
+                          <Button size="small" onClick={() => setSelectedTx(row.id || row.id_transaksi)} sx={{ color: "#D81B60", fontWeight: 800, fontSize: 12, bgcolor: "#FFF0F5", px: 1.5 }}>
+                            <RemoveRedEyeIcon sx={{ fontSize: 16 }} /> Detail
+                          </Button>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><AssignmentIndIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontWeight: 700, fontSize: 13 }}>{row.id}</Typography></Box></TableCell>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><AccessTimeIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{new Date(row.waktuBuka).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} s/d {new Date(row.waktuTutup).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} WIB</Typography></Box></TableCell>
+                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><PersonOutlineIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.kasir}</Typography></Box></TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>{row.totalTransaksi} Transaksi</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: "#10B981", fontSize: 14 }}>Rp {formatRupiahPos(row.omzet)}</TableCell>
+                        <TableCell>
+                          <Button size="small" onClick={() => setSelectedShift(row)} sx={{ color: "#3B82F6", fontWeight: 800, fontSize: 12, bgcolor: "#EFF6FF", px: 1.5 }}>
+                            <StorefrontIcon sx={{ fontSize: 16 }} /> Lihat Sesi
+                          </Button>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {totalItems > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, borderTop: "1px solid #E2E8F0", bgcolor: "#FFFFFF" }}>
+            <Typography sx={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Menampilkan {startIndex + 1} - {Math.min(startIndex + rowsPerPage, totalItems)} dari {totalItems} data</Typography>
+            <Pagination count={totalPages} page={page} onChange={handlePageChange} shape="rounded" sx={{ "& .Mui-selected": { bgcolor: "#D81B60 !important", color: "#FFF" } }} />
           </Box>
+        )}
+      </Paper>
 
-          {/* Baris 2: Controls Filter (Bawah) */}
-          <Grid container spacing={1.5} alignItems="center">
-            {/* Tanggal Mulai */}
-            <Grid item xs={12} sm={6} md={2.5}>
-              <DatePicker
-                label="Mulai"
-                value={startDate}
-                onChange={(newValue) => {
-                  setStartDate(newValue);
-                  setPage(1);
-                }}
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                    sx: fieldInputSx,
-                    error: !!dateError,
-                  },
-                }}
-              />
-            </Grid>
-
-            {/* Tanggal Akhir */}
-            <Grid item xs={12} sm={6} md={2.5}>
-              <DatePicker
-                label="Akhir"
-                value={endDate}
-                onChange={(newValue) => {
-                  setEndDate(newValue);
-                  setPage(1);
-                }}
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                    sx: fieldInputSx,
-                    error: !!dateError,
-                  },
-                }}
-              />
-            </Grid>
-
-            {/* Input Pencarian */}
-            <Grid item xs={12} sm={6} md={2.5}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Cari No. Transaksi..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: colors.textMuted, fontSize: 18 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchInput && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSearchInput("");
-                          setSearchQuery("");
-                        }}
-                        sx={{ p: 0.5 }}
-                      >
-                        <ClearIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={fieldInputSx}
-              />
-            </Grid>
-
-            {/* Tombol Refresh */}
-            <Grid item xs={12} md={1.5}>
-              <Button
-                variant="contained"
-                onClick={handleRefresh}
-                fullWidth
-                size="medium"
-                startIcon={<RefreshIcon sx={{ fontSize: 18 }} />}
-                sx={{
-                  backgroundColor: colors.primary,
-                  "&:hover": { backgroundColor: colors.primaryHover },
-                  py: 0.9,
-                  fontWeight: 700,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Refresh
-              </Button>
-            </Grid>
-          </Grid>
-
-          {/* Alert Error Tanggal */}
-          {dateError && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              {dateError}
-            </Alert>
-          )}
-
-          {/* Active filter chips & Reset Button */}
-          {hasActiveFilters && (
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, pt: 1.5, borderTop: `1px solid ${colors.border || "#eaeaea"}`, flexWrap: "wrap", gap: 1 }}>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {startDate && endDate && (
-                  <Chip
-                    label={`${new Date(startDate).toLocaleDateString("id-ID")} - ${new Date(endDate).toLocaleDateString("id-ID")}`}
-                    onDelete={() => { setStartDate(null); setEndDate(null); }}
-                    size="small"
-                  />
-                )}
-                {searchQuery && (
-                  <Chip
-                    label={`Cari: "${searchQuery}"`}
-                    onDelete={() => { setSearchInput(""); setSearchQuery(""); }}
-                    size="small"
-                  />
-                )}
-              </Stack>
-              <Button
-                variant="outlined"
-                onClick={resetFilters}
-                size="small"
-                sx={{
-                  color: colors.textOnDark,
-                  borderColor: colors.border,
-                  "&:hover": {
-                    borderColor: colors.primary,
-                    color: colors.primary,
-                  }
-                }}
-              >
-                Reset Filter
-              </Button>
-            </Box>
-          )}
-        </Card>
-
-        {/* Transaction List */}
-        <Card sx={{ p: 0, borderRadius: radii.xs, overflow: "hidden" }}>
-          {renderGroupedTransactions()}
-
-          <Box
-            sx={{
-              p: 2.5,
-              borderTop: `1px solid ${colors.border}`,
-              backgroundColor: colors.bgMuted,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <Typography sx={{ fontSize: 13, color: colors.textSecondary }}>
-              Menampilkan {paginatedTransactions.length} dari {allTransactions.length} transaksi
-              <Typography component="span" sx={{ ml: 1, color: colors.text, fontWeight: 600 }}>
-                ({filteredData.length} total)
-              </Typography>
-            </Typography>
-            <PaginationControls
-              page={page}
-              totalPages={totalPages}
-              onChange={(newPage) => setPage(newPage)}
-            />
-          </Box>
-        </Card>
-
-        <DetailTransaksiModal
-          open={!!detailId}
-          transaksiId={detailId}
-          onClose={() => setDetailId(null)}
-          onRefresh={handleRefresh}
-        />
-      </Box>
-    </LocalizationProvider >
+      {/* Komponen Modal */}
+      <ShiftDetailModal open={Boolean(selectedShift)} shift={selectedShift} onClose={() => setSelectedShift(null)} />
+      <CancelTransactionConfirmModal open={Boolean(cancelTxId)} transaksiId={cancelTxId} isLoading={actionLoading} onConfirm={handleConfirmCancel} onCancel={() => setCancelTxId(null)} />
+      <DetailTransaksiModal open={Boolean(selectedTx)} transaksiId={selectedTx} onClose={() => setSelectedTx(null)} onRefresh={reloadTransaksi} />
+    </Box>
   );
 };
 

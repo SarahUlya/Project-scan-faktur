@@ -3,6 +3,41 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../api/authApi";
 import api from "../api/axiosInstance";
 
+const resolveLoginError = (err) => {
+  if (!err.response) {
+    return "Server error atau tidak dapat terhubung. Periksa koneksi internet Anda.";
+  }
+
+  const status = err.response.status;
+  const msg = String(
+    err.response.data?.message ||
+      err.response.data?.error ||
+      err.response.data?.msg ||
+      ""
+  ).toLowerCase();
+
+  if (status === 403 || msg.includes("nonaktif") || msg.includes("inactive")) {
+    return "Akun nonaktif. Hubungi administrator untuk mengaktifkan akun.";
+  }
+
+  if (
+    status === 401 ||
+    status === 400 ||
+    msg.includes("password") ||
+    msg.includes("username") ||
+    msg.includes("kredensial") ||
+    msg.includes("salah")
+  ) {
+    return "Kredensial salah. Periksa username dan password Anda.";
+  }
+
+  if (status >= 500) {
+    return "Server error. Coba lagi beberapa saat.";
+  }
+
+  return err.response.data?.message || "Login gagal. Silakan coba lagi.";
+};
+
 export const useLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,10 +53,9 @@ export const useLogin = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
     try {
-      console.log("LOGIN DATA:", username, password);
-
       const res = await login({ username, password });
       const token = res.data.token;
 
@@ -33,27 +67,34 @@ export const useLogin = () => {
         },
       });
 
-      console.log("ME RESPONSE:", me.data);
-
       localStorage.setItem("user", JSON.stringify(me.data.user));
 
-      console.log("USER DISIMPAN:", localStorage.getItem("user"));
+      if (rememberMe) {
+        localStorage.setItem("rememberedUsername", username);
+      } else {
+        localStorage.removeItem("rememberedUsername");
+      }
+
+      localStorage.removeItem("currentShift");
 
       navigate("/");
       window.location.reload();
-
     } catch (err) {
-      console.log(err);
-      setError("Login gagal");
+      setError(resolveLoginError(err));
     }
   };
 
   return {
-    username, setUsername,
-    password, setPassword,
-    error, setError,
-    rememberMe, setRememberMe,
-    showPassword, setShowPassword,
-    handleLogin
+    username,
+    setUsername,
+    password,
+    setPassword,
+    error,
+    setError,
+    rememberMe,
+    setRememberMe,
+    showPassword,
+    setShowPassword,
+    handleLogin,
   };
 };

@@ -271,24 +271,26 @@ const FakturInfoForm = ({
           </FormField>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <FormField label="Nilai PPN">
+          <FormField label="Besaran PPN (%)">
             <TextField
-              select
+              type="number"
               fullWidth
               size="small"
-              value={fakturInfo.nilai_ppn}
-              onChange={(e) => setInfo("nilai_ppn", Number(e.target.value))}
+              placeholder="Contoh: 11"
+              disabled={fakturInfo.jenis_ppn === "non_ppn"}
+              value={fakturInfo.nilai_ppn || ""}
+              onChange={(e) => {
+                const val = Math.max(0, Number(e.target.value)); // Cegah nilai minus
+                setInfo("nilai_ppn", val === 0 ? "" : val);
+              }}
               sx={{
                 ...fieldInputSx,
                 width: 300,
               }}
-            >
-              {NILAI_PPN_OPTIONS.map((n) => (
-                <MenuItem key={n} value={n}>
-                  {n}%
-                </MenuItem>
-              ))}
-            </TextField>
+              InputProps={{
+                endAdornment: <InputAdornment position="end">%</InputAdornment>,
+              }}
+            />
           </FormField>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>

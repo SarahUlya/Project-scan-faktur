@@ -99,10 +99,14 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
     removeFromCart,
     clearCart,
     diskon,
+    ppn,
+    setPpn,
+    ppnNominal,
+    discountOpen,
+    setDiscountOpen,
+    paymentOpen,
+    setPaymentOpen,
   } = usePos();
-
-  const [discountOpen, setDiscountOpen] = useState(false);
-  const [paymentOpen, setPaymentOpen] = useState(false);
 
   return (
     <Box
@@ -363,6 +367,65 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
             - Rp {formatRupiahPos(diskonNominal)}
           </Typography>
         </Box>
+        
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 0.5,
+            alignItems: "center",
+          }}
+        >
+          <Typography sx={{ color: colors.textSecondary, fontSize: 12 }}>
+            PPN (%)
+          </Typography>
+          <TextField
+            size="small"
+            type="number"
+            value={ppn === 0 ? "" : ppn}
+            placeholder="0"
+            onChange={(e) => {
+              const val = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+              setPpn(val);
+            }}
+            inputProps={{ min: 0, max: 100 }}
+            sx={{
+              width: "70px",
+              "& .MuiOutlinedInput-root": {
+                height: "28px",
+                fontSize: "11px",
+                fontWeight: 600,
+                bgcolor: colors.bgCard,
+                px: 0.8,
+                "& fieldset": {
+                  borderColor: colors.border,
+                },
+              },
+              "& .MuiInputBase-input": {
+                p: 0,
+                textAlign: "right",
+                "&::-webkit-outer-spin-button, &::-webkit-inner-spin-button": {
+                  WebkitAppearance: "none",
+                  margin: 0,
+                },
+                "&[type=number]": {
+                  MozAppearance: "textfield",
+                },
+              },
+            }}
+          />
+        </Box>
+
+        {ppnNominal > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+            <Typography sx={{ color: colors.textSecondary, fontSize: 12 }}>
+              Nominal PPN
+            </Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: 12, color: colors.textSecondary }}>
+              Rp {formatRupiahPos(ppnNominal)}
+            </Typography>
+          </Box>
+        )}
 
         <Typography
           sx={{
