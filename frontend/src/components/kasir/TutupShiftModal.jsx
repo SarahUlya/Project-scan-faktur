@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -8,6 +8,7 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -16,6 +17,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 import { getUser } from "@/auth/auth";
+import { tutupShiftApi } from "@/api/transaksiApi";
 import { colors, radii, typography, shadows } from "@/theme/designTokens";
 
 const formatRupiah = (val) => {
@@ -35,13 +37,34 @@ const formatRupiah = (val) => {
 
 const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
   const currentUser = getUser();
-  
-  const modalAwal = shiftData?.modalAwal || 500000;
-  const penjualan = shiftData?.totalPenjualanTunai || 0;
-  const pengeluaran = shiftData?.totalKasKecil || 0;
+
+  // ── Konversi semua ke Number (backend kirim string) ─────────
+  const idShift = shiftData?.id_shift || shiftData?.id || null;
+  const modalAwal = Number(
+    shiftData?.modalAwal ?? shiftData?.modal_awal ?? 0
+  );
+  const penjualan = Number(
+    shiftData?.totalPenjualanTunai ?? shiftData?.penjualan_tunai ?? 0
+  );
+  const pengeluaran = Number(
+    shiftData?.totalKasKecil ?? shiftData?.pengeluaran_kas_kecil ?? 0
+  );
   const saldoSistem = modalAwal + penjualan - pengeluaran;
 
   const [uangFisikInput, setUangFisikInput] = useState("0");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Reset saat modal dibuka
+  useEffect(() => {
+    if (open) {
+      setError("");
+      setSubmitting(false);
+      setUangFisikInput(
+        saldoSistem > 0 ? formatRupiah(String(saldoSistem)) : "0"
+      );
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cleanUangFisik = useMemo(() => {
     return Number(String(uangFisikInput).replace(/\./g, "")) || 0;
@@ -51,27 +74,45 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
 
   const handleInputChange = (e) => {
     setUangFisikInput(formatRupiah(e.target.value));
+    if (error) setError("");
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      id_user: currentUser?.id,
-      nama_kasir: currentUser?.name || currentUser?.username || "Administrator",
-      modal_awal: modalAwal,
-      penjualan_tunai: penjualan,
-      pengeluaran_kas_kecil: pengeluaran,
-      saldo_sistem: saldoSistem,
-      uang_fisik: cleanUangFisik,
-      selisih: selisih,
-      waktu_tutup: new Date().toISOString(),
-    };
+    setError("");
 
-    if (onConfirm) onConfirm(payload);
+    if (!idShift) {
+      setError("ID shift tidak ditemukan. Hubungi admin.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Backend hanya butuh { id_shift, modal_akhir }
+      const res = await tutupShiftApi({
+        id_shift: idShift,
+        modal_akhir: cleanUangFisik,
+      });
+
+      const closedShift = res?.data;
+      if (onConfirm) onConfirm(closedShift || { id_shift: idShift, status: "CLOSED" });
+    } catch (err) {
+      console.error("[TutupShift] error:", err);
+      console.error("[TutupShift] response:", err?.response?.data);
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal menutup shift";
+
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={submitting ? undefined : onClose}>
       <Box
         sx={{
           position: "absolute",
@@ -89,6 +130,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           overflow: "hidden",
         }}
       >
+        {/* HEADER */}
         <Box
           sx={{
             p: 3,
@@ -114,23 +156,47 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               <ReceiptLongIcon sx={{ color: colors.primary, fontSize: 22 }} />
             </Box>
             <Box>
-              <Typography sx={{ fontWeight: typography.bold, fontSize: typography.h5, color: colors.text }}>
+              <Typography
+                sx={{
+                  fontWeight: typography.bold,
+                  fontSize: typography.h5,
+                  color: colors.text,
+                }}
+              >
                 Tutup Shift (Laporan X)
               </Typography>
-              <Typography sx={{ fontSize: typography.caption, color: colors.textSecondary, mt: 0.5 }}>
-                Kasir: <strong>{currentUser?.name || currentUser?.username || "Administrator"}</strong>
+              <Typography
+                sx={{
+                  fontSize: typography.caption,
+                  color: colors.textSecondary,
+                  mt: 0.5,
+                }}
+              >
+                Kasir:{" "}
+                <strong>
+                  {currentUser?.name || currentUser?.username || "Administrator"}
+                </strong>
               </Typography>
             </Box>
           </Box>
 
-          <IconButton onClick={onClose} size="small" sx={{ color: colors.textSecondary }}>
+          <IconButton
+            onClick={onClose}
+            disabled={submitting}
+            size="small"
+            sx={{ color: colors.textSecondary }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
 
-        <Box component="form" onSubmit={handleFormSubmit} sx={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+        <Box
+          component="form"
+          onSubmit={handleFormSubmit}
+          sx={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}
+        >
           <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            
+            {/* RINCIAN SISTEM */}
             <Box
               sx={{
                 bgcolor: colors.bgMuted,
@@ -142,50 +208,109 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
                 <ReceiptLongIcon sx={{ color: colors.primary, fontSize: 18 }} />
-                <Typography sx={{ fontWeight: typography.bold, fontSize: typography.body, color: colors.text }}>
+                <Typography
+                  sx={{
+                    fontWeight: typography.bold,
+                    fontSize: typography.body,
+                    color: colors.text,
+                  }}
+                >
                   Rincian Sistem
                 </Typography>
               </Box>
 
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>Modal Awal (Kasir)</Typography>
-                <Typography sx={{ fontSize: typography.body, fontWeight: typography.semibold, color: colors.text }}>
+                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
+                  Modal Awal (Kasir)
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    fontWeight: typography.semibold,
+                    color: colors.text,
+                  }}
+                >
                   Rp {modalAwal.toLocaleString("id-ID")}
                 </Typography>
               </Box>
 
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>Penjualan Tunai Sistem</Typography>
-                <Typography sx={{ fontSize: typography.body, fontWeight: typography.semibold, color: colors.success }}>
+                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
+                  Penjualan Tunai Sistem
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    fontWeight: typography.semibold,
+                    color: colors.success,
+                  }}
+                >
                   + Rp {penjualan.toLocaleString("id-ID")}
                 </Typography>
               </Box>
 
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>Pengeluaran Kas Kecil</Typography>
-                <Typography sx={{ fontSize: typography.body, fontWeight: typography.semibold, color: colors.danger }}>
+                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
+                  Pengeluaran Kas Kecil
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    fontWeight: typography.semibold,
+                    color: colors.danger,
+                  }}
+                >
                   - Rp {pengeluaran.toLocaleString("id-ID")}
                 </Typography>
               </Box>
 
               <Divider sx={{ my: 1.5, borderColor: colors.border }} />
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography sx={{ fontSize: typography.body, fontWeight: typography.bold, color: colors.text }}>Saldo Sistem (Harapan)</Typography>
-                <Typography sx={{ fontSize: typography.h5, fontWeight: typography.bold, color: colors.text }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    fontWeight: typography.bold,
+                    color: colors.text,
+                  }}
+                >
+                  Saldo Sistem (Harapan)
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: typography.h5,
+                    fontWeight: typography.bold,
+                    color: colors.text,
+                  }}
+                >
                   Rp {saldoSistem.toLocaleString("id-ID")}
                 </Typography>
               </Box>
             </Box>
 
+            {/* INPUT UANG FISIK */}
             <Box sx={{ mb: 2.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                 <WalletIcon sx={{ color: colors.warning, fontSize: 18 }} />
-                <Typography sx={{ fontWeight: typography.bold, fontSize: typography.body, color: colors.text }}>
+                <Typography
+                  sx={{
+                    fontWeight: typography.bold,
+                    fontSize: typography.body,
+                    color: colors.text,
+                  }}
+                >
                   Uang Fisik di Laci
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: typography.caption, color: colors.textSecondary, mb: 1.5 }}>
+              <Typography
+                sx={{ fontSize: typography.caption, color: colors.textSecondary, mb: 1.5 }}
+              >
                 Hitung dan masukkan total uang tunai yang ada di laci kasir saat ini.
               </Typography>
 
@@ -193,10 +318,17 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 fullWidth
                 value={uangFisikInput}
                 onChange={handleInputChange}
+                disabled={submitting}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Typography sx={{ fontWeight: typography.bold, color: colors.primary, fontSize: typography.bodyLg }}>
+                      <Typography
+                        sx={{
+                          fontWeight: typography.bold,
+                          color: colors.primary,
+                          fontSize: typography.bodyLg,
+                        }}
+                      >
                         Rp
                       </Typography>
                     </InputAdornment>
@@ -223,6 +355,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               />
             </Box>
 
+            {/* SELISIH */}
             <Box
               sx={{
                 bgcolor: selisih < 0 ? colors.dangerLight : colors.successLight,
@@ -236,7 +369,14 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               }}
             >
               <Box>
-                <Typography sx={{ fontSize: typography.caption, fontWeight: typography.semibold, color: colors.textSecondary, mb: 0.5 }}>
+                <Typography
+                  sx={{
+                    fontSize: typography.caption,
+                    fontWeight: typography.semibold,
+                    color: colors.textSecondary,
+                    mb: 0.5,
+                  }}
+                >
                   Selisih (Fisik - Sistem)
                 </Typography>
                 <Box
@@ -271,24 +411,52 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               </Typography>
             </Box>
 
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1,
-                bgcolor: colors.surfaceHover,
-                p: 1.5,
-                borderRadius: `${radii.sm}px`,
-                border: `1px solid ${colors.border}`,
-              }}
-            >
-              <InfoOutlinedIcon sx={{ fontSize: 16, color: colors.blue, mt: 0.2 }} />
-              <Typography sx={{ fontSize: typography.caption, color: colors.textSecondary, lineHeight: 1.4 }}>
-                Jika terdapat selisih, rincian transaksi akan tersimpan secara otomatis ke log audit kasir.
-              </Typography>
-            </Box>
+            {/* ERROR */}
+            {error && (
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 1.2,
+                  bgcolor: colors.dangerLight || "#FEE2E2",
+                  border: `1px solid ${colors.danger || "#DC2626"}`,
+                  borderRadius: `${radii.sm}px`,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    color: colors.danger || "#DC2626",
+                    fontWeight: typography.semibold,
+                  }}
+                >
+                  {error}
+                </Typography>
+              </Box>
+            )}
+
+            {!error && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1,
+                  bgcolor: colors.surfaceHover,
+                  p: 1.5,
+                  borderRadius: `${radii.sm}px`,
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                <InfoOutlinedIcon sx={{ fontSize: 16, color: colors.blue, mt: 0.2 }} />
+                <Typography
+                  sx={{ fontSize: typography.caption, color: colors.textSecondary, lineHeight: 1.4 }}
+                >
+                  Jika terdapat selisih, rincian transaksi akan tersimpan secara otomatis ke log audit kasir.
+                </Typography>
+              </Box>
+            )}
           </Box>
 
+          {/* FOOTER */}
           <Box
             sx={{
               p: 2.5,
@@ -302,6 +470,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               fullWidth
               variant="outlined"
               onClick={onClose}
+              disabled={submitting}
               sx={{
                 borderColor: colors.border,
                 color: colors.text,
@@ -321,7 +490,14 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               type="submit"
               fullWidth
               variant="contained"
-              endIcon={<ArrowForwardIcon />}
+              disabled={submitting}
+              endIcon={
+                submitting ? (
+                  <CircularProgress size={18} sx={{ color: "#FFF" }} />
+                ) : (
+                  <ArrowForwardIcon />
+                )
+              }
               sx={{
                 bgcolor: colors.primary,
                 borderRadius: `${radii.sm}px`,
@@ -331,9 +507,10 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 py: 1.2,
                 boxShadow: "none",
                 "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
+                "&.Mui-disabled": { bgcolor: colors.primary, opacity: 0.7, color: "#FFF" },
               }}
             >
-              Konfirmasi & Tutup Shift
+              {submitting ? "Menutup Shift..." : "Konfirmasi & Tutup Shift"}
             </Button>
           </Box>
         </Box>

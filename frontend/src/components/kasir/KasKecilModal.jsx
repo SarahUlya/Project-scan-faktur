@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Box,
@@ -35,32 +35,72 @@ const formatRupiah = (val) => {
 
 const KasKecilModal = ({ open, onClose, onSave }) => {
   const currentUser = getUser();
-  
+
   const [type, setType] = useState("keluar");
   const [amountInput, setAmountInput] = useState("");
   const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [localError, setLocalError] = useState("");
 
-  const handleSubmit = (e) => {
+  // Reset form tiap kali modal dibuka
+  useEffect(() => {
+    if (open) {
+      setType("keluar");
+      setAmountInput("");
+      setNote("");
+      setLocalError("");
+      setSubmitting(false);
+    }
+  }, [open]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError("");
+
     const numericAmount = Number(String(amountInput).replace(/\./g, "")) || 0;
-    
+
+    if (numericAmount <= 0) {
+      setLocalError("Jumlah harus lebih dari 0");
+      return;
+    }
+    if (!note.trim()) {
+      setLocalError("Keterangan wajib diisi");
+      return;
+    }
+
     const payload = {
-      id_user: currentUser?.id,
-      nama_kasir: currentUser?.name || currentUser?.username || "Administrator",
-      tipe: type, // 'keluar' | 'masuk'
+      id_user: currentUser?.id ?? null,
+      nama_kasir:
+        currentUser?.name || currentUser?.username || "Administrator",
+      tipe: type, // "keluar" | "masuk"
+      jenis: type === "keluar" ? "KELUAR" : "MASUK",
       nominal: numericAmount,
-      keterangan: note,
+      jumlah: numericAmount,
+      keterangan: note.trim(),
       waktu_transaksi: new Date().toISOString(),
     };
 
-    if (onSave) onSave(payload);
-    setAmountInput("");
-    setNote("");
-    onClose();
+    setSubmitting(true);
+    try {
+      const ok = await onSave(payload);
+      // Parent akan return true kalau sukses, false kalau gagal.
+      // Kalau parent gak return apa-apa (undefined), anggap sukses biar
+      // gak blocking (backward compatible).
+      if (ok !== false) {
+        setAmountInput("");
+        setNote("");
+        onClose();
+      }
+    } catch (err) {
+      console.error("[KasKecilModal] onSave throw:", err);
+      setLocalError(err?.message || "Gagal menyimpan");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={submitting ? undefined : onClose}>
       <Box
         sx={{
           position: "absolute",
@@ -103,44 +143,94 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               <WalletIcon sx={{ color: colors.primary, fontSize: 22 }} />
             </Box>
             <Box>
-              <Typography sx={{ fontWeight: typography.bold, fontSize: typography.h5, color: colors.text }}>
+              <Typography
+                sx={{
+                  fontWeight: typography.bold,
+                  fontSize: typography.h5,
+                  color: colors.text,
+                }}
+              >
                 Catat Kas Kecil
               </Typography>
-              <Typography sx={{ fontSize: typography.caption, color: colors.textSecondary, mt: 0.5 }}>
-                Petugas: <strong>{currentUser?.name || currentUser?.username || "Administrator"}</strong>
+              <Typography
+                sx={{
+                  fontSize: typography.caption,
+                  color: colors.textSecondary,
+                  mt: 0.5,
+                }}
+              >
+                Petugas:{" "}
+                <strong>
+                  {currentUser?.name || currentUser?.username || "Administrator"}
+                </strong>
               </Typography>
             </Box>
           </Box>
 
-          <IconButton onClick={onClose} size="small" sx={{ color: colors.textSecondary }}>
+          <IconButton
+            onClick={onClose}
+            disabled={submitting}
+            size="small"
+            sx={{ color: colors.textSecondary }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}
+        >
           <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            
-            <Typography sx={{ fontSize: typography.body, fontWeight: typography.bold, color: colors.text, mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: typography.body,
+                fontWeight: typography.bold,
+                color: colors.text,
+                mb: 1,
+              }}
+            >
               Tipe Transaksi
             </Typography>
 
             <Box sx={{ display: "flex", gap: 2, mb: 2.5 }}>
               {[
-                { value: "keluar", label: "Kas Keluar", desc: "Pengeluaran operasional", icon: <ArrowDownwardIcon sx={{ color: colors.danger, fontSize: 18 }} /> },
-                { value: "masuk", label: "Kas Masuk", desc: "Tambahan dana laci", icon: <ArrowUpwardIcon sx={{ color: colors.success, fontSize: 18 }} /> },
+                {
+                  value: "keluar",
+                  label: "Kas Keluar",
+                  desc: "Pengeluaran operasional",
+                  icon: (
+                    <ArrowDownwardIcon
+                      sx={{ color: colors.danger, fontSize: 18 }}
+                    />
+                  ),
+                },
+                {
+                  value: "masuk",
+                  label: "Kas Masuk",
+                  desc: "Tambahan dana laci",
+                  icon: (
+                    <ArrowUpwardIcon
+                      sx={{ color: colors.success, fontSize: 18 }}
+                    />
+                  ),
+                },
               ].map((opt) => {
                 const isSelected = type === opt.value;
                 return (
                   <Box
                     key={opt.value}
-                    onClick={() => setType(opt.value)}
+                    onClick={() => !submitting && setType(opt.value)}
                     sx={{
                       flex: 1,
                       p: 1.5,
                       borderRadius: `${radii.sm}px`,
-                      border: `1.5px solid ${isSelected ? colors.primary : colors.border}`,
+                      border: `1.5px solid ${
+                        isSelected ? colors.primary : colors.border
+                      }`,
                       bgcolor: isSelected ? colors.surfacePink : colors.bgCard,
-                      cursor: "pointer",
+                      cursor: submitting ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -153,13 +243,28 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
                         checked={isSelected}
                         onChange={() => setType(opt.value)}
                         size="small"
-                        sx={{ color: colors.primary, p: 0, "&.Mui-checked": { color: colors.primary } }}
+                        sx={{
+                          color: colors.primary,
+                          p: 0,
+                          "&.Mui-checked": { color: colors.primary },
+                        }}
                       />
                       <Box>
-                        <Typography sx={{ fontSize: typography.body, fontWeight: typography.bold, color: colors.text }}>
+                        <Typography
+                          sx={{
+                            fontSize: typography.body,
+                            fontWeight: typography.bold,
+                            color: colors.text,
+                          }}
+                        >
                           {opt.label}
                         </Typography>
-                        <Typography sx={{ fontSize: typography.tiny, color: colors.textSecondary }}>
+                        <Typography
+                          sx={{
+                            fontSize: typography.tiny,
+                            color: colors.textSecondary,
+                          }}
+                        >
                           {opt.desc}
                         </Typography>
                       </Box>
@@ -170,7 +275,14 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               })}
             </Box>
 
-            <Typography sx={{ fontSize: typography.body, fontWeight: typography.bold, color: colors.text, mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: typography.body,
+                fontWeight: typography.bold,
+                color: colors.text,
+                mb: 1,
+              }}
+            >
               Jumlah (Rp)
             </Typography>
             <TextField
@@ -178,10 +290,17 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               value={amountInput}
               onChange={(e) => setAmountInput(formatRupiah(e.target.value))}
               placeholder="0"
+              disabled={submitting}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Typography sx={{ fontWeight: typography.bold, color: colors.textSecondary, fontSize: typography.bodyLg }}>
+                    <Typography
+                      sx={{
+                        fontWeight: typography.bold,
+                        color: colors.textSecondary,
+                        fontSize: typography.bodyLg,
+                      }}
+                    >
                       Rp
                     </Typography>
                   </InputAdornment>
@@ -201,7 +320,14 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               }}
             />
 
-            <Typography sx={{ fontSize: typography.body, fontWeight: typography.bold, color: colors.text, mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: typography.body,
+                fontWeight: typography.bold,
+                color: colors.text,
+                mb: 1,
+              }}
+            >
               Keterangan
             </Typography>
             <TextField
@@ -211,6 +337,7 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Misal: Beli galon air, parkir, dll..."
+              disabled={submitting}
               sx={{
                 mb: 2,
                 "& .MuiOutlinedInput-root": {
@@ -236,16 +363,44 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
                 mb: 1,
               }}
             >
-              <Typography sx={{ fontSize: typography.caption, color: colors.textSecondary }}>
+              <Typography
+                sx={{ fontSize: typography.caption, color: colors.textSecondary }}
+              >
                 Waktu Transaksi
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <AccessTimeIcon sx={{ fontSize: 14, color: colors.textSecondary }} />
-                <Typography sx={{ fontSize: typography.caption, fontWeight: typography.semibold, color: colors.text }}>
-                  Hari ini, {new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                <AccessTimeIcon
+                  sx={{ fontSize: 14, color: colors.textSecondary }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: typography.caption,
+                    fontWeight: typography.semibold,
+                    color: colors.text,
+                  }}
+                >
+                  Hari ini,{" "}
+                  {new Date().toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  WIB
                 </Typography>
               </Box>
             </Box>
+
+            {localError && (
+              <Typography
+                sx={{
+                  mt: 1,
+                  fontSize: typography.caption,
+                  color: colors.danger,
+                  fontWeight: typography.semibold,
+                }}
+              >
+                {localError}
+              </Typography>
+            )}
           </Box>
 
           <Box
@@ -262,6 +417,7 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               fullWidth
               variant="outlined"
               onClick={onClose}
+              disabled={submitting}
               sx={{
                 borderColor: colors.border,
                 color: colors.text,
@@ -271,7 +427,10 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
                 fontSize: typography.body,
                 py: 1.2,
                 bgcolor: colors.bgCard,
-                "&:hover": { bgcolor: colors.bgMuted, borderColor: colors.borderHover },
+                "&:hover": {
+                  bgcolor: colors.bgMuted,
+                  borderColor: colors.borderHover,
+                },
               }}
             >
               Batal
@@ -281,6 +440,7 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={submitting}
               startIcon={<WalletIcon />}
               sx={{
                 bgcolor: colors.primary,
@@ -293,7 +453,7 @@ const KasKecilModal = ({ open, onClose, onSave }) => {
                 "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
               }}
             >
-              Simpan Catatan
+              {submitting ? "Menyimpan..." : "Simpan Catatan"}
             </Button>
           </Box>
         </Box>

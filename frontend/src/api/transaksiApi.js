@@ -38,12 +38,11 @@ export const createKasKecil = async (payload) => {
 
 export const getShiftAktifApi = async () => {
   try {
-    const res = await axiosInstance.get("/shift/aktif");
-    return res.data;
+    const res = await axiosInstance.get("/shift/active");   // ← "active"
+    return res.data; // { active: boolean, data: {...} | null }
   } catch (err) {
-    // Catch 404 secara silent jika endpoint di backend belum dibuat
     if (err.response?.status === 404) {
-      return { status: "OFFLINE", data: null };
+      return { active: false, data: null };
     }
     throw err;
   }
@@ -55,6 +54,6 @@ export const bukaShiftApi = async (payload) => {
 };
 
 export const tutupShiftApi = async (payload) => {
-  const res = await axiosInstance.post("/shift/tutup", payload);
+  const res = await axiosInstance.put("/shift/tutup", payload);   // ← PUT
   return res.data;
 };
