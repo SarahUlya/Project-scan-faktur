@@ -1,53 +1,33 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import FakturTable from "../components/pembelian/FakturTable";
-import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  Skeleton,
-  IconButton,
-} from "@mui/material";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Box, Typography, IconButton, Paper } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import usePembelianDb from "../hooks/usePembelianDb";
 import useSupplierDb from "../hooks/useSupplierDb";
 import useProdukDropdown from "../hooks/useProdukDropdown";
 import FakturStepIndicator from "../components/pembelian/tambah/FakturStepIndicator";
 import FakturSummaryPanel from "../components/pembelian/tambah/FakturSummaryPanel";
-import { FakturInfoForm, FakturItemForm } from "../components/pembelian/tambah/FakturFormContent";
+import FakturInfoForm from "../components/pembelian/tambah/FakturFormContent";
+import FakturItemForm from "../components/pembelian/tambah/FakturItemForm";
 import { generateBatchCode } from "../utils/batchCode";
-import PaginationControls from "../components/ui/PaginationControls";
-import Button from "../components/ui/Button";
-import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
+import {
+  defaultFakturInfo,
+  emptyItem,
+  hitungSubtotalItem,
+} from "../config/apotek";
 import {
   colors,
   radii,
   spacing,
   typography,
   shadows,
-  transitions,
-  zIndex,
-  fieldInputSx,
   pageHeaderSx,
-  statCardSx,
-} from "@/theme/designTokens"; 
-import {
-  defaultFakturInfo,
-  emptyItem,
-  hitungSubtotalItem,
-} from "../config/apotek";
-import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
-import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
-import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
-import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
-import PembelianLoadingSkeleton from "../components/pembelian/PembelianLoadingSkeleton";
+} from "@/theme/designTokens";
 
 const TambahFakturPage = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // Ambil state dari router
-  const stateData = location.state; // Data PO dari Buku Defecta
+  const location = useLocation();
+  const stateData = location.state;
 
   const { addPembelian } = usePembelianDb();
   const { produk } = useProdukDropdown();
@@ -56,7 +36,7 @@ const TambahFakturPage = () => {
   const getOneYearLater = (baseDateStr) => {
     try {
       const d = baseDateStr ? new Date(baseDateStr) : new Date();
-      if (isNaN(d.getTime())) return ""; // Cegah Invalid Date
+      if (isNaN(d.getTime())) return "";
       d.setFullYear(d.getFullYear() + 1);
       return d.toISOString().split("T")[0];
     } catch (e) {
@@ -79,6 +59,10 @@ const TambahFakturPage = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const barcodeInputRef = useRef(null);
 
+  // ⚡ State error server — untuk tampil pesan yang jelas
+  const [serverError, setServerError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
   const inputRefs = useRef({
     exp_date: {},
     harga_beli: {},
@@ -87,10 +71,14 @@ const TambahFakturPage = () => {
     diskon: {},
   });
 
-  // --- AUTOMATIC AUTO-FILL DARI BUKU DEFECTA (TARIK DATA PO) ---
+  const recalcItem = (item) => ({
+    ...item,
+    total: hitungSubtotalItem(item),
+  });
+
+  // Auto-fill dari Buku Defecta
   useEffect(() => {
     if (stateData && stateData.items && supplier.length > 0) {
-      // 1. Cocokkan dan set Supplier otomatis
       if (stateData.supplier) {
         const matchedSupplier = supplier.find(
           (s) => (s.nama_supplier || s.nama) === stateData.supplier
@@ -99,17 +87,17 @@ const TambahFakturPage = () => {
           setFakturInfo((prev) => ({
             ...prev,
             supplier_id: matchedSupplier.id_supplier || matchedSupplier.id,
-            supplier_name: matchedSupplier.nama_supplier || matchedSupplier.nama,
+            supplier_name:
+              matchedSupplier.nama_supplier || matchedSupplier.nama,
           }));
         }
       }
 
-      // 2. Petakan item defekta ke dalam baris tabel faktur pembelian
       const mappedItems = stateData.items.map((item) => {
         const newId = Date.now() + Math.random();
-        const defaultHpp = 15000; // Harga estimasi
+        const defaultHpp = 15000;
         const qtyOrder = item.saran_order || 1;
-        
+
         return recalcItem({
           ...emptyItem(),
           id: newId,
@@ -144,6 +132,11 @@ const TambahFakturPage = () => {
   const setInfo = (field, value) => {
     setFakturInfo((prev) => ({ ...prev, [field]: value }));
 
+    // ⚡ Reset server error kalau user ubah no_faktur
+    if (field === "no_faktur" && serverError) {
+      setServerError("");
+    }
+
     if (field === "tanggal") {
       const newExpDate = getOneYearLater(value);
       const oldExpDate = getOneYearLater(fakturInfo.tanggal);
@@ -164,17 +157,17 @@ const TambahFakturPage = () => {
     setBatchManual(true);
   }, []);
 
-  const handleBatchModeChange = useCallback((manual) => {
-    setBatchManual(manual);
-    if (!manual) {
-      setKodeBatch(generateBatchCode(fakturInfo.no_faktur, fakturInfo.tanggal));
-    }
-  }, [fakturInfo.no_faktur, fakturInfo.tanggal]);
-
-  const recalcItem = (item) => ({
-    ...item,
-    total: hitungSubtotalItem(item),
-  });
+  const handleBatchModeChange = useCallback(
+    (manual) => {
+      setBatchManual(manual);
+      if (!manual) {
+        setKodeBatch(
+          generateBatchCode(fakturInfo.no_faktur, fakturInfo.tanggal)
+        );
+      }
+    },
+    [fakturInfo.no_faktur, fakturInfo.tanggal]
+  );
 
   const focusRowInput = (itemId, field) => {
     const el = inputRefs.current[field]?.[itemId];
@@ -206,10 +199,7 @@ const TambahFakturPage = () => {
         const updated = recalcItem({ ...item, [field]: value });
 
         if (field === "produk_id") {
-          const p = produk.find(
-            (x) => String(x.id_produk) === String(value)
-          );
-
+          const p = produk.find((x) => String(x.id_produk) === String(value));
           if (p) {
             updated.nama_produk = p.nama_produk;
             updated.harga_beli = p.harga_beli || 0;
@@ -226,34 +216,62 @@ const TambahFakturPage = () => {
     );
   };
 
-  const handleBarcodeScan = (e) => {
-    if (e.key !== "Enter") return;
-    const barcode = barcodeInput.trim();
-    if (!barcode) return;
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ Tambah produk — increment qty kalau sudah ada
+   * ══════════════════════════════════════════════════════════════════ */
+  const tambahProdukKeItems = (foundProduct) => {
+    if (!foundProduct) return;
 
-    const foundProduct = produk.find((p) => p.barcode === barcode);
-    if (!foundProduct) {
-      alert("Produk tidak ditemukan untuk barcode tersebut.");
-      setBarcodeInput("");
-      return;
-    }
-
-    const newId = Date.now() + Math.floor(Math.random() * 1000); 
-    const newItem = recalcItem({
-      id: newId,
-      produk_id: foundProduct.id_produk,
-      nama_produk: foundProduct.nama_produk,
-      exp_date: getOneYearLater(fakturInfo.tanggal),
-      qty: 1,
-      satuan: foundProduct.nama_satuan || foundProduct.satuan?.nama || "Pcs",
-      harga_beli: foundProduct.harga_beli || 0,
-      harga_jual: foundProduct.harga_jual || 0,
-      diskon: 0,
-      diskon_tipe: "%",
-      total: 0,
-    });
+    const targetId = String(
+      foundProduct.id_produk ?? foundProduct.id ?? ""
+    ).trim();
+    const targetName = String(
+      foundProduct.nama_produk || foundProduct.nama || ""
+    )
+      .trim()
+      .toLowerCase();
 
     setItems((prev) => {
+      const existingIdx = prev.findIndex((it) => {
+        const itId = String(it.produk_id ?? "").trim();
+        const itName = String(it.nama_produk ?? "").trim().toLowerCase();
+        return (
+          (targetId && itId === targetId) ||
+          (targetName && itName === targetName)
+        );
+      });
+
+      // Sudah ada → increment
+      if (existingIdx !== -1) {
+        const updated = [...prev];
+        const currentItem = updated[existingIdx];
+        const newQty = (Number(currentItem.qty) || 0) + 1;
+        updated[existingIdx] = recalcItem({
+          ...currentItem,
+          qty: newQty,
+        });
+        return updated;
+      }
+
+      // Belum ada → tambah baris
+      const newId = Date.now() + Math.floor(Math.random() * 1000);
+      const newItem = recalcItem({
+        id: newId,
+        produk_id: foundProduct.id_produk ?? foundProduct.id,
+        nama_produk: foundProduct.nama_produk || foundProduct.nama,
+        exp_date: getOneYearLater(fakturInfo.tanggal),
+        qty: 1,
+        satuan:
+          foundProduct.nama_satuan ||
+          foundProduct.satuan?.nama ||
+          "Pcs",
+        harga_beli: foundProduct.harga_beli || 0,
+        harga_jual: foundProduct.harga_jual || 0,
+        diskon: 0,
+        diskon_tipe: "%",
+        total: 0,
+      });
+
       const emptyIdx = prev.findIndex((it) => !it.produk_id);
       if (emptyIdx !== -1) {
         return prev.map((it, i) => (i === emptyIdx ? newItem : it));
@@ -262,15 +280,35 @@ const TambahFakturPage = () => {
     });
 
     setBarcodeInput("");
+    setTimeout(() => barcodeInputRef.current?.focus(), 50);
+  };
 
-    setTimeout(() => {
+  const handleBarcodeScan = (input) => {
+    const query = String(input || "").trim();
+    if (!query) return;
+
+    const lowerQuery = query.toLowerCase();
+    const foundProduct = produk.find(
+      (p) =>
+        String(p.barcode || "").trim() === query ||
+        String(p.nama_produk || "").trim().toLowerCase() === lowerQuery
+    );
+
+    if (!foundProduct) {
+      setBarcodeInput("");
       barcodeInputRef.current?.focus();
-    }, 50);
+      return;
+    }
+
+    tambahProdukKeItems(foundProduct);
+  };
+
+  const handleSelectProduk = (product) => {
+    tambahProdukKeItems(product);
   };
 
   const handleBarcodeBlur = (e) => {
     const target = e.relatedTarget;
-
     const isInteractive =
       target &&
       (target.tagName === "INPUT" ||
@@ -280,12 +318,11 @@ const TambahFakturPage = () => {
         target.getAttribute("role") === "button" ||
         target.closest("button") ||
         target.closest(".MuiSelect-root") ||
-        target.closest(".MuiButtonBase-root"));
+        target.closest(".MuiButtonBase-root") ||
+        target.closest(".MuiAutocomplete-popper"));
 
     if (!isInteractive && activeTab === "barang") {
-      setTimeout(() => {
-        barcodeInputRef.current?.focus();
-      }, 50);
+      setTimeout(() => barcodeInputRef.current?.focus(), 50);
     }
   };
 
@@ -293,7 +330,11 @@ const TambahFakturPage = () => {
     const newId = Date.now() + Math.random();
     setItems((prev) => [
       ...prev,
-      { ...emptyItem(), id: newId, exp_date: getOneYearLater(fakturInfo.tanggal) },
+      {
+        ...emptyItem(),
+        id: newId,
+        exp_date: getOneYearLater(fakturInfo.tanggal),
+      },
     ]);
   };
 
@@ -307,22 +348,57 @@ const TambahFakturPage = () => {
     }
   };
 
-  const validItemCount = items.filter((it) => it.produk_id && it.qty > 0).length;
+  const validItemCount = items.filter(
+    (it) => it.produk_id && it.qty > 0
+  ).length;
   const subtotalBruto = items.reduce((acc, it) => acc + (it.total || 0), 0);
   const nilaiPpn = Number(fakturInfo.nilai_ppn) || 11;
   const ppn =
     fakturInfo.jenis_ppn === "non_ppn"
       ? 0
-      : (fakturInfo.jenis_ppn === "sudah_termasuk"
-        ? Math.round(subtotalBruto - subtotalBruto / (1 + nilaiPpn / 100))
-        : Math.round(subtotalBruto * (nilaiPpn / 100)));
+      : fakturInfo.jenis_ppn === "sudah_termasuk"
+      ? Math.round(subtotalBruto - subtotalBruto / (1 + nilaiPpn / 100))
+      : Math.round(subtotalBruto * (nilaiPpn / 100));
   const grandTotal =
-    fakturInfo.jenis_ppn === "sudah_termasuk" ? subtotalBruto : subtotalBruto + ppn;
-  const grandTotalSetelahCashback = Math.max(0, grandTotal - (Number(fakturInfo.cashback) || 0));
+    fakturInfo.jenis_ppn === "sudah_termasuk"
+      ? subtotalBruto
+      : subtotalBruto + ppn;
+  const grandTotalSetelahCashback = Math.max(
+    0,
+    grandTotal - (Number(fakturInfo.cashback) || 0)
+  );
   const isKredit = fakturInfo.jenis_pembayaran === "Kredit";
 
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ Auto-generate nomor faktur unik (tambah suffix timestamp)
+   * ══════════════════════════════════════════════════════════════════ */
+  const generateUniqueNoFaktur = () => {
+    const base = (fakturInfo.no_faktur || "INV").trim();
+    const now = new Date();
+    const suffix =
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
+    // Kalau sudah ada "-01", "-02", naikkan
+    const match = base.match(/-(\d+)$/);
+    if (match) {
+      const next = String(Number(match[1]) + 1).padStart(2, "0");
+      return base.replace(/-\d+$/, `-${next}`);
+    }
+    return `${base}-${suffix}`;
+  };
+
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ HANDLE SIMPAN — dengan handling error yang jelas
+   * ══════════════════════════════════════════════════════════════════ */
   const handleSimpan = async () => {
-    if (!fakturInfo.supplier_id || !fakturInfo.tanggal || !fakturInfo.no_faktur) {
+    setServerError("");
+
+    if (
+      !fakturInfo.supplier_id ||
+      !fakturInfo.tanggal ||
+      !fakturInfo.no_faktur
+    ) {
       alert("Harap isi Supplier, No. Faktur, dan Tanggal Faktur!");
       setActiveTab("informasi");
       return;
@@ -335,40 +411,106 @@ const TambahFakturPage = () => {
       return;
     }
 
-    const finalBatch = (kodeBatch || generateBatchCode(fakturInfo.no_faktur, fakturInfo.tanggal)).trim();
+    const finalBatch = (
+      kodeBatch || generateBatchCode(fakturInfo.no_faktur, fakturInfo.tanggal)
+    ).trim();
     if (!finalBatch) {
       alert("Kode batch wajib diisi.");
       return;
     }
 
     const incompleteExp = validItems.some((it) => !it.exp_date);
-    if (incompleteExp && !window.confirm("Ada item tanpa tanggal expired. Tetap simpan?")) {
+    if (
+      incompleteExp &&
+      !window.confirm("Ada item tanpa tanggal expired. Tetap simpan?")
+    ) {
       return;
     }
 
-    const itemsWithBatch = validItems.map((it) => ({ ...it, no_batch: finalBatch }));
+    const itemsWithBatch = validItems.map((it) => ({
+      ...it,
+      no_batch: finalBatch,
+    }));
+
+    setIsSaving(true);
 
     try {
       await addPembelian(
-        { ...fakturInfo, total: grandTotalSetelahCashback, kode_batch: finalBatch },
+        {
+          ...fakturInfo,
+          total: grandTotalSetelahCashback,
+          kode_batch: finalBatch,
+        },
         itemsWithBatch
       );
+
       alert("Faktur berhasil disimpan! Stok dan batch otomatis terupdate.");
       navigate("/pembelian");
     } catch (e) {
-      console.error(e);
-      alert("Terjadi kesalahan saat menyimpan faktur.");
+      console.error("[Simpan Faktur] error:", e);
+      const msg = String(
+        e?.response?.data?.message || e?.message || ""
+      );
+
+      // ⚡ Deteksi error "unique constraint" (no_faktur duplikat)
+      if (
+        msg.includes("Pembelian_no_faktur_key") ||
+        msg.toLowerCase().includes("unique constraint") ||
+        msg.toLowerCase().includes("no_faktur")
+      ) {
+        const suggested = generateUniqueNoFaktur();
+        const userConfirm = window.confirm(
+          `⚠️ Nomor Faktur "${fakturInfo.no_faktur}" sudah pernah dipakai.\n\n` +
+            `Ganti nomor faktur menjadi "${suggested}" dan simpan ulang?\n\n` +
+            `Klik OK untuk ganti otomatis, Cancel untuk ganti manual.`
+        );
+
+        if (userConfirm) {
+          setFakturInfo((prev) => ({ ...prev, no_faktur: suggested }));
+          setServerError(
+            `Nomor faktur diganti otomatis ke "${suggested}". Klik Simpan lagi.`
+          );
+          setActiveTab("informasi");
+        } else {
+          setServerError(
+            `Nomor Faktur "${fakturInfo.no_faktur}" sudah pernah dipakai. ` +
+              `Ganti nomor faktur di Langkah 1, lalu klik Simpan lagi.`
+          );
+          setActiveTab("informasi");
+        }
+      } else {
+        setServerError(
+          msg || "Terjadi kesalahan saat menyimpan faktur."
+        );
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  // ==================== RENDER ====================
   return (
-    <Box sx={{ width: "100%", pb: 4 }}>
-      <Box
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: colors.bg,
+        px: spacing.xxl,
+        pt: spacing.xxl,
+        pb: spacing.xxl,
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.xxl,
+      }}
+    >
+      {/* HEADER */}
+      <Paper
+        elevation={0}
         sx={{
-          background: colors.bgCard,
-          borderRadius: 3,
-          p: 3,
-          mb: 3,
+          p: spacing.xxl,
+          borderRadius: radii.s,
+          border: `1px solid ${colors.borderLight}`,
+          bgcolor: colors.bgCard,
+          boxShadow: shadows.card,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
@@ -376,8 +518,9 @@ const TambahFakturPage = () => {
             size="small"
             onClick={() => navigate("/pembelian")}
             sx={{
-              bgcolor: colors.borderLight,
+              bgcolor: colors.bgMuted,
               color: colors.textSecondary,
+              borderRadius: radii.xs,
               "&:hover": { bgcolor: colors.border },
             }}
           >
@@ -385,8 +528,8 @@ const TambahFakturPage = () => {
           </IconButton>
           <Typography
             sx={{
-              fontSize: 12,
-              fontWeight: 600,
+              fontSize: typography.caption,
+              fontWeight: typography.semibold,
               color: colors.textMuted,
               letterSpacing: 0.5,
             }}
@@ -394,14 +537,7 @@ const TambahFakturPage = () => {
             Pembelian / Tambah Faktur
           </Typography>
         </Box>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 700,
-            fontSize: typography.title,
-            color: colors.text,
-          }}
-        >
+        <Typography sx={pageHeaderSx.title}>
           Tambah Penerimaan Barang
         </Typography>
         <Typography
@@ -413,18 +549,70 @@ const TambahFakturPage = () => {
         >
           Isi faktur, tentukan kode batch, lalu tambahkan produk.
         </Typography>
-      </Box>
+      </Paper>
 
-      <FakturStepIndicator activeStep={activeTab} onChange={setActiveTab} itemCount={validItemCount} />
+      {/* ⚡ SERVER ERROR BANNER */}
+      {serverError && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            px: 2.5,
+            borderRadius: radii.sm,
+            border: `1px solid ${colors.danger}`,
+            bgcolor: colors.dangerLight,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1.5,
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              sx={{
+                fontSize: typography.body,
+                fontWeight: typography.bold,
+                color: colors.danger,
+                mb: 0.5,
+              }}
+            >
+              ⚠️ Gagal Menyimpan Faktur
+            </Typography>
+            <Typography sx={{ fontSize: typography.caption, color: colors.text }}>
+              {serverError}
+            </Typography>
+          </Box>
+          <Box
+            component="button"
+            onClick={() => setServerError("")}
+            sx={{
+              bgcolor: "transparent",
+              border: "none",
+              color: colors.danger,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: 14,
+              fontFamily: "inherit",
+              padding: 0.5,
+            }}
+          >
+            ✕
+          </Box>
+        </Paper>
+      )}
 
+      {/* STEP INDICATOR */}
+      <FakturStepIndicator
+        activeStep={activeTab}
+        onChange={setActiveTab}
+        itemCount={validItemCount}
+      />
+
+      {/* CONTENT GRID */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            lg: "1fr 280px",
-          },
-          gap: 2.5,
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 300px" },
+          gap: spacing.xxl,
           alignItems: "start",
         }}
       >
@@ -453,8 +641,9 @@ const TambahFakturPage = () => {
               setBarcodeInput={setBarcodeInput}
               barcodeInputRef={barcodeInputRef}
               inputRefs={inputRefs}
-              handleBarcodeScan={handleBarcodeScan}
-              handleBarcodeBlur={handleBarcodeBlur}
+              handleSelectProduk={handleSelectProduk}
+              onBarcodeScan={handleBarcodeScan}
+              onBarcodeBlur={handleBarcodeBlur}
               handleInputKeyDown={handleInputKeyDown}
               updateItem={updateItem}
               handleTambahBaris={handleTambahBaris}
@@ -474,6 +663,7 @@ const TambahFakturPage = () => {
           grandTotal={grandTotalSetelahCashback}
           onSimpan={handleSimpan}
           onBatal={() => navigate("/pembelian")}
+          isSaving={isSaving}
         />
       </Box>
     </Box>

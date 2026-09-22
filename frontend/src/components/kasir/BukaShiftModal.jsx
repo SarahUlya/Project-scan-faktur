@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -14,19 +15,28 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 
 import { getUser } from "@/auth/auth";
+import { bukaShiftApi } from "@/api/transaksiApi";
 import { colors, radii, typography, shadows } from "@/theme/designTokens";
 
-const BukaShiftModal = ({ open, onClose, onSuccess }) => {
+const BukaShiftModal = ({ open, onClose, onSuccess, onShiftExists }) => {
   const [modalAwal, setModalAwal] = useState("500.000");
   const [waktuBuka, setWaktuBuka] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const currentUser = getUser();
-  // Mengambil nama user yang sedang login secara dinamis
-  const namaKasir = currentUser?.nama || currentUser?.name || currentUser?.username || "Apoteker Profile";
+  const namaKasir =
+    currentUser?.nama ||
+    currentUser?.name ||
+    currentUser?.username ||
+    "Kasir";
 
-  // Memperbarui waktu setiap kali modal dibuka
+  // Reset & set waktu saat modal dibuka
   useEffect(() => {
     if (open) {
+      setError("");
+      setSubmitting(false);
+
       const now = new Date();
       const dateStr = now.toLocaleDateString("id-ID", {
         day: "2-digit",
@@ -41,7 +51,6 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
     }
   }, [open]);
 
-  // Fungsi auto format titik rupiah
   const formatRupiah = (val) => {
     const numberString = String(val).replace(/[^,\d]/g, "");
     const split = numberString.split(",");
@@ -58,24 +67,66 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
 
   const handleInputChange = (e) => {
     setModalAwal(formatRupiah(e.target.value));
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onSuccess) {
-      // Hilangkan titik untuk disimpan ke database sebagai integer
-      const cleanModalAwal = Number(modalAwal.replace(/\./g, "")) || 0;
-      
-      onSuccess({
+    setError("");
+
+    const cleanModalAwal = Number(modalAwal.replace(/\./g, "")) || 0;
+    if (cleanModalAwal <= 0) {
+      setError("Modal awal harus lebih dari 0");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      console.log("[BukaShift] POST /shift/buka", {
         modal_awal: cleanModalAwal,
-        nama_kasir: namaKasir,
-        waktu_buka: new Date().toISOString(),
       });
+
+      const res = await bukaShiftApi({ modal_awal: cleanModalAwal });
+      console.log("[BukaShift] response:", res);
+
+      const shiftData = res?.data;
+      if (!shiftData || !shiftData.id_shift) {
+        throw new Error("Response backend tidak berisi id_shift");
+      }
+
+      if (onSuccess) onSuccess(shiftData);
+    } catch (err) {
+      console.error("[BukaShift] error:", err);
+      console.error("[BukaShift] response:", err?.response?.data);
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal membuka shift";
+
+      // ⚡ Deteksi kalau backend bilang "masih ada shift aktif"
+      const lowerMsg = String(msg).toLowerCase();
+      const isShiftExists =
+        lowerMsg.includes("masih memiliki shift") ||
+        lowerMsg.includes("sudah ada shift") ||
+        lowerMsg.includes("sedang berjalan") ||
+        lowerMsg.includes("shift aktif") ||
+        err?.response?.status === 409;
+
+      if (isShiftExists && onShiftExists) {
+        console.log("[BukaShift] backend tolak: shift sudah ada");
+        onShiftExists(msg);
+        return;
+      }
+
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={submitting ? undefined : onClose}>
       <Box
         sx={{
           position: "absolute",
@@ -90,7 +141,7 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
           outline: "none",
         }}
       >
-        {/* HEADER MODAL */}
+        {/* HEADER */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <Box
             sx={{
@@ -109,18 +160,25 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
           <Box>
             <Typography
               variant="h6"
-              sx={{ fontWeight: typography.bold, color: colors.text, lineHeight: 1.2 }}
+              sx={{
+                fontWeight: typography.bold,
+                color: colors.text,
+                lineHeight: 1.2,
+              }}
             >
               Buka Shift Baru
             </Typography>
-            <Typography variant="caption" sx={{ color: colors.textSecondary, fontSize: 13 }}>
+            <Typography
+              variant="caption"
+              sx={{ color: colors.textSecondary, fontSize: 13 }}
+            >
               Mulai sesi kasir harian Anda.
             </Typography>
           </Box>
         </Box>
 
         <form onSubmit={handleSubmit}>
-          {/* INFORMASI KASIR & WAKTU BUKA */}
+          {/* INFO KASIR & WAKTU */}
           <Box sx={{ display: "flex", gap: 2, mb: 2.5 }}>
             <Box sx={{ flex: 1 }}>
               <Typography
@@ -142,7 +200,9 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonOutlineIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
+                      <PersonOutlineIcon
+                        sx={{ fontSize: 18, color: colors.textSecondary }}
+                      />
                     </InputAdornment>
                   ),
                 }}
@@ -150,9 +210,6 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                   "& .MuiOutlinedInput-root": {
                     bgcolor: colors.bgMuted,
                     borderRadius: `${radii.sm}px`,
-                    fontSize: 13,
-                    fontWeight: typography.semibold,
-                    color: colors.text,
                     "& fieldset": { borderColor: "transparent" },
                   },
                 }}
@@ -179,7 +236,9 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <AccessTimeIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
+                      <AccessTimeIcon
+                        sx={{ fontSize: 18, color: colors.textSecondary }}
+                      />
                     </InputAdornment>
                   ),
                 }}
@@ -187,9 +246,6 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                   "& .MuiOutlinedInput-root": {
                     bgcolor: colors.bgMuted,
                     borderRadius: `${radii.sm}px`,
-                    fontSize: 13,
-                    fontWeight: typography.semibold,
-                    color: colors.text,
                     "& fieldset": { borderColor: "transparent" },
                   },
                 }}
@@ -197,29 +253,43 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
             </Box>
           </Box>
 
-          {/* INPUT MODAL AWAL (CASH) */}
+          {/* INPUT MODAL AWAL */}
           <Box sx={{ mb: 3 }}>
             <Typography
-              sx={{ fontWeight: typography.bold, color: colors.text, fontSize: 15, mb: 0.3 }}
+              sx={{
+                fontWeight: typography.bold,
+                color: colors.text,
+                fontSize: 15,
+                mb: 0.3,
+              }}
             >
               Modal Awal (Cash)
             </Typography>
             <Typography
               variant="caption"
-              sx={{ color: colors.textSecondary, display: "block", mb: 1.5, lineHeight: 1.3 }}
+              sx={{
+                color: colors.textSecondary,
+                display: "block",
+                mb: 1.5,
+              }}
             >
-              Masukkan jumlah uang tunai fisik yang ada di laci kasir (Drawer) saat ini sebelum memulai transaksi.
+              Masukkan jumlah uang tunai fisik di laci kasir saat ini.
             </Typography>
 
             <TextField
               fullWidth
               value={modalAwal}
               onChange={handleInputChange}
+              disabled={submitting}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <Typography
-                      sx={{ fontWeight: typography.bold, color: colors.primary, fontSize: 18 }}
+                      sx={{
+                        fontWeight: typography.bold,
+                        color: colors.primary,
+                        fontSize: 18,
+                      }}
                     >
                       Rp
                     </Typography>
@@ -231,7 +301,6 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                   textAlign: "right",
                   fontWeight: typography.bold,
                   fontSize: "22px",
-                  color: colors.text,
                   padding: "10px 14px",
                 },
               }}
@@ -239,31 +308,67 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
                 mb: 1,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: `${radii.sm}px`,
-                  borderColor: colors.primary,
-                  bgcolor: colors.bgCard,
-                  "& fieldset": { borderColor: colors.primary, borderWidth: "1.5px" },
-                  "& .Mui-disabled": { WebkitTextFillColor: colors.text },
-                  "&:hover fieldset": { borderColor: colors.primaryHover || colors.primary },
-                  "&.Mui-focused fieldset": { borderColor: colors.primaryHover || colors.primary },
+                  "& fieldset": {
+                    borderColor: colors.primary,
+                    borderWidth: "1.5px",
+                  },
                 },
               }}
             />
 
-            {/* INFO SHIFT TERAKHIR */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-              <InfoOutlinedIcon sx={{ fontSize: 14, color: colors.blue || "#0284C7" }} />
-              <Typography sx={{ fontSize: 11, color: colors.blue || "#0284C7", fontWeight: typography.semibold }}>
-                Pastikan nominal modal laci fisik ini sesuai.
-              </Typography>
-            </Box>
+            {error && (
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 1.2,
+                  bgcolor: "#FEE2E2",
+                  border: "1px solid #DC2626",
+                  borderRadius: `${radii.sm}px`,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    color: "#DC2626",
+                    fontWeight: typography.semibold,
+                  }}
+                >
+                  {error}
+                </Typography>
+              </Box>
+            )}
+
+            {!error && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                <InfoOutlinedIcon
+                  sx={{ fontSize: 14, color: colors.blue || "#0284C7" }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    color: colors.blue || "#0284C7",
+                    fontWeight: typography.semibold,
+                  }}
+                >
+                  Pastikan nominal modal laci fisik ini sesuai.
+                </Typography>
+              </Box>
+            )}
           </Box>
 
-          {/* SUBMIT BUTTON */}
+          {/* SUBMIT */}
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            startIcon={<PowerSettingsNewIcon />}
+            disabled={submitting}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={18} sx={{ color: "#FFF" }} />
+              ) : (
+                <PowerSettingsNewIcon />
+              )
+            }
             sx={{
               bgcolor: colors.primary,
               color: colors.textOnDark || "#FFFFFF",
@@ -273,13 +378,15 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
               fontWeight: typography.bold,
               fontSize: 15,
               boxShadow: "none",
-              "&:hover": {
-                bgcolor: colors.primaryHover,
-                boxShadow: "none",
+              "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
+              "&.Mui-disabled": {
+                bgcolor: colors.primary,
+                opacity: 0.7,
+                color: "#FFF",
               },
             }}
           >
-            Mulai Shift Sekarang
+            {submitting ? "Membuka Shift..." : "Mulai Shift Sekarang"}
           </Button>
         </form>
       </Box>

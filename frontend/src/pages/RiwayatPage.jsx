@@ -1,19 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Box, Paper, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip, Select, MenuItem, Pagination, Typography } from "@mui/material";
-
-// Icons
+import {
+  Box, Paper, Tabs, Tab, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Select, MenuItem,
+  Pagination, Typography, CircularProgress,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InputBase from "@mui/material/InputBase";
-import TagIcon from "@mui/icons-material/Tag";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 
-// Custom Hooks & Modular Components
 import useTransaksiDb from "../hooks/useTransaksiDb";
+import useShiftList from "../hooks/useShiftList";
 import DetailTransaksiModal from "../components/riwayat/DetailTransaksiModal";
 import CancelTransactionConfirmModal from "../components/riwayat/CancelTransactionConfirmModal";
 import ShiftDetailModal from "../components/riwayat/ShiftDetailModal";
@@ -21,111 +16,336 @@ import RiwayatLoadingSkeleton from "../components/riwayat/RiwayatLoadingSkeleton
 import RiwayatHeader from "../components/riwayat/RiwayatHeader";
 import RiwayatSummaryCards from "../components/riwayat/RiwayatSummaryCards";
 import RiwayatFilterCollapse from "../components/riwayat/RiwayatFilterCollapse";
-import { formatRupiahPos } from "../utils/posCalculations";
+import { TransaksiRow, RekapRow, ShiftRow } from "../components/riwayat/table";
+import ExportPrintMenu from "../components/ui/ExportPrintMenu";
 
+import { formatRupiahPos } from "../utils/posCalculations";
+import { isStatusLunas, isStatusDibatalkan } from "../utils/statusHelpers";
+import { applyTransaksiFilters } from "../utils/riwayatFilters";
+import { buildDailyRekap } from "../utils/rekapBuilder";
+import {
+  exportReportExcel,
+  exportReportCsv,
+  exportReportPdf,
+} from "../utils/export/reportExport";
+
+import {
+  colors, radii, spacing, typography,
+  shadows, transitions, fieldInputSx,
+} from "@/theme/designTokens";
+
+/* ══════════════════════════════════════════════════════════════════
+ * HELPER
+ * ══════════════════════════════════════════════════════════════════ */
+const formatTanggalWaktu = (iso) => {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatTanggal = (iso) => {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * SHARED SX
+ * ══════════════════════════════════════════════════════════════════ */
+const cardSx = {
+  borderRadius: `${radii.lg}px`,
+  border: `1px solid ${colors.borderLight}`,
+  bgcolor: colors.bgCard,
+  boxShadow: shadows.card,
+  overflow: "hidden",
+};
+
+const headCellSx = {
+  color: colors.textOnDark,
+  fontWeight: typography.bold,
+  fontSize: typography.small,
+  textTransform: "uppercase",
+  letterSpacing: 0.5,
+  borderBottom: "none",
+  py: spacing.md,
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * PAGE
+ * ══════════════════════════════════════════════════════════════════ */
 const RiwayatPage = () => {
   const { transaksiList, loading, reloadTransaksi, batalkan } = useTransaksiDb();
-  
+
   const [tabValue, setTabValue] = useState(0);
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("terbaru");
-  
+
   const [selectedTx, setSelectedTx] = useState(null);
   const [cancelTxId, setCancelTxId] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedShift, setSelectedShift] = useState(null);
-  
+
   const [showFilter, setShowFilter] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  
+
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
 
-  const filteredAndSortedList = useMemo(() => {
-    let result = [...transaksiList];
-    if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      result = result.filter(t => new Date(t.tanggal_transaksi || t.created_at) >= start);
-    }
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      result = result.filter(t => new Date(t.tanggal_transaksi || t.created_at) <= end);
-    }
+  /* ══ FILTER + SORT ══ */
+  const filteredAndSortedList = useMemo(
+    () =>
+      applyTransaksiFilters(transaksiList, {
+        startDate,
+        endDate,
+        search,
+        sortOrder,
+      }),
+    [transaksiList, startDate, endDate, search, sortOrder]
+  );
+
+  /* ══ RINGKASAN ══ */
+  const isFilterActive = Boolean(startDate || endDate);
+  const targetDateString = new Date().toISOString().split("T")[0];
+
+  const todayList = useMemo(() => {
+    return filteredAndSortedList.filter((t) => {
+      if (isFilterActive) return true;
+      const tgl = t.tanggal_transaksi || t.created_at;
+      if (!tgl) return false;
+      return new Date(tgl).toISOString().split("T")[0] === targetDateString;
+    });
+  }, [filteredAndSortedList, isFilterActive, targetDateString]);
+
+  const totalTransaksiDitampilkan = todayList.length;
+
+  const omzetDitampilkan = useMemo(
+    () =>
+      todayList
+        .filter((t) => isStatusLunas(t.status))
+        .reduce((acc, c) => acc + Number(c.total || c.total_bayar || 0), 0),
+    [todayList]
+  );
+
+  const transaksiDibatalkan = useMemo(
+    () => todayList.filter((t) => isStatusDibatalkan(t.status)).length,
+    [todayList]
+  );
+
+  /* ══ REKAP HARIAN ══ */
+  const dailyList = useMemo(
+    () => buildDailyRekap(filteredAndSortedList),
+    [filteredAndSortedList]
+  );
+
+  /* ══ SHIFT LIST ══ */
+  const {
+    shiftList: shiftListDb,
+    loading: shiftLoading,
+    error: shiftError,
+  } = useShiftList({ startDate, endDate });
+
+  const filteredShiftList = useMemo(() => {
+    let result = [...shiftListDb];
+
     if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter((row) => {
-        const idMatch = String(row.no_transaksi || "").toLowerCase().includes(searchLower);
-        const kasirMatch = String(row.user?.nama || row.kasir?.nama || "").toLowerCase().includes(searchLower);
+      const q = search.toLowerCase();
+      result = result.filter((s) => {
+        const idMatch = String(s.id_shift || "").includes(q);
+        const kasirMatch = String(s.nama_kasir || "").toLowerCase().includes(q);
         return idMatch || kasirMatch;
       });
     }
+
     result.sort((a, b) => {
-      const dateA = new Date(a.tanggal_transaksi || a.created_at);
-      const dateB = new Date(b.tanggal_transaksi || b.created_at);
-      return sortOrder === "terbaru" ? dateB - dateA : dateA - dateB;
+      const dA = new Date(a.waktu_buka || 0).getTime();
+      const dB = new Date(b.waktu_buka || 0).getTime();
+      return sortOrder === "terbaru" ? dB - dA : dA - dB;
     });
+
     return result;
-  }, [transaksiList, search, sortOrder, startDate, endDate]);
+  }, [shiftListDb, search, sortOrder]);
 
-  const shiftList = useMemo(() => {
-    const shifts = {};
-    filteredAndSortedList.forEach(t => {
-      const shiftId = t.shift_id || t.id_shift || "SHFT-DEFAULT";
-      if (!shifts[shiftId]) {
-        shifts[shiftId] = {
-          id: shiftId,
-          kasir: t.user?.nama || t.kasir?.nama || "Admin Utama",
-          waktuBuka: t.tanggal_transaksi || t.created_at,
-          waktuTutup: t.tanggal_transaksi || t.created_at,
-          transactions: [],
-          totalTransaksi: 0,
-          omzet: 0,
-        };
-      }
-      shifts[shiftId].transactions.push(t);
-      shifts[shiftId].totalTransaksi += 1;
-      
-      const txDate = new Date(t.tanggal_transaksi || t.created_at);
-      if (txDate > new Date(shifts[shiftId].waktuTutup)) shifts[shiftId].waktuTutup = t.tanggal_transaksi || t.created_at;
-      if (txDate < new Date(shifts[shiftId].waktuBuka)) shifts[shiftId].waktuBuka = t.tanggal_transaksi || t.created_at;
+  /* ══ PAGINATION ══ */
+  const currentDataList =
+    tabValue === 0
+      ? filteredAndSortedList
+      : tabValue === 1
+      ? dailyList
+      : filteredShiftList;
 
-      if (t.status === "LUNAS" || t.status === "SELESAI") {
-        shifts[shiftId].omzet += Number(t.total_bayar || t.total || 0);
-      }
-    });
-    return Object.values(shifts);
-  }, [filteredAndSortedList]);
-
-  const currentDataList = tabValue === 0 ? filteredAndSortedList : shiftList;
   const totalItems = currentDataList.length;
   const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
   const startIndex = (page - 1) * rowsPerPage;
   const paginatedList = currentDataList.slice(startIndex, startIndex + rowsPerPage);
 
-  const isFilterActive = startDate || endDate;
-  const targetDateString = new Date().toISOString().split('T')[0];
+  useEffect(() => {
+    setPage(1);
+  }, [search, tabValue, sortOrder, startDate, endDate]);
 
-  const omzetDitampilkan = filteredAndSortedList
-    .filter(t => t.status === "LUNAS" || t.status === "SELESAI")
-    .filter(t => {
-      if (isFilterActive) return true;
-      const txDate = new Date(t.tanggal_transaksi || t.created_at).toISOString().split('T')[0];
-      return txDate === targetDateString;
-    })
-    .reduce((acc, curr) => acc + Number(curr.total_bayar || curr.total || 0), 0);
-    
-  const itemTerjual = filteredAndSortedList
-    .filter(t => {
-      if (isFilterActive) return true;
-      const txDate = new Date(t.tanggal_transaksi || t.created_at).toISOString().split('T')[0];
-      return txDate === targetDateString;
-    })
-    .reduce((acc, curr) => acc + (curr.transaksidetail?.length || curr.items?.length || 1), 0);
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ BUILD EXPORT PAYLOAD — sesuai tab
+   * ══════════════════════════════════════════════════════════════════ */
+  const buildExportPayload = () => {
+    const meta = [
+      ["Tanggal Cetak", new Date().toLocaleString("id-ID")],
+      ["Periode", startDate && endDate ? `${startDate} — ${endDate}` : "Semua periode"],
+      ["Pencarian", search || "—"],
+    ];
 
-  useEffect(() => { setPage(1); }, [search, tabValue, sortOrder, startDate, endDate]);
+    /* ── TAB 0 ──────────────────────────────────────────────── */
+    if (tabValue === 0) {
+      const totalOmzet = filteredAndSortedList
+        .filter((t) => isStatusLunas(t.status))
+        .reduce((a, c) => a + Number(c.total || c.total_bayar || 0), 0);
+
+      return {
+        title: "LAPORAN TRANSAKSI",
+        subtitle: "Semua Transaksi",
+        meta,
+        summary: [
+          ["Total Transaksi", filteredAndSortedList.length],
+          ["Total Omzet", `Rp ${formatRupiahPos(totalOmzet)}`],
+        ],
+        headers: ["No", "No. Transaksi", "Tanggal", "Kasir", "Total", "Status"],
+        rows: filteredAndSortedList.map((t, i) => [
+          i + 1,
+          t.no_transaksi || "-",
+          formatTanggalWaktu(t.tanggal_transaksi || t.created_at),
+          t.user?.nama || t.kasir?.nama || "-",
+          Number(t.total || t.total_bayar || 0),
+          t.status || "-",
+        ]),
+        columnStyles: {
+          0: { halign: "center", cellWidth: 12 },
+          1: { halign: "left" },
+          2: { halign: "center", cellWidth: 38 },
+          3: { halign: "left" },
+          4: { halign: "right", cellWidth: 26 },
+          5: { halign: "center", cellWidth: 24 },
+        },
+        filename: `Riwayat_Transaksi_${new Date().toISOString().slice(0, 10)}`,
+      };
+    }
+
+    /* ── TAB 1 ──────────────────────────────────────────────── */
+    if (tabValue === 1) {
+      const grandOmzet = dailyList.reduce((a, c) => a + Number(c.omzet), 0);
+      const grandTrx = dailyList.reduce((a, c) => a + c.totalTransaksi, 0);
+
+      return {
+        title: "REKAP HARIAN",
+        subtitle: "Rekapitulasi Transaksi per Hari",
+        meta,
+        summary: [
+          ["Total Hari", dailyList.length],
+          ["Total Transaksi", grandTrx],
+          ["Total Omzet", `Rp ${formatRupiahPos(grandOmzet)}`],
+        ],
+        headers: ["No", "Tanggal", "Jumlah Trx", "Omzet", "Dibatalkan", "Kasir"],
+        rows: dailyList.map((d, i) => [
+          i + 1,
+          formatTanggal(d.tanggal),
+          d.totalTransaksi,
+          Number(d.omzet),
+          d.dibatalkan,
+          d.kasir,
+        ]),
+        columnStyles: {
+          0: { halign: "center", cellWidth: 12 },
+          1: { halign: "left", cellWidth: 55 },
+          2: { halign: "center", cellWidth: 24 },
+          3: { halign: "right", cellWidth: 32 },
+          4: { halign: "center", cellWidth: 26 },
+          5: { halign: "left" },
+        },
+        filename: `Rekap_Harian_${new Date().toISOString().slice(0, 10)}`,
+      };
+    }
+
+    /* ── TAB 2 ──────────────────────────────────────────────── */
+    const totalOmzetShift = filteredShiftList.reduce(
+      (a, c) => a + Number(c.total_omzet ?? 0),
+      0
+    );
+
+    return {
+      title: "BUKU SHIFT",
+      subtitle: "Riwayat Sesi Kasir",
+      meta,
+      summary: [
+        ["Total Shift", filteredShiftList.length],
+        ["Total Omzet", `Rp ${formatRupiahPos(totalOmzetShift)}`],
+      ],
+      headers: ["No", "ID Shift", "Status", "Buka", "Tutup", "Kasir", "Trx", "Omzet"],
+      rows: filteredShiftList.map((s, i) => [
+        i + 1,
+        `#${s.id_shift}`,
+        s.status,
+        formatTanggalWaktu(s.waktu_buka),
+        s.waktu_tutup ? formatTanggalWaktu(s.waktu_tutup) : "—",
+        s.nama_kasir || "-",
+        s.total_transaksi ?? 0,
+        Number(s.total_omzet ?? 0),
+      ]),
+      columnStyles: {
+        0: { halign: "center", cellWidth: 10 },
+        1: { halign: "center", cellWidth: 18 },
+        2: { halign: "center", cellWidth: 18 },
+        3: { halign: "center", cellWidth: 32 },
+        4: { halign: "center", cellWidth: 32 },
+        5: { halign: "left" },
+        6: { halign: "right", cellWidth: 16 },
+        7: { halign: "right", cellWidth: 28 },
+      },
+      filename: `Buku_Shift_${new Date().toISOString().slice(0, 10)}`,
+    };
+  };
+
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ HANDLERS EXPORT & PRINT
+   * ══════════════════════════════════════════════════════════════════ */
+
+  // Print → preview PDF di tab baru
+  const handlePrint = () => {
+    const payload = buildExportPayload();
+    exportReportPdf(payload, {
+      filename: `${payload.filename}.pdf`,
+      previewInNewTab: true, // ⚡ buka di tab baru
+    });
+  };
+
+  // Export PDF → download file
+  const handleExportPDF = () => {
+    const payload = buildExportPayload();
+    exportReportPdf(payload, { filename: `${payload.filename}.pdf` });
+  };
+
+  // Export Excel → download .xlsx
+  const handleExportExcel = () => {
+    const payload = buildExportPayload();
+    exportReportExcel(payload, { filename: `${payload.filename}.xlsx` });
+  };
+
+  // Export CSV → download .csv
+  const handleExportCSV = () => {
+    const payload = buildExportPayload();
+    exportReportCsv(payload, { filename: `${payload.filename}.csv` });
+  };
+
+  /* ══ HANDLERS ══ */
   const handlePageChange = (event, value) => setPage(value);
 
   const handleConfirmCancel = async () => {
@@ -143,91 +363,229 @@ const RiwayatPage = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(`<html><body style="font-family: sans-serif; padding: 20px;"><h2>Laporan</h2><script>window.onload = () => { window.print(); window.close(); }</script></body></html>`);
-    printWindow.document.close();
+  const handleViewDailyDetail = (dateKey) => {
+    setStartDate(dateKey);
+    setEndDate(dateKey);
+    setTabValue(0);
   };
 
-  const renderStatus = (status) => {
-    const s = String(status).toUpperCase();
-    if (s.includes("LUNAS") || s.includes("SELESAI")) return <Chip label="LUNAS" sx={{ bgcolor: "#E8F5E9", color: "#2E7D32", fontWeight: 800, height: 24, fontSize: 11 }} />;
-    if (s.includes("MENUNGGU")) return <Chip label="MENUNGGU" sx={{ bgcolor: "#FFF8E1", color: "#F57F17", fontWeight: 800, height: 24, fontSize: 11 }} />;
-    if (s.includes("RETUR")) return <Chip label="RETUR" sx={{ bgcolor: "#FFEBEE", color: "#C62828", fontWeight: 800, height: 24, fontSize: 11 }} />;
-    return <Chip label={s} sx={{ height: 24, fontSize: 11, fontWeight: 800, bgcolor: "#F1F5F9", color: "#64748B" }} />;
+  /* ══ TABLE HEAD ══ */
+  const renderTableHead = () => {
+    const heads =
+      tabValue === 0
+        ? ["ID TRANSAKSI", "TANGGAL & WAKTU", "NAMA KASIR", "TOTAL TRANSAKSI", "STATUS", "AKSI"]
+        : tabValue === 1
+        ? ["TANGGAL", "JUMLAH TRX", "OMZET", "DIBATALKAN", "KASIR", "AKSI"]
+        : ["ID SHIFT", "STATUS", "PERIODE", "KASIR", "TRX", "OMZET", "AKSI"];
+
+    return (
+      <TableRow>
+        {heads.map((h, i) => (
+          <TableCell key={i} sx={headCellSx}>{h}</TableCell>
+        ))}
+      </TableRow>
+    );
   };
+
+  /* ══ ROW RENDERER ══ */
+  const renderRow = (row) => {
+    if (tabValue === 0) {
+      return <TransaksiRow row={row} onDetail={setSelectedTx} />;
+    }
+    if (tabValue === 1) {
+      return <RekapRow row={row} onViewDetail={handleViewDailyDetail} />;
+    }
+    return <ShiftRow row={row} onViewSession={setSelectedShift} />;
+  };
+
+  const searchPlaceholder =
+    tabValue === 0
+      ? "Cari ID atau Kasir..."
+      : tabValue === 1
+      ? "Cari tanggal atau kasir..."
+      : "Cari ID Shift atau Kasir...";
 
   if (loading && transaksiList.length === 0) return <RiwayatLoadingSkeleton />;
 
-  return (
-    // Menyamakan background box utama menjadi transparan / mengikuti halaman agar tidak ada kotak terpisah
-    <Box sx={{ p: 4, width: "100%" }}>
-      <RiwayatHeader showFilter={showFilter} onToggleFilter={() => setShowFilter(!showFilter)} onExportPDF={handleExportPDF} />
-      <RiwayatFilterCollapse showFilter={showFilter} startDate={startDate} endDate={endDate} setStartDate={setStartDate} setEndDate={setEndDate} />
-      <RiwayatSummaryCards isFilterActive={isFilterActive} totalTransaksi={filteredAndSortedList.length} omzet={omzetDitampilkan} itemTerjual={itemTerjual} />
+  const colSpan = tabValue === 2 ? 7 : 6;
 
-      <Paper elevation={0} sx={{ borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden", bgcolor: "transparent" }}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, pt: 1, bgcolor: "#FFFFFF" }}>
-          <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} TabIndicatorProps={{ style: { backgroundColor: "#D81B60", height: 3 } }}>
-            <Tab label="Semua Transaksi" sx={{ textTransform: "none", fontWeight: 800, color: tabValue === 0 ? "#D81B60 !important" : "#64748B" }} />
-            <Tab label="Buku Shift" sx={{ textTransform: "none", fontWeight: 800, color: tabValue === 1 ? "#D81B60 !important" : "#64748B" }} />
+  /* ══════════════════════════════════════════════════════════════════
+   * RENDER
+   * ══════════════════════════════════════════════════════════════════ */
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: colors.bg,
+        px: spacing.xxl,
+        pt: spacing.xxl,
+        pb: spacing.xxl,
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.xxl,
+      }}
+    >
+      <RiwayatHeader
+        showFilter={showFilter}
+        onToggleFilter={() => setShowFilter(!showFilter)}
+        actions={
+          <ExportPrintMenu
+            disabled={currentDataList.length === 0}
+            onPrint={handlePrint}
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+            onExportCSV={handleExportCSV}
+          />
+        }
+      />
+      <RiwayatFilterCollapse
+        showFilter={showFilter}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+      />
+
+      <RiwayatSummaryCards
+        isFilterActive={isFilterActive}
+        totalTransaksi={totalTransaksiDitampilkan}
+        omzet={omzetDitampilkan}
+        itemTerjual={transaksiDibatalkan}
+      />
+
+      {/* ═══ TABS CARD ═══ */}
+      <Paper elevation={0} sx={cardSx}>
+        <Box
+          sx={{
+            borderBottom: `1px solid ${colors.borderLight}`,
+            px: spacing.lg,
+            pt: 0.5,
+            bgcolor: colors.bgCard,
+          }}
+        >
+          <Tabs
+            value={tabValue}
+            onChange={(e, val) => setTabValue(val)}
+            TabIndicatorProps={{
+              style: { backgroundColor: colors.primary, height: 3 },
+            }}
+          >
+            {["Semua Transaksi", "Rekap Harian", "Buku Shift"].map((label, i) => (
+              <Tab
+                key={i}
+                label={label}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: typography.bold,
+                  fontSize: typography.body,
+                  color: tabValue === i ? `${colors.primary} !important` : colors.textSecondary,
+                }}
+              />
+            ))}
           </Tabs>
         </Box>
 
-        <Box sx={{ p: 2.5, display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "#FFFFFF" }}>
-          <Paper elevation={0} sx={{ display: "flex", alignItems: "center", px: 2, py: 0.5, bgcolor: "#F8FAFC", borderRadius: "8px", width: 340, border: "1px solid #E2E8F0" }}>
-            <SearchIcon sx={{ color: "#94A3B8", fontSize: 20, mr: 1 }} />
-            <InputBase placeholder={tabValue === 0 ? "Cari ID atau Kasir..." : "Cari Shift atau Kasir..."} value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flex: 1, fontSize: 13, fontWeight: 600 }} />
+        {/* Search & Sort */}
+        <Box
+          sx={{
+            p: spacing.xl,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            bgcolor: colors.bgCard,
+            gap: spacing.lg,
+            flexWrap: "wrap",
+          }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: spacing.lg,
+              py: 0.5,
+              bgcolor: colors.bgMuted,
+              borderRadius: `${radii.s}px`,
+              width: 340,
+              border: `1px solid ${colors.border}`,
+              transition: transitions.fast,
+              "&:focus-within": { borderColor: colors.primary },
+            }}
+          >
+            <SearchIcon sx={{ color: colors.textMuted, fontSize: 18, mr: 1 }} />
+            <InputBase
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{ flex: 1, fontSize: typography.body, fontWeight: typography.semibold }}
+            />
           </Paper>
-          <Select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} size="small" sx={{ fontSize: 13, fontWeight: 700, bgcolor: "#FFFFFF" }}>
+
+          <Select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            size="small"
+            sx={{
+              fontSize: typography.body,
+              fontWeight: typography.bold,
+              bgcolor: colors.bgCard,
+              borderRadius: `${radii.s}px`,
+              ...fieldInputSx["& .MuiOutlinedInput-root"],
+            }}
+          >
             <MenuItem value="terbaru">Terbaru</MenuItem>
             <MenuItem value="terlama">Terlama</MenuItem>
           </Select>
         </Box>
 
-        <TableContainer sx={{ bgcolor: "#FFFFFF" }}>
+        {/* Table */}
+        <TableContainer sx={{ bgcolor: colors.bgCard }}>
           <Table>
-            <TableHead sx={{ bgcolor: "#D81B60" }}>
-              {tabValue === 0 ? (
-                <TableRow>{["ID TRANSAKSI", "TANGGAL & WAKTU", "NAMA KASIR", "TOTAL TRANSAKSI", "STATUS", "AKSI"].map((h, i) => <TableCell key={i} sx={{ color: "#FFF", fontWeight: 800, fontSize: 12 }}>{h}</TableCell>)}</TableRow>
-              ) : (
-                <TableRow>{["ID SHIFT", "JAM BUKA & TUTUP", "NAMA KASIR", "TOTAL TRX", "OMZET SHIFT", "AKSI"].map((h, i) => <TableCell key={i} sx={{ color: "#FFF", fontWeight: 800, fontSize: 12 }}>{h}</TableCell>)}</TableRow>
-              )}
-            </TableHead>
+            <TableHead sx={{ bgcolor: colors.primary }}>{renderTableHead()}</TableHead>
             <TableBody>
-              {paginatedList.length === 0 ? (
-                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6 }}><Typography sx={{ fontWeight: 700, color: "#94A3B8" }}>Tidak ada data ditemukan.</Typography></TableCell></TableRow>
+              {tabValue === 2 && shiftLoading ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={24} sx={{ color: colors.primary }} />
+                    <Typography sx={{ mt: 1, fontSize: typography.body, color: colors.textMuted }}>
+                      Memuat data shift...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : tabValue === 2 && shiftError ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
+                    <Typography sx={{ fontWeight: typography.bold, color: colors.danger }}>
+                      {shiftError}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : paginatedList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} align="center" sx={{ py: 6 }}>
+                    <Typography sx={{ fontWeight: typography.bold, color: colors.textMuted, fontSize: typography.body }}>
+                      Tidak ada data ditemukan.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
               ) : (
                 paginatedList.map((row) => (
-                  <TableRow key={row.id || row.no_transaksi} hover>
-                    {tabValue === 0 ? (
-                      <>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><TagIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontWeight: 700, fontSize: 13 }}>{row.no_transaksi}</Typography></Box></TableCell>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><EventNoteIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{new Date(row.tanggal_transaksi || row.created_at).toLocaleString("id-ID", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Typography></Box></TableCell>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><PersonOutlineIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.user?.nama || row.kasir?.nama || "Admin Utama"}</Typography></Box></TableCell>
-                        <TableCell sx={{ fontWeight: 800, fontSize: 14 }}>Rp {formatRupiahPos(row.total_bayar || row.total)}</TableCell>
-                        <TableCell>{renderStatus(row.status)}</TableCell>
-                        <TableCell>
-                          <Button size="small" onClick={() => setSelectedTx(row.id || row.id_transaksi)} sx={{ color: "#D81B60", fontWeight: 800, fontSize: 12, bgcolor: "#FFF0F5", px: 1.5 }}>
-                            <RemoveRedEyeIcon sx={{ fontSize: 16 }} /> Detail
-                          </Button>
-                        </TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><AssignmentIndIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontWeight: 700, fontSize: 13 }}>{row.id}</Typography></Box></TableCell>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><AccessTimeIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{new Date(row.waktuBuka).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} s/d {new Date(row.waktuTutup).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })} WIB</Typography></Box></TableCell>
-                        <TableCell><Box sx={{ display: "flex", gap: 1, alignItems: "center" }}><PersonOutlineIcon sx={{ fontSize: 16, color: "#94A3B8" }} /><Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.kasir}</Typography></Box></TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontSize: 13 }}>{row.totalTransaksi} Transaksi</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: "#10B981", fontSize: 14 }}>Rp {formatRupiahPos(row.omzet)}</TableCell>
-                        <TableCell>
-                          <Button size="small" onClick={() => setSelectedShift(row)} sx={{ color: "#3B82F6", fontWeight: 800, fontSize: 12, bgcolor: "#EFF6FF", px: 1.5 }}>
-                            <StorefrontIcon sx={{ fontSize: 16 }} /> Lihat Sesi
-                          </Button>
-                        </TableCell>
-                      </>
-                    )}
+                  <TableRow
+                    key={
+                      tabValue === 2
+                        ? `shift-${row.id_shift}`
+                        : row.id || row.no_transaksi || row.id_transaksi || row.tanggal
+                    }
+                    hover
+                    sx={{
+                      "&:hover": { bgcolor: colors.bgMuted },
+                      "& td": {
+                        borderBottom: `1px solid ${colors.borderLight}`,
+                        py: spacing.md,
+                      },
+                    }}
+                  >
+                    {renderRow(row)}
                   </TableRow>
                 ))
               )}
@@ -235,18 +593,67 @@ const RiwayatPage = () => {
           </Table>
         </TableContainer>
 
+        {/* Pagination */}
         {totalItems > 0 && (
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, borderTop: "1px solid #E2E8F0", bgcolor: "#FFFFFF" }}>
-            <Typography sx={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Menampilkan {startIndex + 1} - {Math.min(startIndex + rowsPerPage, totalItems)} dari {totalItems} data</Typography>
-            <Pagination count={totalPages} page={page} onChange={handlePageChange} shape="rounded" sx={{ "& .Mui-selected": { bgcolor: "#D81B60 !important", color: "#FFF" } }} />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: spacing.lg,
+              borderTop: `1px solid ${colors.borderLight}`,
+              bgcolor: colors.bgCard,
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: typography.caption,
+                color: colors.textSecondary,
+                fontWeight: typography.semibold,
+              }}
+            >
+              Menampilkan {startIndex + 1} - {Math.min(startIndex + rowsPerPage, totalItems)} dari {totalItems} data
+            </Typography>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              shape="rounded"
+              sx={{
+                "& .Mui-selected": {
+                  bgcolor: `${colors.primary} !important`,
+                  color: colors.textOnDark,
+                },
+                "& .MuiPaginationItem-root": {
+                  borderRadius: `${radii.xs}px`,
+                  fontSize: typography.body,
+                  fontWeight: typography.semibold,
+                },
+              }}
+            />
           </Box>
         )}
       </Paper>
 
-      {/* Komponen Modal */}
-      <ShiftDetailModal open={Boolean(selectedShift)} shift={selectedShift} onClose={() => setSelectedShift(null)} />
-      <CancelTransactionConfirmModal open={Boolean(cancelTxId)} transaksiId={cancelTxId} isLoading={actionLoading} onConfirm={handleConfirmCancel} onCancel={() => setCancelTxId(null)} />
-      <DetailTransaksiModal open={Boolean(selectedTx)} transaksiId={selectedTx} onClose={() => setSelectedTx(null)} onRefresh={reloadTransaksi} />
+      {/* MODALS */}
+      <ShiftDetailModal
+        open={Boolean(selectedShift)}
+        shift={selectedShift}
+        onClose={() => setSelectedShift(null)}
+      />
+      <CancelTransactionConfirmModal
+        open={Boolean(cancelTxId)}
+        transaksiId={cancelTxId}
+        isLoading={actionLoading}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setCancelTxId(null)}
+      />
+      <DetailTransaksiModal
+        open={Boolean(selectedTx)}
+        transaksiId={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onRefresh={reloadTransaksi}
+      />
     </Box>
   );
 };

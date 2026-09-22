@@ -66,11 +66,12 @@ export const colors = {
  * ========================================================================== */
 
 export const radii = {
+  xs: 2,
   s: 4,
-  sm: 6,
-  md: 8,
-  lg: 16,
-  xl: 20,
+  sm: 6,   // tetap dipertahankan untuk backward compat
+  md: 8,   // tetap dipertahankan
+  lg: 16,  // tetap dipertahankan
+  xl: 20,  // tetap dipertahankan
 };
 
 /* ==========================================================================

@@ -209,7 +209,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
                           sx={{
                             fontWeight: 700,
                             fontSize: 13,
-                            color: colors.textPrimary,
+                            color: colors.textDark,
                             lineHeight: 1.3,
                           }}
                         >
@@ -441,7 +441,7 @@ const PosCartSidebar = ({ onTransaksiSukses }) => {
         <Typography
           sx={{
             fontSize: 10,
-            color: colors.textSecondary,
+            color: colors.textDark,
             textAlign: "right",
             mb: 1.5,
           }}
