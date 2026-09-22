@@ -31,7 +31,7 @@ const KasirHeader = ({
         mb: 2,
       }}
     >
-      {/* ── KIRI: Printer + Nama Kasir ─────────────────────────── */}
+      {/* KIRI: Printer + Nama Kasir */}
       <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
         <Chip
           icon={
@@ -55,9 +55,9 @@ const KasirHeader = ({
         </Typography>
       </Box>
 
-      {/* ── KANAN: Tombol-tombol Aksi ──────────────────────────── */}
+      {/* KANAN: Tombol-tombol Aksi */}
       <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-        {/* Tombol Hold / Recall Transaksi */}
+        {/* Tombol Hold */}
         <IconButton
           size="small"
           onClick={onOpenHold}
@@ -68,38 +68,22 @@ const KasirHeader = ({
           </Badge>
         </IconButton>
 
-        {/* ═══════════════════════════════════════════════════════════
-            🔒 TOMBOL KAS KECIL DI-HIDE SEMENTARA
-            ───────────────────────────────────────────────────────────
-            Alasan: Endpoint backend POST /api/v1/kas-kecil belum ada.
-            Status: Menunggu backend developer.
-            Aksi: Un-comment blok di bawah setelah endpoint selesai.
-
-            Dokumentasi untuk backend: lihat file
-            BACKEND_TODO_KAS_KECIL.md di root project.
-
-            Cara un-hide:
-            1. Hapus tanda {false && ( dan )} di sekitar blok
-            2. Simpan file, refresh browser
-            3. Tombol akan muncul kembali
-        ══════════════════════════════════════════════════════════════ */}
-        {false && (
-          <Button
-            variant="contained"
-            startIcon={<AccountBalanceWalletIcon />}
-            onClick={onOpenKasKecil}
-            sx={{
-              bgcolor: "#FCE4EC",
-              color: "#D81B60",
-              boxShadow: "none",
-              fontWeight: 700,
-              borderRadius: "8px",
-              "&:hover": { bgcolor: "#F8BBD0" },
-            }}
-          >
-            Kas Kecil
-          </Button>
-        )}
+        {/* ✅ TOMBOL KAS KECIL — SUDAH AKTIF */}
+        <Button
+          variant="contained"
+          startIcon={<AccountBalanceWalletIcon />}
+          onClick={onOpenKasKecil}
+          sx={{
+            bgcolor: "#FCE4EC",
+            color: "#D81B60",
+            boxShadow: "none",
+            fontWeight: 700,
+            borderRadius: "8px",
+            "&:hover": { bgcolor: "#F8BBD0" },
+          }}
+        >
+          Kas Kecil
+        </Button>
 
         {/* Tombol Tutup Shift */}
         <Button

@@ -1,22 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import Table from "../ui/Table";
 import PaginationControls from "../ui/PaginationControls";
 import useLaporanTransaksi from "../../hooks/useLaporanTransaksi";
 import usePosProducts from "../../hooks/usePosProducts";
-import {
-  colors,
-  spacing,
-  typography,
-  radii,
-  shadows,
-  transitions,
-} from "@/theme/designTokens";
-import {
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@mui/material";
-
+import { colors, radii, typography, spacing } from "@/theme/designTokens";
 
 const LaporanBarangTidakLaku = () => {
   const {
@@ -36,11 +24,11 @@ const LaporanBarangTidakLaku = () => {
         p.terakhirTerjual === "-" ? null : new Date(p.terakhirTerjual);
       const durasi = terakhir
         ? Math.max(
-          0,
-          Math.ceil(
-            (Date.now() - terakhir.getTime()) / (1000 * 60 * 60 * 24),
-          ),
-        )
+            0,
+            Math.ceil(
+              (Date.now() - terakhir.getTime()) / (1000 * 60 * 60 * 24)
+            )
+          )
         : "-";
 
       return {
@@ -61,7 +49,13 @@ const LaporanBarangTidakLaku = () => {
       header: "NAMA PRODUK",
       accessor: "nama",
       render: (row) => (
-        <Typography sx={{ fontWeight: 800, color: colors.text, fontSize: 15 }}>
+        <Typography
+          sx={{
+            fontWeight: typography.bold,
+            color: colors.text,
+            fontSize: typography.bodyLg,
+          }}
+        >
           {row.nama}
         </Typography>
       ),
@@ -70,7 +64,9 @@ const LaporanBarangTidakLaku = () => {
       header: "KATEGORI",
       accessor: "kategori",
       render: (row) => (
-        <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>
+        <Typography
+          sx={{ color: colors.textSecondary, fontSize: typography.body }}
+        >
           {row.kategori}
         </Typography>
       ),
@@ -79,11 +75,24 @@ const LaporanBarangTidakLaku = () => {
       header: "STOK SAAT INI",
       accessor: "stok",
       render: (row) => (
-        <Typography sx={{ fontWeight: 800, color: colors.text, fontSize: 15 }}>
+        <Typography
+          sx={{
+            fontWeight: typography.bold,
+            color: colors.text,
+            fontSize: typography.bodyLg,
+          }}
+        >
           {row.stok}{" "}
-          <span style={{ fontWeight: 600, color: colors.textSecondary, fontSize: 13 }}>
+          <Box
+            component="span"
+            sx={{
+              fontWeight: typography.semibold,
+              color: colors.textSecondary,
+              fontSize: typography.body,
+            }}
+          >
             Unit
-          </span>
+          </Box>
         </Typography>
       ),
       align: "center",
@@ -94,11 +103,15 @@ const LaporanBarangTidakLaku = () => {
       render: (row) => {
         if (!row.terakhir || row.terakhir === "-") {
           return (
-            <Typography sx={{ color: colors.textSecondary, fontSize: 14 }}>-</Typography>
+            <Typography
+              sx={{ color: colors.textSecondary, fontSize: typography.body }}
+            >
+              -
+            </Typography>
           );
         }
         return (
-          <Typography sx={{ color: colors.text, fontSize: 14 }}>
+          <Typography sx={{ color: colors.text, fontSize: typography.body }}>
             {new Date(row.terakhir).toLocaleDateString("id-ID", {
               day: "numeric",
               month: "short",
@@ -115,14 +128,14 @@ const LaporanBarangTidakLaku = () => {
       render: (row) => (
         <Box
           sx={{
-            background: colors.dangerLight,
+            bgcolor: colors.dangerLight,
             color: colors.danger,
-            px: 1.5,
+            px: spacing.md,
             py: 0.5,
-            borderRadius: 2,
+            borderRadius: radii.xs,
             display: "inline-block",
-            fontWeight: 800,
-            fontSize: 13,
+            fontWeight: typography.bold,
+            fontSize: typography.body,
           }}
         >
           {typeof row.durasi === "number" ? `${row.durasi} Hari` : row.durasi}
@@ -134,7 +147,7 @@ const LaporanBarangTidakLaku = () => {
 
   return (
     <>
-      <Box sx={{ mb: 2.5 }}>
+      <Box sx={{ mb: spacing.xl }}>
         <ToggleButtonGroup
           value={hari}
           exclusive
@@ -145,38 +158,34 @@ const LaporanBarangTidakLaku = () => {
             }
           }}
           sx={{
-            backgroundColor: "#F1F5F9",
+            bgcolor: colors.bgMuted,
             p: 0.5,
-            borderRadius: "12px",
+            borderRadius: radii.s,
             border: "none",
             gap: "4px",
-
             "& .MuiToggleButtonGroup-grouped": {
               border: "none !important",
-              borderRadius: "8px !important",
+              borderRadius: `${radii.s}px !important`,
             },
-
             "& .MuiToggleButton-root": {
-              px: 2,
+              px: spacing.lg,
               py: 0.6,
               height: 34,
               textTransform: "none",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#64748B",
+              fontSize: typography.body,
+              fontWeight: typography.semibold,
+              color: colors.textSecondary,
               transition: "all 0.2s ease-in-out",
-
               "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.6)",
-                color: "#1E293B",
+                bgcolor: colors.bgCard,
+                color: colors.text,
               },
             },
-
             "& .Mui-selected": {
-              backgroundColor: "#FFFFFF !important", 
-              color: "#E11D48 !important", 
-              boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.06)",
-              fontWeight: 700,
+              bgcolor: `${colors.bgCard} !important`,
+              color: `${colors.primary} !important`,
+              boxShadow: shadows.card,
+              fontWeight: typography.bold,
             },
           }}
         >
@@ -191,19 +200,18 @@ const LaporanBarangTidakLaku = () => {
 
       <Box
         sx={{
-          padding: "20px 24px",
+          p: `${spacing.xl}px ${spacing.xxl}px`,
           borderTop: `1px solid ${colors.border}`,
           color: colors.textSecondary,
-          fontSize: 14,
+          fontSize: typography.body,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
         }}
       >
-        <Typography variant="body2">
+        <Typography sx={{ fontSize: typography.body }}>
           Menampilkan {pagedData.length} dari {data.length} item tidak laku
         </Typography>
-
         <PaginationControls
           page={currentPage}
           totalPages={totalPages}

@@ -9,7 +9,7 @@ import StokBatchPage from "../pages/StokBatchPage";
 import PembelianPage from "../pages/PembelianPage";
 import TambahFakturPage from "../pages/TambahFakturPage";
 import LihatFakturPage from "../pages/LihatFakturPage";
-import BukuDefectaPage from "../pages/BukuDefectaPage"; // <-- IMPORT BARU
+// import BukuDefectaPage from "../pages/BukuDefectaPage"; // <-- IMPORT BARU
 import LoginPage from "../pages/LoginPage";
 import LaporanPage from "../pages/LaporanPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -65,12 +65,12 @@ const AppRouter = () => {
             </ProtectedRoute>
           } />
           
-          {/* ---> ROUTE BARU BUKU DEFECTA <--- */}
+          {/* ---> ROUTE BARU BUKU DEFECTA <---
           <Route path="/pembelian/defecta" element={
             <ProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.STAFF]}>
               <BukuDefectaPage />
             </ProtectedRoute>
-          } />
+          } /> */}
 
           <Route path="/laporan" element={
             <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>

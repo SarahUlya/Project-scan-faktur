@@ -59,7 +59,7 @@ const subIconMap = {
   "Stok & Batch": <Inventory2Icon />,
   "Daftar Pembelian": <ShoppingCartCheckoutIcon />,
   "Tambah Pembelian": <AddShoppingCartIcon />,
-  "Buku Defecta": <AssignmentLateIcon />, // <-- TAMBAHKAN INI
+  // "Buku Defecta": <AssignmentLateIcon />, // <-- TAMBAHKAN INI
   Kasir: <PointOfSaleOutlinedIcon />,
   "Riwayat Transaksi": <ReceiptLongIcon />,
   "Manajemen User": <PeopleIcon />,

@@ -15,11 +15,16 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import WalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 
 import { getUser } from "@/auth/auth";
-import { tutupShiftApi } from "@/api/transaksiApi";
+import { tutupShiftApi, getKasKecilListApi } from "@/api/transaksiApi";
 import { colors, radii, typography, shadows } from "@/theme/designTokens";
 
+/* ══════════════════════════════════════════════════════════════════
+ * HELPER — Format Rupiah
+ * ══════════════════════════════════════════════════════════════════ */
 const formatRupiah = (val) => {
   const numberString = String(val).replace(/[^,\d]/g, "");
   const split = numberString.split(",");
@@ -31,40 +36,65 @@ const formatRupiah = (val) => {
     const separator = sisa ? "." : "";
     rupiah += separator + ribuan.join(".");
   }
-
   return split[1] !== undefined ? rupiah + "," + split[1] : rupiah;
 };
 
+/* ══════════════════════════════════════════════════════════════════
+ * ⚡ HELPER — Hitung total kas kecil (masuk & keluar terpisah)
+ * Return: { totalMasuk, totalKeluar }
+ * ══════════════════════════════════════════════════════════════════ */
+const hitungTotalKasKecil = (list) => {
+  if (!Array.isArray(list)) return { totalMasuk: 0, totalKeluar: 0 };
+
+  let totalMasuk = 0;
+  let totalKeluar = 0;
+
+  list.forEach((item) => {
+    const tipe = String(item.tipe || item.jenis || "").toLowerCase();
+    const nominal = Number(item.nominal ?? item.jumlah ?? 0);
+
+    if (tipe.includes("masuk") || tipe.includes("in")) {
+      totalMasuk += nominal;
+    } else if (tipe.includes("keluar") || tipe.includes("out")) {
+      totalKeluar += nominal;
+    } else {
+      // Kalau tipe tidak jelas, anggap keluar (safety)
+      console.warn("[TutupShift] tipe kas kecil tidak dikenal:", tipe, item);
+      totalKeluar += nominal;
+    }
+  });
+
+  return { totalMasuk, totalKeluar };
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * MAIN COMPONENT
+ * ══════════════════════════════════════════════════════════════════ */
 const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
   const currentUser = getUser();
 
-  // ── Konversi semua ke Number (backend kirim string) ─────────
+  // ── Base data dari shiftData ────────────────────────────────────
   const idShift = shiftData?.id_shift || shiftData?.id || null;
-  const modalAwal = Number(
-    shiftData?.modalAwal ?? shiftData?.modal_awal ?? 0
-  );
+  const modalAwal = Number(shiftData?.modalAwal ?? shiftData?.modal_awal ?? 0);
   const penjualan = Number(
     shiftData?.totalPenjualanTunai ?? shiftData?.penjualan_tunai ?? 0
   );
-  const pengeluaran = Number(
-    shiftData?.totalKasKecil ?? shiftData?.pengeluaran_kas_kecil ?? 0
-  );
-  const saldoSistem = modalAwal + penjualan - pengeluaran;
 
+  // ⚡ State kas kecil — TERPISAH masuk & keluar
+  const [kasMasuk, setKasMasuk] = useState(0);
+  const [kasKeluar, setKasKeluar] = useState(0);
+  const [kasKecilLoading, setKasKecilLoading] = useState(false);
+  const [kasKecilError, setKasKecilError] = useState("");
+
+  // ── State form ──────────────────────────────────────────────────
   const [uangFisikInput, setUangFisikInput] = useState("0");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset saat modal dibuka
-  useEffect(() => {
-    if (open) {
-      setError("");
-      setSubmitting(false);
-      setUangFisikInput(
-        saldoSistem > 0 ? formatRupiah(String(saldoSistem)) : "0"
-      );
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ══════════════════════════════════════════════════════════════════
+  // ⚡ SALDO SISTEM = Modal Awal + Penjualan + Kas Masuk − Kas Keluar
+  // ══════════════════════════════════════════════════════════════════
+  const saldoSistem = modalAwal + penjualan + kasMasuk - kasKeluar;
 
   const cleanUangFisik = useMemo(() => {
     return Number(String(uangFisikInput).replace(/\./g, "")) || 0;
@@ -72,11 +102,87 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
 
   const selisih = cleanUangFisik - saldoSistem;
 
+  /* ══════════════════════════════════════════════════════════════════
+   * FETCH KAS KECIL saat modal dibuka
+   * ══════════════════════════════════════════════════════════════════ */
+  useEffect(() => {
+    if (!open) return;
+    if (!idShift) {
+      setKasMasuk(0);
+      setKasKeluar(0);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setKasKecilLoading(true);
+      setKasKecilError("");
+      try {
+        console.log("[TutupShift] fetch kas kecil id_shift:", idShift);
+
+        const res = await getKasKecilListApi({ id_shift: idShift });
+        if (cancelled) return;
+
+        const list = Array.isArray(res) ? res : res?.data || [];
+        console.log("[TutupShift] kas kecil list:", list);
+
+        const { totalMasuk, totalKeluar } = hitungTotalKasKecil(list);
+        console.log(
+          "[TutupShift] kas masuk:",
+          totalMasuk,
+          "| kas keluar:",
+          totalKeluar
+        );
+
+        setKasMasuk(totalMasuk);
+        setKasKeluar(totalKeluar);
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[TutupShift] gagal fetch kas kecil:", err);
+        setKasKecilError(
+          err?.response?.data?.message || "Gagal memuat data kas kecil"
+        );
+        setKasMasuk(0);
+        setKasKeluar(0);
+      } finally {
+        if (!cancelled) setKasKecilLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, idShift]);
+
+  /* ══════════════════════════════════════════════════════════════════
+   * RESET FORM saat modal dibuka
+   * ══════════════════════════════════════════════════════════════════ */
+  useEffect(() => {
+    if (open) {
+      setError("");
+      setSubmitting(false);
+    }
+  }, [open]);
+
+  // ⚡ Auto-fill uang fisik = saldo sistem setelah kas kecil selesai fetch
+  useEffect(() => {
+    if (open && !kasKecilLoading) {
+      const saldoTerbaru = modalAwal + penjualan + kasMasuk - kasKeluar;
+      setUangFisikInput(
+        saldoTerbaru > 0 ? formatRupiah(String(saldoTerbaru)) : "0"
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kasMasuk, kasKeluar, kasKecilLoading]);
+
   const handleInputChange = (e) => {
     setUangFisikInput(formatRupiah(e.target.value));
     if (error) setError("");
   };
 
+  /* ══════════════════════════════════════════════════════════════════
+   * SUBMIT — tutup shift
+   * ══════════════════════════════════════════════════════════════════ */
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -86,16 +192,29 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
       return;
     }
 
+    if (kasKecilLoading) {
+      setError("Menunggu data kas kecil selesai dimuat...");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Backend hanya butuh { id_shift, modal_akhir }
+      console.log("[TutupShift] PUT /shift/tutup", {
+        id_shift: idShift,
+        modal_akhir: cleanUangFisik,
+      });
+
       const res = await tutupShiftApi({
         id_shift: idShift,
         modal_akhir: cleanUangFisik,
       });
 
+      console.log("[TutupShift] response:", res);
+
       const closedShift = res?.data;
-      if (onConfirm) onConfirm(closedShift || { id_shift: idShift, status: "CLOSED" });
+      if (onConfirm) {
+        onConfirm(closedShift || { id_shift: idShift, status: "CLOSED" });
+      }
     } catch (err) {
       console.error("[TutupShift] error:", err);
       console.error("[TutupShift] response:", err?.response?.data);
@@ -111,6 +230,9 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
     }
   };
 
+  /* ══════════════════════════════════════════════════════════════════
+   * RENDER
+   * ══════════════════════════════════════════════════════════════════ */
   return (
     <Modal open={open} onClose={submitting ? undefined : onClose}>
       <Box
@@ -130,7 +252,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           overflow: "hidden",
         }}
       >
-        {/* HEADER */}
+        {/* ═══ HEADER ═══ */}
         <Box
           sx={{
             p: 3,
@@ -174,7 +296,9 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               >
                 Kasir:{" "}
                 <strong>
-                  {currentUser?.name || currentUser?.username || "Administrator"}
+                  {currentUser?.name ||
+                    currentUser?.username ||
+                    "Administrator"}
                 </strong>
               </Typography>
             </Box>
@@ -190,13 +314,19 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           </IconButton>
         </Box>
 
+        {/* ═══ BODY (scrollable) ═══ */}
         <Box
           component="form"
           onSubmit={handleFormSubmit}
-          sx={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            overflow: "hidden",
+          }}
         >
           <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            {/* RINCIAN SISTEM */}
+            {/* ═══ RINCIAN SISTEM ═══ */}
             <Box
               sx={{
                 bgcolor: colors.bgMuted,
@@ -206,7 +336,9 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 mb: 2.5,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}
+              >
                 <ReceiptLongIcon sx={{ color: colors.primary, fontSize: 18 }} />
                 <Typography
                   sx={{
@@ -219,8 +351,20 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
+              {/* Modal Awal */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    color: colors.textSecondary,
+                  }}
+                >
                   Modal Awal (Kasir)
                 </Typography>
                 <Typography
@@ -234,8 +378,20 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
+              {/* Penjualan Tunai */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    color: colors.textSecondary,
+                  }}
+                >
                   Penjualan Tunai Sistem
                 </Typography>
                 <Typography
@@ -249,10 +405,65 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
-                <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
-                  Pengeluaran Kas Kecil
+              {/* ⚡ KAS MASUK */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <ArrowUpwardIcon
+                    sx={{ fontSize: 14, color: colors.success }}
+                  />
+                  <Typography
+                    sx={{
+                      fontSize: typography.body,
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    Kas Masuk
+                  </Typography>
+                  {kasKecilLoading && (
+                    <CircularProgress
+                      size={12}
+                      sx={{ color: colors.textMuted }}
+                    />
+                  )}
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: typography.body,
+                    fontWeight: typography.semibold,
+                    color: kasMasuk > 0 ? colors.success : colors.textMuted,
+                  }}
+                >
+                  + Rp {kasMasuk.toLocaleString("id-ID")}
                 </Typography>
+              </Box>
+
+              {/* ⚡ KAS KELUAR */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1.5,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <ArrowDownwardIcon
+                    sx={{ fontSize: 14, color: colors.danger }}
+                  />
+                  <Typography
+                    sx={{
+                      fontSize: typography.body,
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    Kas Keluar
+                  </Typography>
+                </Box>
                 <Typography
                   sx={{
                     fontSize: typography.body,
@@ -260,12 +471,36 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                     color: colors.danger,
                   }}
                 >
-                  - Rp {pengeluaran.toLocaleString("id-ID")}
+                  - Rp {kasKeluar.toLocaleString("id-ID")}
                 </Typography>
               </Box>
 
+              {/* Error kas kecil */}
+              {kasKecilError && (
+                <Box
+                  sx={{
+                    mb: 1.5,
+                    p: 1,
+                    bgcolor: "#FEF3C7",
+                    border: `1px solid ${colors.warning || "#F59E0B"}`,
+                    borderRadius: `${radii.xs || 2}px`,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      color: "#92400E",
+                      fontWeight: typography.semibold,
+                    }}
+                  >
+                    ⚠ {kasKecilError}
+                  </Typography>
+                </Box>
+              )}
+
               <Divider sx={{ my: 1.5, borderColor: colors.border }} />
 
+              {/* Saldo Sistem */}
               <Box
                 sx={{
                   display: "flex",
@@ -294,9 +529,11 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               </Box>
             </Box>
 
-            {/* INPUT UANG FISIK */}
+            {/* ═══ INPUT UANG FISIK ═══ */}
             <Box sx={{ mb: 2.5 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+              >
                 <WalletIcon sx={{ color: colors.warning, fontSize: 18 }} />
                 <Typography
                   sx={{
@@ -309,16 +546,21 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
               <Typography
-                sx={{ fontSize: typography.caption, color: colors.textSecondary, mb: 1.5 }}
+                sx={{
+                  fontSize: typography.caption,
+                  color: colors.textSecondary,
+                  mb: 1.5,
+                }}
               >
-                Hitung dan masukkan total uang tunai yang ada di laci kasir saat ini.
+                Hitung dan masukkan total uang tunai yang ada di laci kasir saat
+                ini.
               </Typography>
 
               <TextField
                 fullWidth
                 value={uangFisikInput}
                 onChange={handleInputChange}
-                disabled={submitting}
+                disabled={submitting || kasKecilLoading}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -355,10 +597,11 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               />
             </Box>
 
-            {/* SELISIH */}
+            {/* ═══ SELISIH ═══ */}
             <Box
               sx={{
-                bgcolor: selisih < 0 ? colors.dangerLight : colors.successLight,
+                bgcolor:
+                  selisih < 0 ? colors.dangerLight : colors.successLight,
                 p: 2,
                 borderRadius: `${radii.sm}px`,
                 border: `1px solid ${selisih < 0 ? "#FCA5A5" : "#86EFAC"}`,
@@ -392,7 +635,11 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                     display: "inline-block",
                   }}
                 >
-                  {selisih < 0 ? "KURANG (MINUS)" : selisih > 0 ? "LEBIH (PLUS)" : "SESUAI"}
+                  {selisih < 0
+                    ? "KURANG (MINUS)"
+                    : selisih > 0
+                    ? "LEBIH (PLUS)"
+                    : "SESUAI"}
                 </Box>
               </Box>
 
@@ -411,7 +658,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               </Typography>
             </Box>
 
-            {/* ERROR */}
+            {/* ERROR MESSAGE */}
             {error && (
               <Box
                 sx={{
@@ -446,17 +693,24 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                   border: `1px solid ${colors.border}`,
                 }}
               >
-                <InfoOutlinedIcon sx={{ fontSize: 16, color: colors.blue, mt: 0.2 }} />
+                <InfoOutlinedIcon
+                  sx={{ fontSize: 16, color: colors.blue, mt: 0.2 }}
+                />
                 <Typography
-                  sx={{ fontSize: typography.caption, color: colors.textSecondary, lineHeight: 1.4 }}
+                  sx={{
+                    fontSize: typography.caption,
+                    color: colors.textSecondary,
+                    lineHeight: 1.4,
+                  }}
                 >
-                  Jika terdapat selisih, rincian transaksi akan tersimpan secara otomatis ke log audit kasir.
+                  Jika terdapat selisih, rincian transaksi akan tersimpan
+                  secara otomatis ke log audit kasir.
                 </Typography>
               </Box>
             )}
           </Box>
 
-          {/* FOOTER */}
+          {/* ═══ FOOTER ═══ */}
           <Box
             sx={{
               p: 2.5,
@@ -480,7 +734,10 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 fontSize: typography.body,
                 py: 1.2,
                 bgcolor: colors.bgCard,
-                "&:hover": { bgcolor: colors.bgMuted, borderColor: colors.borderHover },
+                "&:hover": {
+                  bgcolor: colors.bgMuted,
+                  borderColor: colors.borderHover,
+                },
               }}
             >
               Kembali ke POS
@@ -490,7 +747,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               type="submit"
               fullWidth
               variant="contained"
-              disabled={submitting}
+              disabled={submitting || kasKecilLoading}
               endIcon={
                 submitting ? (
                   <CircularProgress size={18} sx={{ color: "#FFF" }} />
@@ -507,7 +764,11 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 py: 1.2,
                 boxShadow: "none",
                 "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
-                "&.Mui-disabled": { bgcolor: colors.primary, opacity: 0.7, color: "#FFF" },
+                "&.Mui-disabled": {
+                  bgcolor: colors.primary,
+                  opacity: 0.7,
+                  color: "#FFF",
+                },
               }}
             >
               {submitting ? "Menutup Shift..." : "Konfirmasi & Tutup Shift"}

@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
-  Modal, Box, Typography, TextField, Button,
-  InputAdornment, CircularProgress,
+  Modal,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -13,7 +18,7 @@ import { getUser } from "@/auth/auth";
 import { bukaShiftApi } from "@/api/transaksiApi";
 import { colors, radii, typography, shadows } from "@/theme/designTokens";
 
-const BukaShiftModal = ({ open, onClose, onSuccess }) => {
+const BukaShiftModal = ({ open, onClose, onSuccess, onShiftExists }) => {
   const [modalAwal, setModalAwal] = useState("500.000");
   const [waktuBuka, setWaktuBuka] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -21,18 +26,26 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
 
   const currentUser = getUser();
   const namaKasir =
-    currentUser?.nama || currentUser?.name || currentUser?.username || "Kasir";
+    currentUser?.nama ||
+    currentUser?.name ||
+    currentUser?.username ||
+    "Kasir";
 
+  // Reset & set waktu saat modal dibuka
   useEffect(() => {
     if (open) {
       setError("");
       setSubmitting(false);
+
       const now = new Date();
       const dateStr = now.toLocaleDateString("id-ID", {
-        day: "2-digit", month: "short", year: "numeric",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       });
       const timeStr = now.toLocaleTimeString("id-ID", {
-        hour: "2-digit", minute: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
       });
       setWaktuBuka(`${dateStr} - ${timeStr}`);
     }
@@ -44,6 +57,7 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
     const sisa = split[0].length % 3;
     let rupiah = split[0].substr(0, sisa);
     const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
     if (ribuan) {
       const separator = sisa ? "." : "";
       rupiah += separator + ribuan.join(".");
@@ -68,7 +82,9 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
 
     setSubmitting(true);
     try {
-      console.log("[BukaShift] POST /shift/buka", { modal_awal: cleanModalAwal });
+      console.log("[BukaShift] POST /shift/buka", {
+        modal_awal: cleanModalAwal,
+      });
 
       const res = await bukaShiftApi({ modal_awal: cleanModalAwal });
       console.log("[BukaShift] response:", res);
@@ -82,9 +98,28 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
     } catch (err) {
       console.error("[BukaShift] error:", err);
       console.error("[BukaShift] response:", err?.response?.data);
-      setError(
-        err?.response?.data?.message || err?.message || "Gagal membuka shift"
-      );
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal membuka shift";
+
+      // ⚡ Deteksi kalau backend bilang "masih ada shift aktif"
+      const lowerMsg = String(msg).toLowerCase();
+      const isShiftExists =
+        lowerMsg.includes("masih memiliki shift") ||
+        lowerMsg.includes("sudah ada shift") ||
+        lowerMsg.includes("sedang berjalan") ||
+        lowerMsg.includes("shift aktif") ||
+        err?.response?.status === 409;
+
+      if (isShiftExists && onShiftExists) {
+        console.log("[BukaShift] backend tolak: shift sudah ada");
+        onShiftExists(msg);
+        return;
+      }
+
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -94,118 +129,261 @@ const BukaShiftModal = ({ open, onClose, onSuccess }) => {
     <Modal open={open} onClose={submitting ? undefined : onClose}>
       <Box
         sx={{
-          position: "absolute", top: "50%", left: "50%",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 480, bgcolor: colors.bgCard,
-          borderRadius: `${radii.md}px`, p: 3.5,
-          boxShadow: shadows.floating, outline: "none",
+          width: 480,
+          bgcolor: colors.bgCard,
+          borderRadius: `${radii.md}px`,
+          p: 3.5,
+          boxShadow: shadows.floating,
+          outline: "none",
         }}
       >
+        {/* HEADER */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <Box
             sx={{
-              width: 44, height: 44, borderRadius: "50%",
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
               bgcolor: colors.surfacePink || "#FCE4EC",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             <PlayArrowIcon sx={{ color: colors.primary, fontSize: 26 }} />
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: typography.bold, color: colors.text }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: typography.bold,
+                color: colors.text,
+                lineHeight: 1.2,
+              }}
+            >
               Buka Shift Baru
             </Typography>
-            <Typography variant="caption" sx={{ color: colors.textSecondary }}>
+            <Typography
+              variant="caption"
+              sx={{ color: colors.textSecondary, fontSize: 13 }}
+            >
               Mulai sesi kasir harian Anda.
             </Typography>
           </Box>
         </Box>
 
         <form onSubmit={handleSubmit}>
+          {/* INFO KASIR & WAKTU */}
           <Box sx={{ display: "flex", gap: 2, mb: 2.5 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: typography.bold, color: colors.textSecondary, mb: 0.8 }}>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: typography.bold,
+                  color: colors.textSecondary,
+                  letterSpacing: "0.5px",
+                  mb: 0.8,
+                }}
+              >
                 NAMA KASIR
               </Typography>
               <TextField
-                fullWidth size="small" value={namaKasir} disabled
+                fullWidth
+                size="small"
+                value={namaKasir}
+                disabled
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonOutlineIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
+                      <PersonOutlineIcon
+                        sx={{ fontSize: 18, color: colors.textSecondary }}
+                      />
                     </InputAdornment>
                   ),
                 }}
-                sx={{ "& .MuiOutlinedInput-root": { bgcolor: colors.bgMuted, borderRadius: `${radii.sm}px`, "& fieldset": { borderColor: "transparent" } } }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: colors.bgMuted,
+                    borderRadius: `${radii.sm}px`,
+                    "& fieldset": { borderColor: "transparent" },
+                  },
+                }}
               />
             </Box>
+
             <Box sx={{ flex: 1 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: typography.bold, color: colors.textSecondary, mb: 0.8 }}>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: typography.bold,
+                  color: colors.textSecondary,
+                  letterSpacing: "0.5px",
+                  mb: 0.8,
+                }}
+              >
                 WAKTU BUKA
               </Typography>
               <TextField
-                fullWidth size="small" value={waktuBuka} disabled
+                fullWidth
+                size="small"
+                value={waktuBuka}
+                disabled
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <AccessTimeIcon sx={{ fontSize: 18, color: colors.textSecondary }} />
+                      <AccessTimeIcon
+                        sx={{ fontSize: 18, color: colors.textSecondary }}
+                      />
                     </InputAdornment>
                   ),
                 }}
-                sx={{ "& .MuiOutlinedInput-root": { bgcolor: colors.bgMuted, borderRadius: `${radii.sm}px`, "& fieldset": { borderColor: "transparent" } } }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: colors.bgMuted,
+                    borderRadius: `${radii.sm}px`,
+                    "& fieldset": { borderColor: "transparent" },
+                  },
+                }}
               />
             </Box>
           </Box>
 
+          {/* INPUT MODAL AWAL */}
           <Box sx={{ mb: 3 }}>
-            <Typography sx={{ fontWeight: typography.bold, color: colors.text, fontSize: 15, mb: 0.3 }}>
+            <Typography
+              sx={{
+                fontWeight: typography.bold,
+                color: colors.text,
+                fontSize: 15,
+                mb: 0.3,
+              }}
+            >
               Modal Awal (Cash)
             </Typography>
-            <Typography variant="caption" sx={{ color: colors.textSecondary, display: "block", mb: 1.5 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: colors.textSecondary,
+                display: "block",
+                mb: 1.5,
+              }}
+            >
               Masukkan jumlah uang tunai fisik di laci kasir saat ini.
             </Typography>
+
             <TextField
-              fullWidth value={modalAwal} onChange={handleInputChange} disabled={submitting}
+              fullWidth
+              value={modalAwal}
+              onChange={handleInputChange}
+              disabled={submitting}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Typography sx={{ fontWeight: typography.bold, color: colors.primary, fontSize: 18 }}>Rp</Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: typography.bold,
+                        color: colors.primary,
+                        fontSize: 18,
+                      }}
+                    >
+                      Rp
+                    </Typography>
                   </InputAdornment>
                 ),
               }}
-              inputProps={{ style: { textAlign: "right", fontWeight: typography.bold, fontSize: "22px", padding: "10px 14px" } }}
+              inputProps={{
+                style: {
+                  textAlign: "right",
+                  fontWeight: typography.bold,
+                  fontSize: "22px",
+                  padding: "10px 14px",
+                },
+              }}
               sx={{
                 mb: 1,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: `${radii.sm}px`,
-                  "& fieldset": { borderColor: colors.primary, borderWidth: "1.5px" },
+                  "& fieldset": {
+                    borderColor: colors.primary,
+                    borderWidth: "1.5px",
+                  },
                 },
               }}
             />
+
             {error && (
-              <Box sx={{ mt: 1, p: 1.2, bgcolor: "#FEE2E2", border: "1px solid #DC2626", borderRadius: `${radii.sm}px` }}>
-                <Typography sx={{ fontSize: 12, color: "#DC2626", fontWeight: typography.semibold }}>{error}</Typography>
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 1.2,
+                  bgcolor: "#FEE2E2",
+                  border: "1px solid #DC2626",
+                  borderRadius: `${radii.sm}px`,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    color: "#DC2626",
+                    fontWeight: typography.semibold,
+                  }}
+                >
+                  {error}
+                </Typography>
               </Box>
             )}
+
             {!error && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-                <InfoOutlinedIcon sx={{ fontSize: 14, color: colors.blue || "#0284C7" }} />
-                <Typography sx={{ fontSize: 11, color: colors.blue || "#0284C7", fontWeight: typography.semibold }}>
+                <InfoOutlinedIcon
+                  sx={{ fontSize: 14, color: colors.blue || "#0284C7" }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    color: colors.blue || "#0284C7",
+                    fontWeight: typography.semibold,
+                  }}
+                >
                   Pastikan nominal modal laci fisik ini sesuai.
                 </Typography>
               </Box>
             )}
           </Box>
 
+          {/* SUBMIT */}
           <Button
-            type="submit" fullWidth variant="contained" disabled={submitting}
-            startIcon={submitting ? <CircularProgress size={18} sx={{ color: "#FFF" }} /> : <PowerSettingsNewIcon />}
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={submitting}
+            startIcon={
+              submitting ? (
+                <CircularProgress size={18} sx={{ color: "#FFF" }} />
+              ) : (
+                <PowerSettingsNewIcon />
+              )
+            }
             sx={{
-              bgcolor: colors.primary, color: "#FFF", py: 1.5,
-              borderRadius: `${radii.sm}px`, textTransform: "none",
-              fontWeight: typography.bold, fontSize: 15, boxShadow: "none",
+              bgcolor: colors.primary,
+              color: colors.textOnDark || "#FFFFFF",
+              py: 1.5,
+              borderRadius: `${radii.sm}px`,
+              textTransform: "none",
+              fontWeight: typography.bold,
+              fontSize: 15,
+              boxShadow: "none",
               "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
-              "&.Mui-disabled": { bgcolor: colors.primary, opacity: 0.7, color: "#FFF" },
+              "&.Mui-disabled": {
+                bgcolor: colors.primary,
+                opacity: 0.7,
+                color: "#FFF",
+              },
             }}
           >
             {submitting ? "Membuka Shift..." : "Mulai Shift Sekarang"}

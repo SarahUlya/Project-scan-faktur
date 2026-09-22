@@ -5,7 +5,13 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import FakturPrintView from "../components/pembelian/FakturPrintView";
 import usePembelianDb from "../hooks/usePembelianDb";
 import "../styles/faktur-print.css";
-import { colors } from "@/theme/designTokens";
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+} from "@/theme/designTokens";
 
 const LihatFakturPage = () => {
   const params = useParams();
@@ -50,66 +56,89 @@ const LihatFakturPage = () => {
   }, [fakturId, getPembelianDetail]);
 
   return (
-    <Box className="faktur-preview-page" sx={{ p: 3 }}>
-      {/* HEADER PAGE: BREADCRUMB & JUDUL + TOMBOL KEMBALI */}
-      <Box className="no-print" sx={{ mb: 3 }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="flex-start"
-          spacing={2}
-        >
-          {/* SISI KIRI: Breadcrumb & Title */}
-          <Box>
-            <Typography
-              variant="caption"
-              sx={{
-                color: colors.textMuted || "#64748b",
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: 1,
-                display: "block",
-                mb: 0.5,
-              }}
-            >
-              <span
-                style={{ cursor: "pointer" }}
-                onClick={() => navigate("/pembelian")}
-              >
-                PEMBELIAN
-              </span>
-              <span style={{ margin: "0 8px" }}>&gt;</span>
-              <span>LIHAT FAKTUR</span>
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, color: colors.text || "#0f172a" }}
-            >
-              Preview Faktur Pembelian
-            </Typography>
-          </Box>
-
-          {/* SISI KANAN: Tombol Kembali (Diisikan di sebelah Dropdown Ekspor) */}
-          <Button
-            variant="contained"
-            onClick={() => navigate("/pembelian")}
-            startIcon={<ArrowBackIcon />}
+    <Box
+      className="faktur-preview-page"
+      sx={{
+        minHeight: "100vh",
+        bgcolor: colors.bg,
+        px: spacing.xxl,
+        pt: spacing.xxl,
+        pb: spacing.xxl,
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.xxl,
+      }}
+    >
+      {/* ==================== HEADER ==================== */}
+      <Box
+        className="no-print"
+        sx={{
+          bgcolor: colors.bgCard,
+          p: spacing.xxl,
+          borderRadius: radii.s,
+          border: `1px solid ${colors.borderLight}`,
+          boxShadow: shadows.card,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: spacing.lg,
+        }}
+      >
+        <Box>
+          <Typography
             sx={{
-              bgcolor: "#ffffff",
-              color: colors.text || "#0f172a",
-              fontWeight: 700,
-              textTransform: "none",
-              borderRadius: "8px",
-              px: 2.5,
-              py: 1,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              border: "1px solid #e2e8f0",
-              "&:hover": { bgcolor: "#f8fafc" },
+              color: colors.textMuted,
+              fontSize: typography.caption,
+              fontWeight: typography.bold,
+              letterSpacing: 1,
+              display: "block",
+              mb: 0.5,
             }}
           >
-            Kembali
-          </Button>
-        </Stack>
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate("/pembelian")}
+            >
+              PEMBELIAN
+            </span>
+            <span style={{ margin: "0 8px" }}>&gt;</span>
+            <span>LIHAT FAKTUR</span>
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: typography.bold,
+              fontSize: typography.title,
+              color: colors.text,
+            }}
+          >
+            Preview Faktur Pembelian
+          </Typography>
+        </Box>
+
+        <Button
+          variant="outlined"
+          onClick={() => navigate("/pembelian")}
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            bgcolor: colors.bgCard,
+            color: colors.text,
+            fontWeight: typography.bold,
+            fontSize: typography.body,
+            textTransform: "none",
+            borderRadius: radii.s,
+            px: spacing.xxl,
+            py: 1,
+            border: `1px solid ${colors.border}`,
+            boxShadow: "none",
+            "&:hover": {
+              bgcolor: colors.bgMuted,
+              borderColor: colors.borderHover,
+            },
+          }}
+        >
+          Kembali
+        </Button>
       </Box>
 
       {/* STATE LOADING */}
@@ -118,7 +147,8 @@ const LihatFakturPage = () => {
           sx={{
             textAlign: "center",
             py: 6,
-            color: colors.textMuted || "#64748b",
+            color: colors.textMuted,
+            fontSize: typography.body,
           }}
         >
           Memuat data faktur...
@@ -131,19 +161,28 @@ const LihatFakturPage = () => {
           sx={{
             textAlign: "center",
             py: 6,
-            color: colors.textMuted || "#64748b",
+            color: colors.textMuted,
           }}
         >
-          <Typography variant="body1">Faktur tidak ditemukan.</Typography>
+          <Typography
+            sx={{ fontSize: typography.bodyLg, color: colors.textSecondary }}
+          >
+            Faktur tidak ditemukan.
+          </Typography>
           <Button
             variant="contained"
             onClick={() => navigate("/pembelian")}
             sx={{
               mt: 2,
               bgcolor: colors.primary,
-              fontWeight: 700,
+              fontWeight: typography.bold,
               textTransform: "none",
-              borderRadius: "8px",
+              borderRadius: radii.s,
+              boxShadow: "none",
+              "&:hover": {
+                bgcolor: colors.primaryHover,
+                boxShadow: "none",
+              },
             }}
           >
             Kembali ke Daftar

@@ -5,10 +5,10 @@ import Inventory2Icon from "@mui/icons-material/Inventory2";
 
 import { PosProvider, usePos } from "../context/PosContext";
 import usePosProducts from "../hooks/usePosProducts";
+import useKeyboardShortcuts from "../hooks/useKeyboardShortcuts";
 import SearchBar from "../components/kasir/SearchBar";
 import KasirLoadingSkeleton from "../components/kasir/KasirLoadingSkeleton";
 
-// Modular Components
 import KasirHeader from "../components/kasir/KasirHeader";
 import KeranjangTable from "../components/kasir/KeranjangTable";
 import RingkasanBelanja from "../components/kasir/RingkasanBelanja";
@@ -16,7 +16,6 @@ import DiskonModal from "../components/kasir/DiskonModal";
 import LogoutConfirmModal from "../components/kasir/LogoutConfirmModal";
 import HoldTransaksiModal from "../components/kasir/HoldTransaksiModal";
 
-// Modals
 import PosPaymentModal from "../components/kasir/PosPaymentModal";
 import PosSuccessModal from "../components/kasir/PosSuccessModal";
 import BukaShiftModal from "../components/kasir/BukaShiftModal";
@@ -25,48 +24,19 @@ import KasKecilModal from "../components/kasir/KasKecilModal";
 import ShiftTerkunciModal from "../components/kasir/ShiftTerkunciModal";
 import VarianPickerModal from "../components/kasir/VarianPickerModal";
 
-import { createKasKecil } from "@/api/transaksiApi";
+import {
+  isBarcodeLike,
+  safeString,
+  getNamaProduk,
+  getSatuanLabel,
+  formatRupiah,
+} from "../utils/barcodeHelpers";
 
-// ══════════════════════════════════════════════════════════════════
-// ⚡ HELPER — aman render apapun jadi string (handle object)
-// ══════════════════════════════════════════════════════════════════
-const safeString = (val) => {
-  if (val == null) return "";
-  if (typeof val === "string") return val;
-  if (typeof val === "number") return String(val);
-  if (typeof val === "object") {
-    return (
-      val.nama ||
-      val.name ||
-      val.kode ||
-      val.label ||
-      val.teks ||
-      String(val.id || "")
-    );
-  }
-  return String(val);
-};
+import { createKasKecil, getShiftAktifApi } from "@/api/transaksiApi";
 
-const getSatuanLabel = (p) => {
-  if (!p) return "";
-  const s = p.satuan ?? p.unit ?? p.satuan_nama;
-  if (typeof s === "string") return s;
-  if (typeof s === "object" && s !== null) {
-    return s.nama || s.kode || s.label || "";
-  }
-  return "";
-};
-
-const getNamaProduk = (p) => {
-  if (!p) return "-";
-  return safeString(p.nama_produk) || safeString(p.nama) || "Produk";
-};
-
-const formatRupiah = (val) => {
-  const n = Number(val) || 0;
-  return n.toLocaleString("id-ID");
-};
-
+/* ══════════════════════════════════════════════════════════════════
+ * MAIN CONTENT
+ * ══════════════════════════════════════════════════════════════════ */
 const KasirContent = () => {
   const {
     cart,
@@ -89,6 +59,8 @@ const KasirContent = () => {
     subtotal,
     totalBayar,
     currentUser,
+    applyItemDiscount,
+    removeItemDiscount,
   } = usePos();
 
   const { produk, loading } = usePosProducts();
@@ -101,11 +73,9 @@ const KasirContent = () => {
     currentUser?.username ||
     "Kasir Utama";
 
-  // ── Status shift ────────────────────────────────────────────────
   const hasActiveShift = shift?.status === "OPEN";
   const needsBukaShift = !shiftLoading && !hasActiveShift;
 
-  // ── Modal states ────────────────────────────────────────────────
   const [isPrinterReady, setIsPrinterReady] = useState(false);
   const [holdModalOpen, setHoldModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -118,6 +88,8 @@ const KasirContent = () => {
   const [kasKecilOpen, setKasKecilOpen] = useState(false);
   const [shiftTerkunciOpen, setShiftTerkunciOpen] = useState(false);
 
+  const [pendingLogout, setPendingLogout] = useState(false);
+
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
@@ -127,11 +99,9 @@ const KasirContent = () => {
   const [inputDiskon, setInputDiskon] = useState("");
   const [kategoriDiskon, setKategoriDiskon] = useState("nota");
 
-  // ⚡ SEARCH SUGGESTION
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // ⚡ VARIANT PICKER
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [variantProducts, setVariantProducts] = useState([]);
   const [variantProductName, setVariantProductName] = useState("");
@@ -139,34 +109,87 @@ const KasirContent = () => {
   const scanRef = useRef(null);
   const searchContainerRef = useRef(null);
 
-  // ── Helper snackbar ─────────────────────────────────────────────
+  const anyModalOpen =
+    paymentModalOpen ||
+    successModalOpen ||
+    tutupShiftOpen ||
+    kasKecilOpen ||
+    bukaShiftOpen ||
+    shiftTerkunciOpen ||
+    logoutConfirmOpen ||
+    holdModalOpen ||
+    diskonModalOpen ||
+    variantModalOpen;
+
   const showSnackbar = (message, severity = "success") => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
 
-  // ── Printer ready ───────────────────────────────────────────────
   useEffect(() => {
     if (typeof window !== "undefined" && window.print) setIsPrinterReady(true);
     else setIsPrinterReady(false);
   }, []);
 
-  // ── Auto buka modal Buka Shift ──────────────────────────────────
+  /* AUTO BUKA MODAL BUKA SHIFT */
   useEffect(() => {
-    if (shiftTerkunciOpen) {
+    if (!needsBukaShift || shiftTerkunciOpen) {
       setBukaShiftOpen(false);
       return;
     }
-    setBukaShiftOpen(needsBukaShift);
-  }, [needsBukaShift, shiftTerkunciOpen]);
 
-  // ══════════════════════════════════════════════════════════════════
-  // ⚡ SEARCH SUGGESTION
-  // ══════════════════════════════════════════════════════════════════
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getShiftAktifApi();
+        if (cancelled) return;
+
+        if (res?.active && res?.data) {
+          setShift({
+            ...res.data,
+            kasir: res.data.nama_kasir || namaKasirAktif,
+            status: "OPEN",
+          });
+          setBukaShiftOpen(false);
+        } else {
+          setBukaShiftOpen(true);
+        }
+      } catch (err) {
+        if (!cancelled) setBukaShiftOpen(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [needsBukaShift, shiftTerkunciOpen, namaKasirAktif, setShift]);
+
+  const focusBarcode = () => {
+    if (!hasActiveShift) return;
+    setTimeout(() => {
+      if (scanRef.current) {
+        scanRef.current.focus();
+        if (typeof scanRef.current.select === "function") {
+          try {
+            scanRef.current.select();
+          } catch (err) {}
+        }
+      }
+    }, 50);
+  };
+
+  useEffect(() => {
+    if (!loading && hasActiveShift && !anyModalOpen) {
+      focusBarcode();
+    }
+  }, [loading, hasActiveShift, anyModalOpen]);
+
+  /* SEARCH SUGGESTION */
   const suggestions = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    if (isBarcodeLike(q)) return [];
 
     return produk
       .filter((p) => {
@@ -188,64 +211,11 @@ const KasirContent = () => {
     }
   }, [search, suggestions]);
 
-  // ── Focus barcode ───────────────────────────────────────────────
-  const focusBarcode = () => {
-    if (!hasActiveShift) return;
-    setTimeout(() => {
-      if (scanRef.current) {
-        scanRef.current.focus();
-        if (typeof scanRef.current.select === "function") {
-          try {
-            scanRef.current.select();
-          } catch (err) {}
-        }
-      }
-    }, 50);
-  };
+  const isBarcodeInput = isBarcodeLike(search);
 
-  useEffect(() => {
-    if (
-      !loading &&
-      hasActiveShift &&
-      !paymentModalOpen &&
-      !successModalOpen &&
-      !tutupShiftOpen &&
-      !kasKecilOpen &&
-      !bukaShiftOpen &&
-      !shiftTerkunciOpen &&
-      !logoutConfirmOpen &&
-      !holdModalOpen &&
-      !diskonModalOpen &&
-      !variantModalOpen
-    ) {
-      focusBarcode();
-    }
-  }, [
-    loading,
-    hasActiveShift,
-    paymentModalOpen,
-    successModalOpen,
-    tutupShiftOpen,
-    kasKecilOpen,
-    bukaShiftOpen,
-    shiftTerkunciOpen,
-    logoutConfirmOpen,
-    holdModalOpen,
-    diskonModalOpen,
-    variantModalOpen,
-  ]);
-
-  // ══════════════════════════════════════════════════════════════════
-  // ⚡ HANDLE PILIH SUGGESTION
-  // ══════════════════════════════════════════════════════════════════
   const handleSelectProduct = (product) => {
     const nama = getNamaProduk(product);
-
-    // Cari varian dengan nama sama
     const sameName = produk.filter((p) => getNamaProduk(p) === nama);
-
-    console.log("[SelectProduct] Nama:", nama);
-    console.log("[SelectProduct] Duplikat:", sameName.length);
 
     if (sameName.length > 1) {
       setVariantProducts(sameName);
@@ -262,7 +232,6 @@ const KasirContent = () => {
     focusBarcode();
   };
 
-  // ⚡ Pilih varian
   const handleSelectVariant = (product) => {
     addToCart(product, 1);
     setVariantModalOpen(false);
@@ -273,9 +242,6 @@ const KasirContent = () => {
     focusBarcode();
   };
 
-  // ══════════════════════════════════════════════════════════════════
-  // ⚡ HANDLE KEYBOARD
-  // ══════════════════════════════════════════════════════════════════
   const handleSearchKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -304,13 +270,30 @@ const KasirContent = () => {
         return;
       }
 
+      if (isBarcodeLike(q)) {
+        const byBarcode = produk.find(
+          (p) => safeString(p.barcode) === q || safeString(p.kode) === q,
+        );
+        if (byBarcode) {
+          handleSelectProduct(byBarcode);
+        } else {
+          showSnackbar(
+            `Produk tidak ditemukan untuk barcode "${q}"`,
+            "warning",
+          );
+          setSearch("");
+          focusBarcode();
+        }
+        return;
+      }
+
       if (highlightedIndex >= 0 && suggestions[highlightedIndex]) {
         handleSelectProduct(suggestions[highlightedIndex]);
         return;
       }
 
       const byBarcode = produk.find(
-        (p) => safeString(p.barcode) === q || safeString(p.kode) === q
+        (p) => safeString(p.barcode) === q || safeString(p.kode) === q,
       );
       if (byBarcode) {
         handleSelectProduct(byBarcode);
@@ -332,7 +315,6 @@ const KasirContent = () => {
     }
   };
 
-  // ── Klik di luar dropdown → tutup ───────────────────────────────
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -347,24 +329,15 @@ const KasirContent = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Shortcuts ───────────────────────────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!hasActiveShift) return;
-
-      if (e.key === "F2") {
-        e.preventDefault();
-        focusBarcode();
-      }
-
-      if (e.key === "F4") {
-        e.preventDefault();
+  /* SHORTCUTS */
+  useKeyboardShortcuts(
+    {
+      F2: () => focusBarcode(),
+      F4: () => {
         if (cart.length > 0) setDiskonModalOpen(true);
         else showSnackbar("Keranjang kosong!", "warning");
-      }
-
-      if (e.key === "F6") {
-        e.preventDefault();
+      },
+      F6: (e) => {
         if (e.shiftKey) setHoldModalOpen(true);
         else {
           if (cart.length > 0) {
@@ -376,29 +349,26 @@ const KasirContent = () => {
             showSnackbar("Keranjang kosong!", "warning");
           }
         }
-      }
-
-      if (e.key === "F8") {
-        e.preventDefault();
+      },
+      F8: () => {
         if (cart.length > 0) setPaymentModalOpen(true);
         else showSnackbar("Keranjang belanja kosong!", "warning");
-      }
-
-      if (e.key === "Escape") {
+      },
+      Escape: () => {
         setPaymentModalOpen(false);
         setKasKecilOpen(false);
         setTutupShiftOpen(false);
         setLogoutConfirmOpen(false);
         setHoldModalOpen(false);
         setDiskonModalOpen(false);
-      }
-    };
+      },
+    },
+    {
+      disabled: !hasActiveShift || anyModalOpen,
+    },
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cart, holdCurrentCart, hasActiveShift]);
-
-  // ── Diskon ──────────────────────────────────────────────────────
+  /* DISKON */
   const handleApplyDiskon = () => {
     let val = Number(inputDiskon) || 0;
     if (tipeDiskon === "%") val = (subtotal * val) / 100;
@@ -412,13 +382,13 @@ const KasirContent = () => {
     showSnackbar("Diskon berhasil diterapkan", "success");
   };
 
-  // ── Kas Kecil ───────────────────────────────────────────────────
+  /* KAS KECIL */
   const handleSaveKasKecil = async (payload) => {
     const idShift = shift?.id_shift || shift?.id || null;
     if (!idShift) {
       showSnackbar(
         "Shift belum aktif — tidak bisa mencatat kas kecil.",
-        "error"
+        "error",
       );
       return false;
     }
@@ -428,13 +398,10 @@ const KasirContent = () => {
         id_shift: idShift,
         nama_kasir: namaKasirAktif,
       };
-      console.log("[Kas Kecil] request payload:", body);
       const res = await createKasKecil(body);
-      console.log("[Kas Kecil] response:", res);
       showSnackbar("Kas Kecil berhasil dicatat", "success");
       return true;
     } catch (err) {
-      console.error("[Kas Kecil] error:", err);
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
@@ -446,9 +413,8 @@ const KasirContent = () => {
     }
   };
 
-  // ── Tutup shift ─────────────────────────────────────────────────
+  /* TUTUP SHIFT */
   const handleConfirmTutupShift = (closedShiftData) => {
-    console.log("[Tutup Shift] sukses:", closedShiftData);
     setTutupShiftOpen(false);
     setBukaShiftOpen(false);
     setShift({
@@ -457,11 +423,34 @@ const KasirContent = () => {
       modal_akhir: closedShiftData?.modal_akhir,
       waktu_tutup: closedShiftData?.waktu_tutup,
     });
-    setShiftTerkunciOpen(true);
-    showSnackbar("Shift berhasil ditutup", "success");
+
+    if (pendingLogout) {
+      setPendingLogout(false);
+      setTimeout(() => setLogoutConfirmOpen(true), 200);
+      showSnackbar(
+        "Shift berhasil ditutup. Silakan konfirmasi logout.",
+        "success",
+      );
+    } else {
+      setShiftTerkunciOpen(true);
+      showSnackbar("Shift berhasil ditutup", "success");
+    }
   };
 
-  // ── Logout ──────────────────────────────────────────────────────
+  /* LOGOUT */
+  const handleOpenLogout = () => {
+    if (hasActiveShift) {
+      setPendingLogout(true);
+      showSnackbar(
+        "Tutup shift terlebih dahulu (dengan pengecekan kas) sebelum logout.",
+        "warning",
+      );
+      setTutupShiftOpen(true);
+      return;
+    }
+    setLogoutConfirmOpen(true);
+  };
+
   const handleExecLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
@@ -492,7 +481,6 @@ const KasirContent = () => {
           flexGrow: 1,
         }}
       >
-        {/* HEADER */}
         <KasirHeader
           isPrinterReady={isPrinterReady}
           namaKasirAktif={namaKasirAktif}
@@ -500,10 +488,10 @@ const KasirContent = () => {
           onOpenHold={() => setHoldModalOpen(true)}
           onOpenKasKecil={() => setKasKecilOpen(true)}
           onOpenTutupShift={() => setTutupShiftOpen(true)}
-          onOpenLogout={() => setLogoutConfirmOpen(true)}
+          onOpenLogout={handleOpenLogout}
         />
 
-        {/* SEARCH BAR + SUGGESTION */}
+        {/* SEARCH BAR */}
         <Box
           sx={{
             bgcolor: "#FFFFFF",
@@ -528,8 +516,7 @@ const KasirContent = () => {
               autoFocus={hasActiveShift}
             />
 
-            {/* DROPDOWN SUGGESTION */}
-            {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && suggestions.length > 0 && !isBarcodeInput && (
               <Paper
                 elevation={8}
                 onMouseDown={(e) => e.preventDefault()}
@@ -549,7 +536,7 @@ const KasirContent = () => {
               >
                 {suggestions.map((p, idx) => {
                   const stok = Number(p.stok) || 0;
-                  const harga = Number(p.harga || p.harga_jual || 0);
+                  const hargaJual = Number(p.harga_jual || p.harga || 0);
                   const nama = getNamaProduk(p);
                   const barcodeStr = safeString(p.barcode);
                   const kodeStr = safeString(p.kode);
@@ -557,9 +544,8 @@ const KasirContent = () => {
                   const isHighlighted = highlightedIndex === idx;
                   const isOutOfStock = stok <= 0;
 
-                  // Hitung varian untuk info badge
                   const variantCount = produk.filter(
-                    (x) => getNamaProduk(x) === nama
+                    (x) => getNamaProduk(x) === nama,
                   ).length;
 
                   return (
@@ -632,9 +618,7 @@ const KasirContent = () => {
                             </Typography>
                             {variantCount > 1 && (
                               <Chip
-                                icon={
-                                  <Inventory2Icon sx={{ fontSize: 12 }} />
-                                }
+                                icon={<Inventory2Icon sx={{ fontSize: 12 }} />}
                                 label={`${variantCount} varian`}
                                 size="small"
                                 sx={{
@@ -668,7 +652,7 @@ const KasirContent = () => {
                             color: "#D81B60",
                           }}
                         >
-                          Rp {formatRupiah(harga)}
+                          Rp {formatRupiah(hargaJual)}
                         </Typography>
                         <Typography
                           sx={{
@@ -686,7 +670,6 @@ const KasirContent = () => {
                   );
                 })}
 
-                {/* Footer hint */}
                 <Box
                   sx={{
                     p: 1,
@@ -758,6 +741,12 @@ const KasirContent = () => {
             cart={cart}
             updateQuantity={updateQuantity}
             removeFromCart={removeFromCart}
+            onExceedStock={(maxStok) =>
+              showSnackbar(
+                `Stok hanya tersedia ${maxStok}. QTY dibatasi ke ${maxStok}.`,
+                "warning",
+              )
+            }
           />
           <RingkasanBelanja
             subtotal={subtotal}
@@ -771,7 +760,6 @@ const KasirContent = () => {
         </Box>
       </Box>
 
-      {/* MODAL DISKON */}
       <DiskonModal
         open={diskonModalOpen}
         onClose={() => setDiskonModalOpen(false)}
@@ -784,9 +772,11 @@ const KasirContent = () => {
         subtotal={subtotal}
         setDiskonNominal={setDiskonNominal}
         handleApplyDiskon={handleApplyDiskon}
+        cart={cart}
+        onApplyItemDiscount={applyItemDiscount}
+        onRemoveItemDiscount={removeItemDiscount}
       />
 
-      {/* MODAL HOLD */}
       <HoldTransaksiModal
         open={holdModalOpen}
         onClose={() => setHoldModalOpen(false)}
@@ -798,24 +788,45 @@ const KasirContent = () => {
         onDelete={(index) => removeHoldCart(index)}
       />
 
-      {/* MODAL LOGOUT */}
       <LogoutConfirmModal
         open={logoutConfirmOpen}
-        onClose={() => setLogoutConfirmOpen(false)}
-        onConfirm={handleExecLogout}
+        onClose={() => {
+          setLogoutConfirmOpen(false);
+          setPendingLogout(false);
+        }}
+        onConfirm={() => {
+          if (hasActiveShift) {
+            setLogoutConfirmOpen(false);
+            setPendingLogout(true);
+            showSnackbar(
+              "Shift masih aktif. Tutup shift terlebih dahulu.",
+              "error",
+            );
+            setTutupShiftOpen(true);
+            return;
+          }
+          handleExecLogout();
+        }}
       />
 
-      {/* SNACKBAR */}
+      {/* SNACKBAR — warna warning KUNING */}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         open={snackbarOpen}
-        autoHideDuration={snackbarSeverity === "error" ? 3500 : 1800}
+        autoHideDuration={snackbarSeverity === "success" ? 1800 : 3500}
         onClose={() => setSnackbarOpen(false)}
       >
         <Alert
           severity={snackbarSeverity}
           variant="filled"
-          sx={{ bgcolor: snackbarSeverity === "error" ? "#D32F2F" : "#D81B60" }}
+          sx={{
+            bgcolor:
+              snackbarSeverity === "error"
+                ? "#D32F2F"
+                : snackbarSeverity === "warning"
+                  ? "#ED6C02"
+                  : "#D81B60",
+          }}
         >
           {snackbarMessage}
         </Alert>
@@ -853,7 +864,10 @@ const KasirContent = () => {
 
       <TutupShiftModal
         open={tutupShiftOpen}
-        onClose={() => setTutupShiftOpen(false)}
+        onClose={() => {
+          setTutupShiftOpen(false);
+          setPendingLogout(false);
+        }}
         onConfirm={handleConfirmTutupShift}
         shiftData={{
           id_shift: shift?.id_shift ?? null,
@@ -868,11 +882,24 @@ const KasirContent = () => {
         open={bukaShiftOpen}
         onClose={() => {}}
         onSuccess={(shiftData) => {
-          console.log("[KasirPage] shift dari backend:", shiftData);
           setBukaShiftOpen(false);
           setShiftTerkunciOpen(false);
           setShift({ ...shiftData, kasir: namaKasirAktif, status: "OPEN" });
           showSnackbar("Shift berhasil dibuka", "success");
+        }}
+        onShiftExists={async (msg) => {
+          showSnackbar(msg || "Masih ada shift yang berjalan.", "warning");
+          setBukaShiftOpen(false);
+          try {
+            const res = await getShiftAktifApi();
+            if (res?.active && res?.data) {
+              setShift({
+                ...res.data,
+                kasir: res.data.nama_kasir || namaKasirAktif,
+                status: "OPEN",
+              });
+            }
+          } catch (err) {}
         }}
       />
 
@@ -885,7 +912,6 @@ const KasirContent = () => {
         }}
       />
 
-      {/* VARIANT PICKER MODAL */}
       <VarianPickerModal
         open={variantModalOpen}
         onClose={() => {

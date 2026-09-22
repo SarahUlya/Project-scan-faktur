@@ -1,15 +1,11 @@
 import React, { useState, useRef } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
 import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
-import PrintIcon from "@mui/icons-material/Print";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import AssignmentLateOutlinedIcon from "@mui/icons-material/AssignmentLateOutlined";
 import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -21,16 +17,15 @@ import {
   typography,
   shadows,
   transitions,
-  zIndex,
-  fieldInputSx,
   pageHeaderSx,
-  statCardSx,
 } from "@/theme/designTokens";
 import LaporanPenjualan from "../components/laporan/LaporanPenjualan";
 import LaporanProdukTerlaris from "../components/laporan/LaporanProdukTerlaris";
 import LaporanBarangTidakLaku from "../components/laporan/LaporanBarangTidakLaku";
 import LaporanStokExpired from "../components/laporan/LaporanStokExpired";
-import useLaporanTransaksi from "../hooks/useLaporanTransaksi"; const laporanMenu = [
+import useLaporanTransaksi from "../hooks/useLaporanTransaksi";
+
+const laporanMenu = [
   {
     id: "penjualan",
     title: "Laporan Penjualan",
@@ -43,12 +38,6 @@ import useLaporanTransaksi from "../hooks/useLaporanTransaksi"; const laporanMen
     desc: "Analisis performa produk",
     icon: TrendingUpOutlinedIcon,
   },
-  // {
-  //   id: "tidak-laku",
-  //   title: "Barang Tidak Laku",
-  //   desc: "Dead stock & slow moving",
-  //   icon: AssignmentLateOutlinedIcon,
-  // },
   {
     id: "expired",
     title: "Stok & Expired",
@@ -72,8 +61,6 @@ const LaporanPage = () => {
         return <LaporanPenjualan />;
       case "terlaris":
         return <LaporanProdukTerlaris />;
-      // case "tidak-laku":
-      //   return <LaporanBarangTidakLaku />;
       case "expired":
         return (
           <LaporanStokExpired
@@ -90,75 +77,71 @@ const LaporanPage = () => {
     const active = laporanMenu.find((m) => m.id === activeTab);
     return active ? active.title : "Laporan";
   };
-  const {
-    loading,
-    dataPenjualan,
-    produkTerlaris,
-    barangTidakLaku,
-    stokExpired,
-  } = useLaporanTransaksi();
+
+  const { loading } = useLaporanTransaksi();
+
   if (loading) {
     return <LaporanLoadingSkeleton />;
   }
+
   return (
     <Box
-      sx={{ minHeight: "100vh", background: "#F1F5F9", px: 3, pt: 3, pb: 4 }}
+      sx={{
+        minHeight: "100vh",
+        bgcolor: colors.bg,
+        px: spacing.xxl,
+        pt: spacing.xxl,
+        pb: spacing.xxl,
+        display: "flex",
+        flexDirection: "column",
+        gap: spacing.xxl,
+      }}
     >
-      <Box
+      {/* ==================== HEADER ==================== */}
+      <Paper
+        elevation={0}
         sx={{
-          background: colors.bgCard,
-          borderRadius: 3,
-          p: 3,
-          mb: 3,
+          p: spacing.xxl,
+          borderRadius: radii.s,
+          border: `1px solid ${colors.borderLight}`,
+          bgcolor: colors.bgCard,
+          boxShadow: shadows.card,
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 3,
-            flexWrap: "wrap",
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 280 }}>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 700, fontSize: typography.title, color: colors.text }}
-            >
-              Laporan & Rekapitulasi
-            </Typography>
+        <Typography sx={pageHeaderSx.title}>Laporan & Rekapitulasi</Typography>
+        <Typography sx={{ ...pageHeaderSx.subtitle, fontSize: typography.body }}>
+          Analisis data performa Apotek Ampuh Tayu
+        </Typography>
+      </Paper>
 
-            <Typography sx={{ fontSize: typography.body, color: colors.textSecondary, mt: 1 }}>
-            Analisis data performa Apotek Ampuh Tayu
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: "flex", gap: 3, mb: 4 }}>
+      {/* ==================== TAB MENU ==================== */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+          gap: spacing.xxl,
+        }}
+      >
         {laporanMenu.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
-            <Card
+            <Box
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               sx={{
-                flex: 1,
-                p: 3,
-                borderRadius: 4,
+                p: spacing.xxl,
+                borderRadius: radii.s,
                 cursor: "pointer",
-                transition: "all 0.2s",
+                transition: transitions.fast,
                 border: isActive
-                  ? "2px solid #D81B60"
-                  : "2px solid transparent",
-                background: isActive ? "#FCE4EC" : "#fff",
-                boxShadow: isActive
-                  ? "0 10px 30px rgba(216, 27, 96, 0.1)"
-                  : "0 4px 20px rgba(0,0,0,0.03)",
+                  ? `2px solid ${colors.primary}`
+                  : `2px solid ${colors.borderLight}`,
+                bgcolor: isActive ? colors.primaryLight : colors.bgCard,
+                boxShadow: isActive ? shadows.hover : shadows.card,
                 "&:hover": {
                   transform: "translateY(-2px)",
+                  boxShadow: shadows.hover,
                 },
               }}
             >
@@ -166,13 +149,13 @@ const LaporanPage = () => {
                 sx={{
                   width: 44,
                   height: 44,
-                  backgroundColor: isActive ? "#F8BBD0" : "#F8FAFC",
-                  borderRadius: 3,
+                  bgcolor: isActive ? colors.primaryLight : colors.bgMuted,
+                  borderRadius: radii.xs,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: isActive ? "#D81B60" : "#94A3B8",
-                  mb: 2,
+                  color: isActive ? colors.primary : colors.textMuted,
+                  mb: spacing.md,
                 }}
               >
                 <Icon />
@@ -180,9 +163,9 @@ const LaporanPage = () => {
 
               <Typography
                 sx={{
-                  fontWeight: 800,
+                  fontWeight: typography.bold,
                   color: isActive ? colors.primary : colors.text,
-                  fontSize: 16,
+                  fontSize: typography.bodyLg,
                   mb: 0.5,
                 }}
               >
@@ -191,30 +174,36 @@ const LaporanPage = () => {
 
               <Typography
                 sx={{
-                  fontSize: 13,
-                  color: isActive ? colors.textSecondary : colors.text,
+                  fontSize: typography.body,
+                  color: colors.textSecondary,
                 }}
               >
                 {item.desc}
               </Typography>
-            </Card>
+            </Box>
           );
         })}
       </Box>
 
+      {/* ==================== EXPIRED SUMMARY CARDS ==================== */}
       {activeTab === "expired" && (
-        <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+            gap: spacing.xxl,
+          }}
+        >
           {/* Expired */}
           <Box
             sx={{
-              flex: 1,
-              background: "#FFF1F2",
-              borderRadius: 4,
-              p: 3,
+              bgcolor: colors.dangerLight,
+              borderRadius: radii.s,
+              p: spacing.xxl,
               display: "flex",
               alignItems: "center",
-              gap: 2.5,
-              border: "1px solid #FFE4E6",
+              gap: spacing.md,
+              border: `1px solid ${colors.danger}40`,
             }}
           >
             <Box
@@ -222,32 +211,30 @@ const LaporanPage = () => {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                background: "#fff",
+                bgcolor: colors.bgCard,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#E11D48",
+                color: colors.danger,
               }}
             >
               <HighlightOffIcon />
             </Box>
-
             <Box>
               <Typography
                 sx={{
-                  fontSize: 24,
-                  fontWeight: 900,
-                  color: "#E11D48",
+                  fontSize: typography.h3,
+                  fontWeight: typography.bold,
+                  color: colors.danger,
                 }}
               >
                 {expiredSummary.expired}
               </Typography>
-
               <Typography
                 sx={{
-                  color: "#E11D48",
-                  fontWeight: 700,
-                  fontSize: 13,
+                  color: colors.danger,
+                  fontWeight: typography.bold,
+                  fontSize: typography.caption,
                 }}
               >
                 Produk Expired
@@ -258,14 +245,13 @@ const LaporanPage = () => {
           {/* Warning */}
           <Box
             sx={{
-              flex: 1,
-              background: "#FFF7ED",
-              borderRadius: 4,
-              p: 3,
+              bgcolor: colors.warningLight,
+              borderRadius: radii.s,
+              p: spacing.xxl,
               display: "flex",
               alignItems: "center",
-              gap: 2.5,
-              border: "1px solid #FFEDD5",
+              gap: spacing.md,
+              border: `1px solid ${colors.warning}40`,
             }}
           >
             <Box
@@ -273,32 +259,30 @@ const LaporanPage = () => {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                background: "#fff",
+                bgcolor: colors.bgCard,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#F97316",
+                color: colors.warning,
               }}
             >
               <WarningAmberIcon />
             </Box>
-
             <Box>
               <Typography
                 sx={{
-                  fontSize: 24,
-                  fontWeight: 900,
-                  color: "#F97316",
+                  fontSize: typography.h3,
+                  fontWeight: typography.bold,
+                  color: colors.warning,
                 }}
               >
                 {expiredSummary.warning}
               </Typography>
-
               <Typography
                 sx={{
                   color: colors.warning,
-                  fontWeight: 700,
-                  fontSize: 13,
+                  fontWeight: typography.bold,
+                  fontSize: typography.caption,
                 }}
               >
                 Produk Mendekati Expired
@@ -309,14 +293,13 @@ const LaporanPage = () => {
           {/* Aman */}
           <Box
             sx={{
-              flex: 1,
-              background: "#F0FDF4",
-              borderRadius: 4,
-              p: 3,
+              bgcolor: colors.successLight,
+              borderRadius: radii.s,
+              p: spacing.xxl,
               display: "flex",
               alignItems: "center",
-              gap: 2.5,
-              border: "1px solid #BBF7D0",
+              gap: spacing.md,
+              border: `1px solid ${colors.success}40`,
             }}
           >
             <Box
@@ -324,7 +307,7 @@ const LaporanPage = () => {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                background: "#fff",
+                bgcolor: colors.bgCard,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -333,23 +316,21 @@ const LaporanPage = () => {
             >
               <InfoOutlinedIcon />
             </Box>
-
             <Box>
               <Typography
                 sx={{
-                  fontSize: 24,
-                  fontWeight: 900,
-                  color: colors.suce,
+                  fontSize: typography.h3,
+                  fontWeight: typography.bold,
+                  color: colors.success,
                 }}
               >
                 {expiredSummary.aman}
               </Typography>
-
               <Typography
                 sx={{
                   color: colors.success,
-                  fontWeight: 700,
-                  fontSize: 13,
+                  fontWeight: typography.bold,
+                  fontSize: typography.caption,
                 }}
               >
                 Produk Aman
@@ -359,14 +340,14 @@ const LaporanPage = () => {
         </Box>
       )}
 
+      {/* ==================== PREVIEW CARD ==================== */}
       <Box
         sx={{
-          background: "#fff",
-          borderRadius: 4,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          border: "1px solid #E2E8F0",
+          bgcolor: colors.bgCard,
+          borderRadius: radii.s,
+          boxShadow: shadows.card,
+          border: `1px solid ${colors.borderLight}`,
           overflow: "hidden",
-          mt: 3,
         }}
       >
         <Box
@@ -374,44 +355,37 @@ const LaporanPage = () => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            p: 3,
-            borderBottom: "1px solid #F1F5F9",
+            p: spacing.xxl,
+            borderBottom: `1px solid ${colors.borderLight}`,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: spacing.md }}>
             <Box
               sx={{
-                background: "#FCE4EC",
-                color: "#D81B60",
-                px: 1.5,
+                bgcolor: colors.primaryLight,
+                color: colors.primary,
+                px: spacing.md,
                 py: 0.5,
-                borderRadius: 1.5,
-                fontSize: 11,
-                fontWeight: 900,
+                borderRadius: radii.xs,
+                fontSize: typography.small,
+                fontWeight: typography.bold,
                 letterSpacing: 0.5,
               }}
             >
               PREVIEW
             </Box>
-            <Box>
-              <Typography
-                sx={{ fontWeight: 800, fontSize: 18, color: "#1E293B" }}
-              >
-                Preview Laporan {getActiveTitle()}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            {activeTab === "expired" ? (
-              <>
-              </>
-            ) : (
-              <>
-              </>
-            )}
+            <Typography
+              sx={{
+                fontWeight: typography.bold,
+                fontSize: typography.h5,
+                color: colors.text,
+              }}
+            >
+              Preview Laporan {getActiveTitle()}
+            </Typography>
           </Box>
         </Box>
+
         <Box>{renderContent()}</Box>
       </Box>
     </Box>

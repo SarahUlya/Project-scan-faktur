@@ -1,8 +1,7 @@
 import React, { useMemo } from "react";
-import { Box, Typography, Paper, Chip, Avatar } from "@mui/material";
+import { Box, Typography, Paper, Avatar } from "@mui/material";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
-import ScaleOutlinedIcon from "@mui/icons-material/ScaleOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 
 import useLaporanTransaksi from "../hooks/useLaporanTransaksi";
@@ -11,50 +10,49 @@ import useDashboardAlerts from "../hooks/useDashboardAlerts";
 import DashboardLoadingSkeleton from "../components/common/DashboardLoadingSkeleton";
 import formatCurrency from "../utils/formatCurrency";
 import Table from "../components/ui/Table";
+import {
+  colors,
+  radii,
+  spacing,
+  typography,
+  shadows,
+  transitions,
+  statCardSx,
+  pageHeaderSx,
+} from "@/theme/designTokens";
 
-const themeColors = {
-  primary: "#D81B60",
-  primaryLight: "#FFF0F5",
-  bgCanvas: "#F8FAFC",
-  bgCard: "#FFFFFF",
-  border: "#E2E8F0",
-  textMain: "#1E293B",
-  textMuted: "#64748B",
-  successBg: "#E8F5E9",
-  successText: "#2E7D32",
-  warningBg: "#FFF8E1",
-  warningText: "#F57F17",
-  dangerBg: "#FFEBEE",
-  dangerText: "#C62828",
-};
-
+// ==================== STAT CARD COMPONENT ====================
 const StatCard = ({ icon, title, value, accent, secondarySub }) => (
   <Paper
     elevation={0}
     sx={{
-      p: 2.5,
-      borderRadius: "12px",
-      border: `1px solid ${themeColors.border}`,
-      bgcolor: themeColors.bgCard,
+      ...statCardSx,
+      p: spacing.xl,
       display: "flex",
       flexDirection: "column",
       justifyContent: "space-between",
       height: "100%",
+      transition: transitions.fast,
+      "&:hover": {
+        boxShadow: shadows.hover,
+        transform: "translateY(-2px)",
+      },
     }}
   >
+    {/* Header: Title + Icon */}
     <Box
       sx={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-start",
-        mb: 1,
+        mb: 1.5,
       }}
     >
       <Typography
         sx={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: themeColors.textMuted,
+          fontSize: typography.tiny,
+          fontWeight: typography.bold,
+          color: colors.textSecondary,
           textTransform: "uppercase",
           letterSpacing: 0.5,
         }}
@@ -65,35 +63,40 @@ const StatCard = ({ icon, title, value, accent, secondarySub }) => (
         sx={{
           width: 36,
           height: 36,
-          borderRadius: 2,
-          bgcolor: themeColors.primaryLight,
+          borderRadius: radii.xs,        // ✅
+          bgcolor: colors.primaryLight,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: accent || themeColors.primary,
+          color: accent || colors.primary,
         }}
       >
         {icon}
       </Box>
     </Box>
+
+    {/* Value */}
     <Typography
       sx={{
-        fontSize: 22,
-        fontWeight: 800,
-        color: themeColors.textMain,
-        mb: secondarySub ? 1 : 0,
+        fontSize: typography.h3,
+        fontWeight: typography.bold,
+        color: colors.text,
+        mb: secondarySub ? 1.5 : 0,
         lineHeight: 1.2,
+        letterSpacing: -0.5,
       }}
     >
       {value}
     </Typography>
+
+    {/* Secondary Subtitle */}
     {secondarySub && (
       <Box
         sx={{
-          pt: 1,
-          borderTop: `1px dashed ${themeColors.border}`,
-          fontSize: 11,
-          color: themeColors.textMuted,
+          pt: 1.5,
+          borderTop: `1px dashed ${colors.border}`,
+          fontSize: typography.small,
+          color: colors.textSecondary,
         }}
       >
         {secondarySub}
@@ -102,6 +105,7 @@ const StatCard = ({ icon, title, value, accent, secondarySub }) => (
   </Paper>
 );
 
+// ==================== DASHBOARD PAGE ====================
 const DashboardPage = () => {
   const {
     produkTerlaris = [],
@@ -110,27 +114,21 @@ const DashboardPage = () => {
     loading,
   } = useLaporanTransaksi() || {};
   const { produk = [], loading: produkLoading } = useProdukDb() || {};
-  const {
-    stokMenipisList = [],
-    hampirExpiredList = [],
-    auditLogs = [],
-    leaderboardKasir = [],
-    loadingAlerts,
-  } = useDashboardAlerts() || {};
+  const { loadingAlerts } = useDashboardAlerts() || {};
 
   const isLoading = loading || produkLoading || loadingAlerts;
 
   const totalUnitTerjual = useMemo(() => {
     return (produkTerlaris || []).reduce(
       (sum, item) => sum + Number(item?.total_terjual || 0),
-      0,
+      0
     );
   }, [produkTerlaris]);
 
   const topProducts = useMemo(() => {
     return (produkTerlaris || []).slice(0, 5).map((item) => {
       const dataProduk = (produk || []).find(
-        (p) => p?.id_produk === item?.id_produk,
+        (p) => p?.id_produk === item?.id_produk
       );
       return {
         id: item?.id_produk,
@@ -142,6 +140,7 @@ const DashboardPage = () => {
     });
   }, [produkTerlaris, produk]);
 
+  // ==================== KOLOM TABEL ====================
   const columns = [
     {
       header: "Produk",
@@ -150,27 +149,34 @@ const DashboardPage = () => {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Avatar
             sx={{
-              width: 28,
-              height: 28,
-              fontSize: 12,
-              fontWeight: 700,
-              bgcolor: themeColors.primaryLight,
-              color: themeColors.primary,
+              width: 32,
+              height: 32,
+              fontSize: typography.caption,
+              fontWeight: typography.bold,
+              bgcolor: colors.primaryLight,
+              color: colors.primary,
             }}
           >
             {idx + 1}
           </Avatar>
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               sx={{
-                fontWeight: 600,
-                fontSize: 14,
-                color: themeColors.textMain,
+                fontWeight: typography.semibold,
+                fontSize: typography.body,
+                color: colors.text,
+                lineHeight: 1.3,
               }}
             >
               {row?.name}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: themeColors.textMuted }}>
+            <Typography
+              sx={{
+                fontSize: typography.small,
+                color: colors.textSecondary,
+                lineHeight: 1.3,
+              }}
+            >
               {row?.type}
             </Typography>
           </Box>
@@ -181,7 +187,7 @@ const DashboardPage = () => {
       header: "Kategori",
       accessor: "type",
       render: (row) => (
-        <Typography sx={{ fontSize: 14, color: themeColors.textMuted }}>
+        <Typography sx={{ fontSize: typography.body, color: colors.textSecondary }}>
           {row?.type}
         </Typography>
       ),
@@ -191,7 +197,13 @@ const DashboardPage = () => {
       accessor: "sold",
       align: "center",
       render: (row) => (
-        <Typography sx={{ fontWeight: 600, color: themeColors.textMain }}>
+        <Typography
+          sx={{
+            fontWeight: typography.semibold,
+            fontSize: typography.body,
+            color: colors.text,
+          }}
+        >
           {(row?.sold || 0).toLocaleString()} unit
         </Typography>
       ),
@@ -203,11 +215,9 @@ const DashboardPage = () => {
       render: (row) => (
         <Typography
           sx={{
-            color:
-              (row?.stock || 0) < 10
-                ? themeColors.dangerText
-                : themeColors.textMuted,
-            fontWeight: (row?.stock || 0) < 10 ? 700 : 400,
+            color: (row?.stock || 0) < 10 ? colors.danger : colors.textSecondary,
+            fontWeight: (row?.stock || 0) < 10 ? typography.bold : typography.regular,
+            fontSize: typography.body,
           }}
         >
           {(row?.stock || 0).toLocaleString()} unit
@@ -218,55 +228,40 @@ const DashboardPage = () => {
 
   if (isLoading) return <DashboardLoadingSkeleton />;
 
+  // ==================== RENDER ====================
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background: "#F1F5F9",
-        px: 3,
-        pt: 3,
-        pb: 4,
+        bgcolor: colors.bg,
+        px: spacing.xxl,
+        pt: spacing.xxl,
+        pb: spacing.xxl,
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: spacing.xxl,
       }}
     >
-      {/* HEADER / CONTROL CENTER */}
+      {/* ==================== HEADER ==================== */}
       <Paper
         elevation={0}
         sx={{
-          p: 3, // disamakan dengan header Laporan (p: 3)
-          borderRadius: 3,
-          border: `1px solid ${themeColors.border}`,
-          bgcolor: themeColors.bgCard,
-          display: "flex",
-          justify: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
+          p: spacing.xxl,
+          borderRadius: radii.s,          // ✅
+          border: `1px solid ${colors.borderLight}`,
+          bgcolor: colors.bgCard,
+          boxShadow: shadows.card,
         }}
       >
-        <Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Typography
-              sx={{
-                fontWeight: 800,
-                fontSize: 18,
-                color: themeColors.textMain,
-              }}
-            >
-              Dashboard Apotek Ampuh Tayu
-            </Typography>
-          </Box>
-          <Typography
-            sx={{ fontSize: 13, color: themeColors.textMuted, mt: 1 }}
-          >
-            Apotek Ampuh Tayu — Sistem Manajemen Ritel & Operasional Farmasi
-          </Typography>
-        </Box>
+        <Typography sx={pageHeaderSx.title}>
+          Dashboard Apotek Ampuh Tayu
+        </Typography>
+        <Typography sx={{ ...pageHeaderSx.subtitle, fontSize: typography.body }}>
+          Apotek Ampuh Tayu — Sistem Manajemen Ritel & Operasional Farmasi
+        </Typography>
       </Paper>
 
-      {/* TIER A: TOP SUMMARY METRIC CARDS */}
+      {/* ==================== SUMMARY CARDS ==================== */}
       <Box
         sx={{
           display: "grid",
@@ -275,7 +270,7 @@ const DashboardPage = () => {
             sm: "repeat(2, 1fr)",
             md: "repeat(3, 1fr)",
           },
-          gap: 3, // disamakan gap-nya dengan LaporanPage (gap: 3)
+          gap: spacing.xxl,
           width: "100%",
         }}
       >
@@ -295,41 +290,51 @@ const DashboardPage = () => {
           icon={<AssignmentOutlinedIcon />}
           title="Piutang & Tempo"
           value="Monitoring Aktif"
-          accent={themeColors.warningText}
+          accent={colors.warning}
           secondarySub="Faktur tempo < 7 hari"
         />
       </Box>
 
-      {/* TABEL TOP 5 PRODUK TERLARIS */}
+      {/* ==================== TOP 5 PRODUK TERLARIS ==================== */}
       <Box
         sx={{
-          bgcolor: themeColors.bgCard,
-          borderRadius: 4, // disamakan radiusnya dengan kontainer LaporanPage (borderRadius: 4)
-          border: `1px solid ${themeColors.border}`,
-          p: 3,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          bgcolor: colors.bgCard,
+          borderRadius: radii.s,          // ✅
+          border: `1px solid ${colors.borderLight}`,
+          p: spacing.xxl,
+          boxShadow: shadows.card,
         }}
       >
         <Typography
           sx={{
-            fontWeight: 800,
-            fontSize: 18,
+            fontWeight: typography.bold,
+            fontSize: typography.h5,
             mb: 0.5,
-            color: themeColors.textMain,
+            color: colors.text,
           }}
         >
           Top 5 Produk Terlaris
         </Typography>
         <Typography
-          sx={{ fontSize: 13, color: themeColors.textMuted, mb: 2.5 }}
+          sx={{
+            fontSize: typography.body,
+            color: colors.textSecondary,
+            mb: spacing.xxl,
+          }}
         >
           Performa penjualan produk periode berjalan.
         </Typography>
+
         {topProducts.length > 0 ? (
           <Table columns={columns} data={topProducts} />
         ) : (
           <Typography
-            sx={{ textAlign: "center", py: 5, color: themeColors.textMuted }}
+            sx={{
+              textAlign: "center",
+              py: 5,
+              color: colors.textMuted,
+              fontSize: typography.body,
+            }}
           >
             Belum ada data penjualan.
           </Typography>

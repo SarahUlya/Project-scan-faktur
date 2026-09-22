@@ -6,19 +6,25 @@ const PosContext = createContext();
 
 const SHIFT_STORAGE_KEY = "pos_active_shift";
 
-// ── Helper: cek apakah shift dibuka hari ini ─────────────────────
-// Backend pakai field "waktu_buka", bukan "tanggal"/"opened_at"
+/* ══════════════════════════════════════════════════════════════════
+ * HITUNG SUBTOTAL PER ITEM (dengan diskon)
+ * ══════════════════════════════════════════════════════════════════ */
+const hitungSubtotalItem = (item) => {
+  const harga = Number(item.harga || item.harga_jual || 0);
+  const diskonPerUnit = Number(item.diskon_item) || 0;
+  const hargaEfektif = Math.max(0, harga - diskonPerUnit);
+  return hargaEfektif * Number(item.qty || 0);
+};
+
 const isShiftToday = (shift) => {
   const tgl = shift?.waktu_buka || shift?.tanggal || shift?.opened_at || shift?.created_at;
-  if (!tgl) return true; // kalau gak ada tanggal, anggap valid
+  if (!tgl) return true;
   const d = new Date(tgl);
   if (isNaN(d.getTime())) return true;
   return d.toDateString() === new Date().toDateString();
 };
 
-// ── Helper: parse response backend { active, data } ──────────────
 const parseShiftResponse = (res, namaDefault) => {
-  // Bentuk baru dari backend: { active: boolean, data: {...} | null }
   if (res && typeof res === "object" && "active" in res) {
     if (res.active && res.data) {
       return {
@@ -29,8 +35,6 @@ const parseShiftResponse = (res, namaDefault) => {
     }
     return null;
   }
-
-  // Fallback: kalau backend balas data langsung
   if (res && (res.id_shift != null || res.id != null)) {
     return {
       ...res,
@@ -38,11 +42,9 @@ const parseShiftResponse = (res, namaDefault) => {
       status: res.status || "OPEN",
     };
   }
-
   return null;
 };
 
-// ── Helper: load cache shift dari localStorage ───────────────────
 const loadCachedShift = (namaDefault) => {
   try {
     const raw = localStorage.getItem(SHIFT_STORAGE_KEY);
@@ -64,7 +66,7 @@ export const PosProvider = ({ children }) => {
   const namaDefault =
     currentUser?.nama || currentUser?.name || currentUser?.username || "Kasir Utama";
 
-  // ── 1. CART ─────────────────────────────────────────────────────
+  /* ── 1. CART ─────────────────────────────────────────────────── */
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem("pos_cart");
@@ -88,7 +90,7 @@ export const PosProvider = ({ children }) => {
     localStorage.setItem("pos_diskon", diskonNominal.toString());
   }, [diskonNominal]);
 
-  // ── 2. SHIFT ────────────────────────────────────────────────────
+  /* ── 2. SHIFT ────────────────────────────────────────────────── */
   const [shift, setShift] = useState(() => {
     const cached = loadCachedShift(namaDefault);
     return cached || {
@@ -103,7 +105,6 @@ export const PosProvider = ({ children }) => {
 
   const [shiftLoading, setShiftLoading] = useState(true);
 
-  // Persist shift tiap berubah
   useEffect(() => {
     if (shift?.status === "OPEN") {
       localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(shift));
@@ -112,22 +113,15 @@ export const PosProvider = ({ children }) => {
     }
   }, [shift]);
 
-  // Rekonsiliasi dengan backend saat mount
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
         const res = await getShiftAktifApi();
         if (cancelled) return;
-
-        console.log("[PosContext] shift/active response:", res);
-
         const parsed = parseShiftResponse(res, namaDefault);
-
         if (parsed && isShiftToday(parsed)) {
           setShift(parsed);
-          console.log("[PosContext] shift aktif ditemukan:", parsed);
         } else {
           setShift({
             id_shift: null,
@@ -138,20 +132,17 @@ export const PosProvider = ({ children }) => {
             status: "CLOSED",
           });
           localStorage.removeItem(SHIFT_STORAGE_KEY);
-          console.log("[PosContext] tidak ada shift aktif");
         }
       } catch (err) {
-        // Gagal fetch → tetap pakai cache lokal
-        console.warn("[PosContext] gagal fetch shift:", err?.message);
+        console.warn("[Shift] gagal fetch:", err?.message);
       } finally {
         if (!cancelled) setShiftLoading(false);
       }
     })();
-
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 3. HOLD LIST ────────────────────────────────────────────────
+  /* ── 3. HOLD LIST ────────────────────────────────────────────── */
   const [holdList, setHoldList] = useState(() => {
     try {
       const saved = localStorage.getItem("pos_hold_list");
@@ -165,19 +156,18 @@ export const PosProvider = ({ children }) => {
     localStorage.setItem("pos_hold_list", JSON.stringify(holdList));
   }, [holdList]);
 
-  // ── 4. KALKULASI ────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════
+   * 4. KALKULASI — subtotal item sudah termasuk diskon per item
+   * ══════════════════════════════════════════════════════════════════ */
   const subtotal = useMemo(() => {
-    return cart.reduce(
-      (acc, item) => acc + (item.harga || item.harga_jual || 0) * item.qty,
-      0
-    );
+    return cart.reduce((acc, item) => acc + hitungSubtotalItem(item), 0);
   }, [cart]);
 
   const totalBayar = useMemo(() => {
     return Math.max(0, subtotal - diskonNominal + pajakNominal);
   }, [subtotal, diskonNominal, pajakNominal]);
 
-  // ── 5. CART HANDLERS ────────────────────────────────────────────
+  /* ── 5. CART HANDLERS ────────────────────────────────────────── */
   const addToCart = (product, qty = 1, forceQty = false) => {
     setCart((prevCart) => {
       const id = product.id_produk || product.id;
@@ -196,7 +186,16 @@ export const PosProvider = ({ children }) => {
       }
 
       const initialQty = qty > maxStok ? maxStok : qty < 1 ? 1 : qty;
-      return [...prevCart, { ...product, qty: initialQty }];
+      return [
+        ...prevCart,
+        {
+          ...product,
+          qty: initialQty,
+          diskon_item: 0,
+          diskon_tipe: "Rp",
+          diskon_input: 0,
+        },
+      ];
     });
   };
 
@@ -219,7 +218,53 @@ export const PosProvider = ({ children }) => {
     localStorage.removeItem("pos_diskon");
   };
 
-  // ── 6. HOLD / RECALL ────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════
+   * ⚡ 5b. DISKON PER ITEM
+   * ══════════════════════════════════════════════════════════════════ */
+  const applyItemDiscount = (id_produk, { tipe, nilai }) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if ((item.id_produk || item.id) !== id_produk) return item;
+
+        const hargaAsli = Number(item.harga || item.harga_jual || 0);
+        let diskonPerUnit = 0;
+
+        if (tipe === "%") {
+          diskonPerUnit = Math.round(hargaAsli * (Number(nilai) / 100));
+        } else {
+          diskonPerUnit = Number(nilai) || 0;
+        }
+
+        // Validasi
+        if (diskonPerUnit > hargaAsli) diskonPerUnit = hargaAsli;
+        if (diskonPerUnit < 0) diskonPerUnit = 0;
+
+        return {
+          ...item,
+          diskon_item: diskonPerUnit,        // nilai diskon dalam Rp per unit
+          diskon_tipe: tipe,                 // "Rp" atau "%"
+          diskon_input: Number(nilai) || 0,  // nilai asli yang user input
+        };
+      })
+    );
+  };
+
+  const removeItemDiscount = (id_produk) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if ((item.id_produk || item.id) !== id_produk) return item;
+        const { diskon_item, diskon_tipe, diskon_input, ...rest } = item;
+        return {
+          ...rest,
+          diskon_item: 0,
+          diskon_tipe: "Rp",
+          diskon_input: 0,
+        };
+      })
+    );
+  };
+
+  /* ── 6. HOLD / RECALL ────────────────────────────────────────── */
   const holdCurrentCart = (referenceName = "") => {
     if (cart.length === 0) return;
     const now = new Date();
@@ -274,6 +319,10 @@ export const PosProvider = ({ children }) => {
         pajakNominal, setPajakNominal,
         holdList, holdCurrentCart, recallCart, removeHoldCart,
         currentUser,
+        // ⚡ BARU
+        applyItemDiscount,
+        removeItemDiscount,
+        hitungSubtotalItem,
       }}
     >
       {children}

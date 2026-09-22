@@ -23,11 +23,6 @@ Batch : ${item.batch || "-"}
 Exp : ${item.expired || "-"}
 </div>
 
-<div class="small">
-Barcode : ${item.barcode || "-"}
-</div>
-
-
 <table style="width:100%;margin-top:2px">
 <tr>
 <td>

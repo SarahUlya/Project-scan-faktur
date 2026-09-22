@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   Box,
@@ -21,7 +21,6 @@ import { usePos } from "../../context/PosContext";
 import useTransaksiDb from "../../hooks/useTransaksiDb";
 import { getUser } from "../../auth/auth";
 import { formatRupiahPos } from "../../utils/posCalculations";
-import { printReceipt } from "@/utils/print/receiptPrinter";
 import useSetting from "../../hooks/useSetting";
 
 const METODE_LIST = [
@@ -64,16 +63,11 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
   const [uangDiterimaStr, setUangDiterimaStr] = useState("0");
   const [cetakStruk, setCetakStruk] = useState(true);
   const [loading, setLoading] = useState(false);
-
-  // Status khusus penanganan UX Numpad (Replace vs Append)
   const [isNewInput, setIsNewInput] = useState(true);
-
-  // State Split Payment
   const [isSplit, setIsSplit] = useState(false);
   const [metode2, setMetode2] = useState("QRIS");
   const [qrisTimer, setQrisTimer] = useState(300);
 
-  // Reset & Inisialisasi ulang ketika Modal dibuka
   useEffect(() => {
     if (open) {
       setMetode("TUNAI");
@@ -86,10 +80,9 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
     }
   }, [open, totalBayar]);
 
-  // Timer Simulasi QRIS
   useEffect(() => {
     let interval;
-    if (open && (!isSplit && metode === "QRIS") && qrisTimer > 0) {
+    if (open && !isSplit && metode === "QRIS" && qrisTimer > 0) {
       interval = setInterval(() => setQrisTimer((prev) => prev - 1), 1000);
     }
     return () => clearInterval(interval);
@@ -100,7 +93,6 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
     [uangDiterimaStr],
   );
 
-  // Kalkulasi Split & Kembalian
   const nominalSplit1 = isSplit
     ? Math.min(uangDiterimaNum, totalBayar)
     : uangDiterimaNum;
@@ -117,7 +109,6 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
       ? uangDiterimaNum >= totalBayar
       : true;
 
-  // Algoritma Uang Cepat (Quick Cash)
   const quickCashOptions = useMemo(() => {
     if (!totalBayar || totalBayar <= 0) return [20000, 50000, 100000];
     const options = new Set();
@@ -135,7 +126,6 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
       .slice(0, 3);
   }, [totalBayar]);
 
-  // Handler Numpad - Smart Replace/Append Logic
   const handleNumpadClick = (val) => {
     if (isNewInput) {
       setUangDiterimaStr(String(val));
@@ -154,36 +144,68 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
 
   const handleQuickCash = (amt) => {
     setUangDiterimaStr(String(amt));
-    setIsNewInput(true); // Jika pencet numpad lagi, angka terganti baru
+    setIsNewInput(true);
   };
 
-  // Eksekusi API & Validasi
+  const buildMetodeBayar = () => {
+    if (isSplit) {
+      return [
+        { jenis: metode, nominal: nominalSplit1 },
+        { jenis: metode2, nominal: nominalSplit2 },
+      ].filter((m) => m.nominal > 0);
+    }
+    return [{ jenis: metode, nominal: totalBayar }];
+  };
+
   const handleConfirm = async () => {
     if (!canPay || cart.length === 0) return;
     setLoading(true);
+
     const cartSnapshot = [...cart];
-    const finalMetode = isSplit ? `SPLIT_${metode}_${metode2}` : metode;
+    const metodeBayarArray = buildMetodeBayar();
+    const finalMetodeStr = isSplit ? `SPLIT_${metode}_${metode2}` : metode;
+
+    const totalDiskonItem = cartSnapshot.reduce((sum, item) => {
+      const qty = Number(item.qty) || 0;
+      const diskonPerUnit = Number(item.diskon_item) || 0;
+      return sum + diskonPerUnit * qty;
+    }, 0);
+
+    const subtotalMentah = cartSnapshot.reduce((sum, item) => {
+      const harga = Number(item.harga || item.harga_jual || 0);
+      const qty = Number(item.qty) || 0;
+      return sum + harga * qty;
+    }, 0);
 
     try {
       const transactionPayload = {
-        metode_bayar: finalMetode,
-        subtotal: subtotal,
+        metode_bayar: metodeBayarArray,
+        subtotal: subtotalMentah,
         total_bayar: totalBayar,
         diskon_nota_nominal: diskonNominal,
-        diskon_item_nominal: 0,
+        diskon_item_nominal: totalDiskonItem,
         ppn_persen: pajakNominal,
         shift_id: shift?.id_shift || shift?.id || null,
 
-        items: cartSnapshot.map((item) => ({
-          barcode: item.barcode || item.kode_produk || item.kode || "",
-          id_produk: item.id_produk || item.id,
-          qty: item.qty,
-          harga: item.harga || item.harga_jual,
-          subtotal: item.qty * (item.harga || item.harga_jual),
-          id_batch:
-            item.id_batch ||
-            (typeof item.batch === "object" ? item.batch?.id_batch : null),
-        })),
+        items: cartSnapshot.map((item) => {
+          const harga = Number(item.harga || item.harga_jual || 0);
+          const qty = Number(item.qty) || 0;
+          const diskonPerUnit = Number(item.diskon_item) || 0;
+          const subtotalPerItem = Math.max(0, harga - diskonPerUnit) * qty;
+
+          return {
+            barcode: item.barcode || item.kode_produk || item.kode || "",
+            id_produk: item.id_produk || item.id,
+            qty: qty,
+            harga: harga,
+            diskon_item: diskonPerUnit,
+            diskon_tipe: item.diskon_tipe || "Rp",
+            subtotal: subtotalPerItem,
+            id_batch:
+              item.id_batch ||
+              (typeof item.batch === "object" ? item.batch?.id_batch : null),
+          };
+        }),
 
         uang_diterima: isSplit
           ? totalBayar
@@ -192,6 +214,7 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
             : totalBayar,
         kembalian: kembalian,
         kasir: namaKasirAktif,
+
         detail_split: isSplit
           ? {
               metode1: metode,
@@ -202,38 +225,98 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
           : null,
       };
 
+      console.log(
+        "[Payment] PAYLOAD DIKIRIM:",
+        JSON.stringify(transactionPayload, null, 2),
+      );
+
       const result = await processTransaksi(transactionPayload);
 
-      if (cetakStruk) {
-        try {
-          printReceipt({
-            apotek: setting,
-            kode: result?.kode_transaksi || `TRX-${Date.now()}`,
-            tanggal: new Date().toISOString(),
-            kasir: namaKasirAktif,
-            metode: finalMetode,
-            subtotal,
-            diskon: diskonNominal,
-            ppn: pajakNominal,
-            total: totalBayar,
-            bayar: isSplit
-              ? totalBayar
-              : metode === "TUNAI"
-                ? uangDiterimaNum
-                : totalBayar,
-            kembalian,
-            items: cartSnapshot,
-          });
-        } catch (printErr) {}
-      }
+      // ⚡ Susun data receipt untuk auto-print di PosSuccessModal
+      const receiptItems = cartSnapshot.map((item) => {
+        const harga = Number(item.harga || item.harga_jual || 0);
+        const qty = Number(item.qty) || 0;
+        const diskonPerUnit = Number(item.diskon_item) || 0;
+        const subtotalPerItem = Math.max(0, harga - diskonPerUnit) * qty;
+
+        // ⚡ Ambil batch + expired dari transaksibatch
+        let batchText = "-";
+        let expText = "-";
+        const batches = item.transaksibatch || item.transaksiBatch || [];
+
+        if (Array.isArray(batches) && batches.length > 0) {
+          const batchList = batches
+            .map((b) => {
+              const bp = b.batchproduk || b.batch || {};
+              return {
+                no_batch: bp.no_batch || b.no_batch || null,
+                expired: bp.expired_date || b.expired_date || null,
+              };
+            })
+            .filter((b) => b.no_batch);
+
+          if (batchList.length > 0) {
+            batchText = batchList.map((b) => b.no_batch).join(", ");
+            const exps = batchList
+              .map((b) => b.expired)
+              .filter((e) => e)
+              .map((e) => {
+                try {
+                  const d = new Date(e);
+                  return d.toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  });
+                } catch {
+                  return null;
+                }
+              })
+              .filter((e) => e);
+            if (exps.length > 0) expText = exps.join(", ");
+          }
+        } else if (item.batch?.no_batch) {
+          batchText = item.batch.no_batch;
+          if (item.batch.expired_date) {
+            try {
+              expText = new Date(item.batch.expired_date).toLocaleDateString(
+                "id-ID",
+                {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                },
+              );
+            } catch {}
+          }
+        } else if (item.no_batch) {
+          batchText = item.no_batch;
+        }
+
+        return {
+          nama: item.nama_produk || item.nama || "-",
+          nama_produk: item.nama_produk || item.nama || "-",
+          harga,
+          harga_jual: harga,
+          qty,
+          diskon_item: diskonPerUnit,
+          diskon_tipe: item.diskon_tipe || "Rp",
+          subtotal: subtotalPerItem,
+          batch: batchText,
+          no_batch: batchText,
+          exp: expText, // ⚡ kirim expired
+          expired: expText, // alias
+        };
+      });
 
       clearCart();
       onSuccess?.({
         ...result,
         cetakStruk,
-        metode: finalMetode,
+        metode: finalMetodeStr,
+        metode_bayar: metodeBayarArray,
         kembalian,
-        subtotal,
+        subtotal: subtotalMentah,
         total: totalBayar,
         uangDiterima: isSplit
           ? totalBayar
@@ -242,19 +325,69 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
             : totalBayar,
         cart: cartSnapshot,
         kasir: namaKasirAktif,
+        // ⚡ Data lengkap untuk auto-print di PosSuccessModal
+        receiptData: {
+          apotek: setting,
+          kode: result?.kode_transaksi || `TRX-${Date.now()}`,
+          tanggal: new Date().toISOString(),
+          kasir: namaKasirAktif,
+          metode: finalMetodeStr,
+          subtotal: subtotalMentah,
+          diskon: diskonNominal + totalDiskonItem,
+          ppn: pajakNominal,
+          total: totalBayar,
+          bayar: isSplit
+            ? totalBayar
+            : metode === "TUNAI"
+              ? uangDiterimaNum
+              : totalBayar,
+          kembalian,
+          items: receiptItems,
+        },
       });
     } catch (e) {
       const errMsg =
         e.response?.data?.message || e.message || "Gagal memproses transaksi.";
       alert(errMsg);
+      console.error("[Payment] ERROR:", e.response?.data || e);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleConfirmRef = useRef(handleConfirm);
+  useEffect(() => {
+    handleConfirmRef.current = handleConfirm;
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "F8") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!loading && canPay && cart.length > 0) {
+          handleConfirmRef.current();
+        }
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!loading) onClose?.();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, loading, canPay, cart.length, onClose]);
+
   const renderNumpadAndCash = () => {
     const isUangPas = uangDiterimaNum === totalBayar;
-    
+
     return (
       <Box>
         <Box
@@ -281,16 +414,16 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
               fullWidth
               onClick={() => handleQuickCash(totalBayar)}
               sx={{
-                bgcolor: isUangPas ? "#D81B60" : "#FFF0F5",
-                color: isUangPas ? "#FFFFFF" : "#D81B60",
+                bgcolor: isUangPas ? "#D81B60" : "#FFFFFF",
+                color: isUangPas ? "#FFFFFF" : "#475569",
                 border: "1px solid",
-                borderColor: isUangPas ? "#D81B60" : "#FCE4EC",
+                borderColor: isUangPas ? "#D81B60" : "#E2E8F0",
                 borderRadius: "8px",
                 fontWeight: 700,
                 fontSize: 13,
                 py: 1,
                 textTransform: "none",
-                "&:hover": { bgcolor: isUangPas ? "#C2185B" : "#FCE4EC" },
+                "&:hover": { bgcolor: isUangPas ? "#C2185B" : "#FFFFFF" },
               }}
             >
               Uang Pas
@@ -386,29 +519,76 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
           }}
         >
           <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#D81B60", mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                color: "#D81B60",
+                mb: 3,
+              }}
+            >
               <ShoppingCartIcon sx={{ fontSize: 22 }} />
               <Typography sx={{ fontWeight: 800, fontSize: 18 }}>
                 Detail Pembayaran
               </Typography>
             </Box>
 
-            <Box sx={{ bgcolor: "#FFFFFF", p: 2.5, borderRadius: "12px", border: "1px solid #FCE4EC", mb: 2 }}>
-              <Typography sx={{ fontSize: 13, color: "#64748B", fontWeight: 600, mb: 0.5 }}>
+            <Box
+              sx={{
+                bgcolor: "#FFFFFF",
+                p: 2.5,
+                borderRadius: "12px",
+                border: "1px solid #FCE4EC",
+                mb: 2,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  color: "#64748B",
+                  fontWeight: 600,
+                  mb: 0.5,
+                }}
+              >
                 Total Tagihan
               </Typography>
-              <Typography sx={{ fontSize: 28, fontWeight: 900, color: "#D81B60" }}>
+              <Typography
+                sx={{ fontSize: 28, fontWeight: 900, color: "#D81B60" }}
+              >
                 Rp {formatRupiahPos(totalBayar)}
               </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1,
+              }}
+            >
+              <Typography
+                sx={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}
+              >
                 Metode {isSplit && "1 (Utama)"}
               </Typography>
               <FormControlLabel
-                control={<Switch size="small" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} color="secondary" />}
-                label={<Typography sx={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Split Pay</Typography>}
+                control={
+                  <Switch
+                    size="small"
+                    checked={isSplit}
+                    onChange={(e) => setIsSplit(e.target.checked)}
+                    color="secondary"
+                  />
+                }
+                label={
+                  <Typography
+                    sx={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}
+                  >
+                    Split Pay
+                  </Typography>
+                }
                 sx={{ m: 0 }}
               />
             </Box>
@@ -425,7 +605,9 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                       }}
                       sx={{
                         bgcolor: "#FFFFFF",
-                        border: `2px solid ${isSelected ? "#D81B60" : "#E2E8F0"}`,
+                        border: `2px solid ${
+                          isSelected ? "#D81B60" : "#E2E8F0"
+                        }`,
                         borderRadius: "12px",
                         p: 1.5,
                         display: "flex",
@@ -435,21 +617,32 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                         cursor: "pointer",
                         color: isSelected ? "#D81B60" : "#64748B",
                         transition: "all 0.2s",
-                        "&:hover": { borderColor: isSelected ? "#D81B60" : "#CBD5E1" }
+                        "&:hover": {
+                          borderColor: isSelected ? "#D81B60" : "#CBD5E1",
+                        },
                       }}
                     >
                       {m.icon}
-                      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{m.label}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>
+                        {m.label}
+                      </Typography>
                     </Box>
                   </Grid>
                 );
               })}
             </Grid>
 
-            {/* Split Metode 2 */}
             {isSplit && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#1E293B", mb: 1, mt: 1 }}>
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#1E293B",
+                    mb: 1,
+                    mt: 1,
+                  }}
+                >
                   Metode 2 (Sisa Tagihan)
                 </Typography>
                 <Grid container spacing={1.5}>
@@ -461,7 +654,9 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                           onClick={() => setMetode2(m.id)}
                           sx={{
                             bgcolor: "#FFFFFF",
-                            border: `2px solid ${isSelected ? "#D81B60" : "#E2E8F0"}`,
+                            border: `2px solid ${
+                              isSelected ? "#D81B60" : "#E2E8F0"
+                            }`,
                             borderRadius: "12px",
                             p: 1,
                             display: "flex",
@@ -470,11 +665,15 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                             gap: 1,
                             cursor: "pointer",
                             color: isSelected ? "#D81B60" : "#64748B",
-                            "&:hover": { borderColor: isSelected ? "#D81B60" : "#CBD5E1" }
+                            "&:hover": {
+                              borderColor: isSelected ? "#D81B60" : "#CBD5E1",
+                            },
                           }}
                         >
                           {m.icon}
-                          <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{m.label}</Typography>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700 }}>
+                            {m.label}
+                          </Typography>
                         </Box>
                       </Grid>
                     );
@@ -497,7 +696,7 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
               fontWeight: 700,
               textTransform: "none",
               mt: 2,
-              "&:hover": { bgcolor: "#F8FAFC", borderColor: "#CBD5E1" }
+              "&:hover": { bgcolor: "#F8FAFC", borderColor: "#CBD5E1" },
             }}
           >
             Batalkan Pembayaran (Esc)
@@ -518,15 +717,39 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
           <Box>
             {isSplit ? (
               <Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1E293B", mb: 1.5 }}>
+                <Typography
+                  sx={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#1E293B",
+                    mb: 1.5,
+                  }}
+                >
                   Nominal Metode 1 ({metode})
                 </Typography>
                 {renderNumpadAndCash()}
-                <Box sx={{ bgcolor: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: "10px", p: 1.5, mt: 1 }}>
-                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#64748B", mb: 0.5 }}>
+                <Box
+                  sx={{
+                    bgcolor: "#F8FAFC",
+                    border: "1px dashed #CBD5E1",
+                    borderRadius: "10px",
+                    p: 1.5,
+                    mt: 1,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#64748B",
+                      mb: 0.5,
+                    }}
+                  >
                     Sisa Tagihan dialihkan ke {metode2}
                   </Typography>
-                  <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#D81B60" }}>
+                  <Typography
+                    sx={{ fontSize: 18, fontWeight: 800, color: "#D81B60" }}
+                  >
                     Rp {formatRupiahPos(nominalSplit2)}
                   </Typography>
                 </Box>
@@ -544,11 +767,17 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                       textAlign: "center",
                     }}
                   >
-                    <Typography sx={{ fontSize: 15, fontWeight: 800, color: "#1E293B", mb: 2 }}>
+                    <Typography
+                      sx={{
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: "#1E293B",
+                        mb: 2,
+                      }}
+                    >
                       Silakan Scan QRIS Apotek
                     </Typography>
-                    
-                    {/* Mockup QRIS Design */}
+
                     <Box
                       sx={{
                         p: 2,
@@ -562,16 +791,30 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                       }}
                     >
                       <QrCode2Icon sx={{ fontSize: 130, color: "#0F172A" }} />
-                      <Typography sx={{ fontWeight: 800, fontSize: 13, color: "#0F172A", letterSpacing: 1 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 800,
+                          fontSize: 13,
+                          color: "#0F172A",
+                          letterSpacing: 1,
+                        }}
+                      >
                         QRIS PAYMENT
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "#64748B" }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: "#64748B",
+                      }}
+                    >
                       <CircularProgress size={16} color="inherit" />
                       <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
                         Menunggu Pembayaran... ({Math.floor(qrisTimer / 60)}:
@@ -581,15 +824,36 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
                   </Box>
                 ) : (
                   <>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: "#1E293B", mb: 1.5 }}>
+                    <Typography
+                      sx={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#1E293B",
+                        mb: 1.5,
+                      }}
+                    >
                       Nominal Diterima
                     </Typography>
                     {renderNumpadAndCash()}
-                    <Box sx={{ bgcolor: "#E8F5E9", border: "1px solid #A5D6A7", borderRadius: "10px", p: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#2E7D32" }}>
+                    <Box
+                      sx={{
+                        bgcolor: "#E8F5E9",
+                        border: "1px solid #A5D6A7",
+                        borderRadius: "10px",
+                        p: 1.5,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontSize: 13, fontWeight: 700, color: "#2E7D32" }}
+                      >
                         Kembalian
                       </Typography>
-                      <Typography sx={{ fontSize: 20, fontWeight: 900, color: "#2E7D32" }}>
+                      <Typography
+                        sx={{ fontSize: 20, fontWeight: 900, color: "#2E7D32" }}
+                      >
                         Rp {formatRupiahPos(kembalian)}
                       </Typography>
                     </Box>
@@ -616,13 +880,13 @@ const PosPaymentModal = ({ open, onClose, onSuccess }) => {
               boxShadow: "none",
               mt: 2,
               "&:hover": { bgcolor: "#C2185B" },
-              "&.Mui-disabled": { bgcolor: "#E2E8F0", color: "#94A3B8" }
+              "&.Mui-disabled": { bgcolor: "#E2E8F0", color: "#94A3B8" },
             }}
           >
             {loading
               ? "Memproses..."
               : metode === "QRIS" && !isSplit
-                ? "Verifikasi Manual & Bayar"
+                ? "Verifikasi Manual & Bayar (F8)"
                 : "Konfirmasi Pembayaran (F8)"}
           </Button>
         </Box>

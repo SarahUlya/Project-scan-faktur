@@ -27,7 +27,6 @@ export default function useSidebarMenu() {
       subItems: [
         { text: "Daftar Pembelian", path: "/pembelian" },
         { text: "Tambah Pembelian", path: "/pembelian/tambah" },
-        { text: "Buku Defecta", path: "/pembelian/defecta" },
       ],
     },
     {

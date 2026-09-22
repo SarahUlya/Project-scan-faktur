@@ -1,41 +1,79 @@
 import React from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, Stack } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import CloseIcon from "@mui/icons-material/Close";
+import { colors, typography, pageHeaderSx } from "@/theme/designTokens";
 
-const RiwayatHeader = ({ showFilter, onToggleFilter, onExportPDF }) => {
+const RiwayatHeader = ({
+  showFilter,
+  onToggleFilter,
+  onExportPDF,    // ⚡ opsional — fallback kalau actions tidak diisi
+  actions,        // ⚡ React node — menggantikan tombol Export PDF
+}) => {
   return (
-    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 2,
+        flexWrap: "wrap",
+      }}
+    >
+      {/* KIRI: Judul */}
       <Box>
-        <Typography variant="h5" sx={{ fontWeight: 800, color: "#1E293B", mb: 0.5 }}>
+        <Typography sx={pageHeaderSx.title}>
           Riwayat Transaksi & Shift
         </Typography>
-        <Typography variant="body2" sx={{ color: "#64748B" }}>
+        <Typography sx={{ ...pageHeaderSx.subtitle, fontSize: typography.body }}>
           Melacak semua transaksi penjualan dan rekapitulasi sesi kasir.
         </Typography>
       </Box>
-      <Box sx={{ display: "flex", gap: 1.5 }}>
-        <Button 
-          variant={showFilter ? "contained" : "outlined"} 
-          onClick={onToggleFilter} 
-          startIcon={showFilter ? <CloseIcon /> : <FilterListIcon />} 
-          sx={{ 
-            borderColor: "#E2E8F0", fontWeight: 700, textTransform: "none", 
-            bgcolor: showFilter ? "#D81B60" : "#FFF", color: showFilter ? "#FFF" : "#475569" 
+
+      {/* KANAN: Filter + Actions */}
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Button
+          variant="outlined"
+          startIcon={<FilterListIcon />}
+          onClick={onToggleFilter}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: "8px",
+            color: colors.text,
+            borderColor: colors.border,
+            bgcolor: colors.bgCard,
+            "&:hover": {
+              borderColor: colors.borderHover,
+              bgcolor: colors.bgMuted,
+            },
           }}
         >
-          {showFilter ? "Tutup Filter" : "Filter"}
+          Filter
         </Button>
-        <Button 
-          variant="outlined" 
-          onClick={onExportPDF} 
-          startIcon={<PictureAsPdfIcon />} 
-          sx={{ borderColor: "#E2E8F0", color: "#475569", fontWeight: 700, textTransform: "none", bgcolor: "#FFF" }}
-        >
-          Export PDF
-        </Button>
-      </Box>
+
+        {/* ⚡ Slot actions — kalau diisi, ganti tombol Export PDF default */}
+        {actions ? (
+          actions
+        ) : onExportPDF ? (
+          <Button
+            variant="contained"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={onExportPDF}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: "8px",
+              bgcolor: colors.text,
+              color: colors.textOnDark,
+              boxShadow: "none",
+              "&:hover": { bgcolor: colors.text, boxShadow: "none" },
+            }}
+          >
+            Export PDF
+          </Button>
+        ) : null}
+      </Stack>
     </Box>
   );
 };
