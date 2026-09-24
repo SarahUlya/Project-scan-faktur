@@ -1,15 +1,33 @@
-node_modules
-dist
-build
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build output
+dist/
+build/
+*/dist/
+*/build/
+
+# Env
 .env
 .env.local
 .env.*.local
-.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.vscode/*
-!.vscode/extensions.json
-.idea
-coverage
+
+# OS
+.DS_Store
+Thumbs.db

@@ -19,8 +19,12 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 
 import { getUser } from "@/auth/auth";
-import { tutupShiftApi, getKasKecilListApi } from "@/api/transaksiApi";
-import { colors, radii, typography, shadows } from "@/theme/designTokens";
+import {
+  tutupShiftApi,
+  getKasKecilListApi,
+  getTransaksi,
+} from "@/api/transaksiApi";
+import { colors, radii, typography, shadows, spacing } from "@/theme/designTokens";
 
 /* ══════════════════════════════════════════════════════════════════
  * HELPER — Format Rupiah
@@ -40,8 +44,27 @@ const formatRupiah = (val) => {
 };
 
 /* ══════════════════════════════════════════════════════════════════
- * ⚡ HELPER — Hitung total kas kecil (masuk & keluar terpisah)
- * Return: { totalMasuk, totalKeluar }
+ * HELPER — Ambil nilai pertama yang tidak null
+ * ══════════════════════════════════════════════════════════════════ */
+const firstNumber = (...values) => {
+  for (const v of values) {
+    if (v === null || v === undefined) continue;
+    const n = Number(v);
+    if (!isNaN(n) && n !== 0) return n;
+  }
+  return 0;
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * HELPER — Cek status LUNAS
+ * ══════════════════════════════════════════════════════════════════ */
+const isLunas = (status) => {
+  const s = String(status || "").toUpperCase();
+  return s.includes("LUNAS") || s.includes("SELESAI") || s.includes("PAID");
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * HELPER — Hitung total kas kecil
  * ══════════════════════════════════════════════════════════════════ */
 const hitungTotalKasKecil = (list) => {
   if (!Array.isArray(list)) return { totalMasuk: 0, totalKeluar: 0 };
@@ -55,11 +78,7 @@ const hitungTotalKasKecil = (list) => {
 
     if (tipe.includes("masuk") || tipe.includes("in")) {
       totalMasuk += nominal;
-    } else if (tipe.includes("keluar") || tipe.includes("out")) {
-      totalKeluar += nominal;
     } else {
-      // Kalau tipe tidak jelas, anggap keluar (safety)
-      console.warn("[TutupShift] tipe kas kecil tidak dikenal:", tipe, item);
       totalKeluar += nominal;
     }
   });
@@ -73,14 +92,21 @@ const hitungTotalKasKecil = (list) => {
 const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
   const currentUser = getUser();
 
-  // ── Base data dari shiftData ────────────────────────────────────
-  const idShift = shiftData?.id_shift || shiftData?.id || null;
-  const modalAwal = Number(shiftData?.modalAwal ?? shiftData?.modal_awal ?? 0);
-  const penjualan = Number(
-    shiftData?.totalPenjualanTunai ?? shiftData?.penjualan_tunai ?? 0
+  const idShift =
+    shiftData?.id_shift || shiftData?.id || shiftData?.shift_id || null;
+
+  const modalAwal = firstNumber(
+    shiftData?.modalAwal,
+    shiftData?.modal_awal,
+    shiftData?.modal,
+    0
   );
 
-  // ⚡ State kas kecil — TERPISAH masuk & keluar
+  // ── State penjualan tunai (dari API) ────────────────────────────
+  const [penjualanTunaiApi, setPenjualanTunaiApi] = useState(0);
+  const [penjualanLoading, setPenjualanLoading] = useState(false);
+
+  // ── State kas kecil ─────────────────────────────────────────────
   const [kasMasuk, setKasMasuk] = useState(0);
   const [kasKeluar, setKasKeluar] = useState(0);
   const [kasKecilLoading, setKasKecilLoading] = useState(false);
@@ -91,23 +117,66 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // ══════════════════════════════════════════════════════════════════
-  // ⚡ SALDO SISTEM = Modal Awal + Penjualan + Kas Masuk − Kas Keluar
-  // ══════════════════════════════════════════════════════════════════
-  const saldoSistem = modalAwal + penjualan + kasMasuk - kasKeluar;
-
-  const cleanUangFisik = useMemo(() => {
-    return Number(String(uangFisikInput).replace(/\./g, "")) || 0;
-  }, [uangFisikInput]);
-
-  const selisih = cleanUangFisik - saldoSistem;
-
-  /* ══════════════════════════════════════════════════════════════════
-   * FETCH KAS KECIL saat modal dibuka
-   * ══════════════════════════════════════════════════════════════════ */
+  // ⚡ FETCH PENJUALAN TUNAI dari API transaksi
   useEffect(() => {
-    if (!open) return;
-    if (!idShift) {
+    if (!open || !idShift) {
+      setPenjualanTunaiApi(0);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setPenjualanLoading(true);
+      try {
+        console.log("[TutupShift] fetch transaksi untuk shift:", idShift);
+        const res = await getTransaksi();
+        if (cancelled) return;
+
+        const list = Array.isArray(res) ? res : res?.data || [];
+        console.log("[TutupShift] total transaksi:", list.length);
+
+        // Filter transaksi milik shift ini
+        const transaksiShift = list.filter((t) => {
+          const sid = t.id_shift || t.shift_id;
+          return String(sid) === String(idShift);
+        });
+        console.log(
+          "[TutupShift] transaksi shift ini:",
+          transaksiShift.length,
+          transaksiShift
+        );
+
+        // Filter yang TUNAI + LUNAS, lalu sum
+        const totalTunai = transaksiShift
+          .filter((t) => {
+            const metode = String(
+              t.metode_bayar || t.metode || ""
+            ).toUpperCase();
+            return metode === "TUNAI" && isLunas(t.status);
+          })
+          .reduce(
+            (sum, t) => sum + Number(t.total || t.total_bayar || 0),
+            0
+          );
+
+        console.log("[TutupShift] total tunai dari API:", totalTunai);
+        setPenjualanTunaiApi(totalTunai);
+      } catch (err) {
+        console.error("[TutupShift] gagal fetch transaksi:", err);
+        setPenjualanTunaiApi(0);
+      } finally {
+        if (!cancelled) setPenjualanLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, idShift]);
+
+  // ⚡ FETCH KAS KECIL
+  useEffect(() => {
+    if (!open || !idShift) {
       setKasMasuk(0);
       setKasKeluar(0);
       return;
@@ -118,27 +187,16 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
       setKasKecilLoading(true);
       setKasKecilError("");
       try {
-        console.log("[TutupShift] fetch kas kecil id_shift:", idShift);
-
         const res = await getKasKecilListApi({ id_shift: idShift });
         if (cancelled) return;
 
         const list = Array.isArray(res) ? res : res?.data || [];
-        console.log("[TutupShift] kas kecil list:", list);
-
         const { totalMasuk, totalKeluar } = hitungTotalKasKecil(list);
-        console.log(
-          "[TutupShift] kas masuk:",
-          totalMasuk,
-          "| kas keluar:",
-          totalKeluar
-        );
 
         setKasMasuk(totalMasuk);
         setKasKeluar(totalKeluar);
       } catch (err) {
         if (cancelled) return;
-        console.error("[TutupShift] gagal fetch kas kecil:", err);
         setKasKecilError(
           err?.response?.data?.message || "Gagal memuat data kas kecil"
         );
@@ -154,9 +212,30 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
     };
   }, [open, idShift]);
 
-  /* ══════════════════════════════════════════════════════════════════
-   * RESET FORM saat modal dibuka
-   * ══════════════════════════════════════════════════════════════════ */
+  // ── Penjualan final (prioritas dari API) ────────────────────────
+  const penjualanDariProps = firstNumber(
+    shiftData?.totalPenjualanTunai,
+    shiftData?.penjualan_tunai,
+    shiftData?.total_penjualan_tunai,
+    0
+  );
+
+  const penjualan =
+    penjualanTunaiApi > 0 ? penjualanTunaiApi : penjualanDariProps;
+
+  // ══════════════════════════════════════════════════════════════════
+  // SALDO SISTEM
+  // ══════════════════════════════════════════════════════════════════
+  const saldoSistem = modalAwal + penjualan + kasMasuk - kasKeluar;
+
+  const cleanUangFisik = useMemo(
+    () => Number(String(uangFisikInput).replace(/\./g, "")) || 0,
+    [uangFisikInput]
+  );
+
+  const selisih = cleanUangFisik - saldoSistem;
+
+  // ── Reset form saat modal dibuka ────────────────────────────────
   useEffect(() => {
     if (open) {
       setError("");
@@ -164,16 +243,16 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
     }
   }, [open]);
 
-  // ⚡ Auto-fill uang fisik = saldo sistem setelah kas kecil selesai fetch
+  // ── Auto-fill uang fisik = saldo sistem ─────────────────────────
   useEffect(() => {
-    if (open && !kasKecilLoading) {
+    if (open && !kasKecilLoading && !penjualanLoading) {
       const saldoTerbaru = modalAwal + penjualan + kasMasuk - kasKeluar;
       setUangFisikInput(
         saldoTerbaru > 0 ? formatRupiah(String(saldoTerbaru)) : "0"
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kasMasuk, kasKeluar, kasKecilLoading]);
+  }, [kasMasuk, kasKeluar, kasKecilLoading, penjualan, penjualanLoading]);
 
   const handleInputChange = (e) => {
     setUangFisikInput(formatRupiah(e.target.value));
@@ -181,7 +260,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
   };
 
   /* ══════════════════════════════════════════════════════════════════
-   * SUBMIT — tutup shift
+   * SUBMIT
    * ══════════════════════════════════════════════════════════════════ */
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -192,43 +271,34 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
       return;
     }
 
-    if (kasKecilLoading) {
-      setError("Menunggu data kas kecil selesai dimuat...");
+    if (kasKecilLoading || penjualanLoading) {
+      setError("Menunggu data selesai dimuat...");
       return;
     }
 
     setSubmitting(true);
     try {
-      console.log("[TutupShift] PUT /shift/tutup", {
-        id_shift: idShift,
-        modal_akhir: cleanUangFisik,
-      });
-
       const res = await tutupShiftApi({
         id_shift: idShift,
         modal_akhir: cleanUangFisik,
       });
-
-      console.log("[TutupShift] response:", res);
 
       const closedShift = res?.data;
       if (onConfirm) {
         onConfirm(closedShift || { id_shift: idShift, status: "CLOSED" });
       }
     } catch (err) {
-      console.error("[TutupShift] error:", err);
-      console.error("[TutupShift] response:", err?.response?.data);
-
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "Gagal menutup shift";
-
       setError(msg);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const isLoading = kasKecilLoading || penjualanLoading;
 
   /* ══════════════════════════════════════════════════════════════════
    * RENDER
@@ -243,7 +313,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           transform: "translate(-50%, -50%)",
           width: 520,
           bgcolor: colors.bgCard,
-          borderRadius: `${radii.sm}px`,
+          borderRadius: radii.s,
           boxShadow: shadows.floating,
           outline: "none",
           display: "flex",
@@ -252,24 +322,24 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           overflow: "hidden",
         }}
       >
-        {/* ═══ HEADER ═══ */}
+        {/* HEADER */}
         <Box
           sx={{
-            p: 3,
-            pb: 2,
+            p: spacing.xxl,
+            pb: spacing.lg,
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
             borderBottom: `1px solid ${colors.border}`,
           }}
         >
-          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+          <Box sx={{ display: "flex", gap: spacing.md, alignItems: "center" }}>
             <Box
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: `${radii.sm}px`,
-                bgcolor: colors.surfacePink,
+                borderRadius: radii.s,
+                bgcolor: colors.primaryLight,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -314,7 +384,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
           </IconButton>
         </Box>
 
-        {/* ═══ BODY (scrollable) ═══ */}
+        {/* BODY */}
         <Box
           component="form"
           onSubmit={handleFormSubmit}
@@ -325,21 +395,28 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
             overflow: "hidden",
           }}
         >
-          <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-            {/* ═══ RINCIAN SISTEM ═══ */}
+          <Box sx={{ p: spacing.xxl, overflowY: "auto", flex: 1 }}>
+            {/* RINCIAN SISTEM */}
             <Box
               sx={{
                 bgcolor: colors.bgMuted,
-                p: 2,
-                borderRadius: `${radii.sm}px`,
+                p: spacing.lg,
+                borderRadius: radii.s,
                 border: `1px solid ${colors.border}`,
-                mb: 2.5,
+                mb: spacing.xl,
               }}
             >
               <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: spacing.md,
+                }}
               >
-                <ReceiptLongIcon sx={{ color: colors.primary, fontSize: 18 }} />
+                <ReceiptLongIcon
+                  sx={{ color: colors.primary, fontSize: 18 }}
+                />
                 <Typography
                   sx={{
                     fontWeight: typography.bold,
@@ -386,26 +463,34 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                   mb: 1,
                 }}
               >
-                <Typography
-                  sx={{
-                    fontSize: typography.body,
-                    color: colors.textSecondary,
-                  }}
-                >
-                  Penjualan Tunai Sistem
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <Typography
+                    sx={{
+                      fontSize: typography.body,
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    Penjualan Tunai Sistem
+                  </Typography>
+                  {penjualanLoading && (
+                    <CircularProgress
+                      size={12}
+                      sx={{ color: colors.textMuted }}
+                    />
+                  )}
+                </Box>
                 <Typography
                   sx={{
                     fontSize: typography.body,
                     fontWeight: typography.semibold,
-                    color: colors.success,
+                    color: penjualan > 0 ? colors.success : colors.textMuted,
                   }}
                 >
                   + Rp {penjualan.toLocaleString("id-ID")}
                 </Typography>
               </Box>
 
-              {/* ⚡ KAS MASUK */}
+              {/* Kas Masuk */}
               <Box
                 sx={{
                   display: "flex",
@@ -443,12 +528,12 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
 
-              {/* ⚡ KAS KELUAR */}
+              {/* Kas Keluar */}
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
-                  mb: 1.5,
+                  mb: spacing.md,
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
@@ -475,21 +560,20 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Typography>
               </Box>
 
-              {/* Error kas kecil */}
               {kasKecilError && (
                 <Box
                   sx={{
-                    mb: 1.5,
+                    mb: spacing.md,
                     p: 1,
-                    bgcolor: "#FEF3C7",
-                    border: `1px solid ${colors.warning || "#F59E0B"}`,
-                    borderRadius: `${radii.xs || 2}px`,
+                    bgcolor: colors.warningLight,
+                    border: `1px solid ${colors.warning}`,
+                    borderRadius: radii.xs,
                   }}
                 >
                   <Typography
                     sx={{
-                      fontSize: 11,
-                      color: "#92400E",
+                      fontSize: typography.small,
+                      color: colors.warning,
                       fontWeight: typography.semibold,
                     }}
                   >
@@ -498,9 +582,8 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 </Box>
               )}
 
-              <Divider sx={{ my: 1.5, borderColor: colors.border }} />
+              <Divider sx={{ my: spacing.md, borderColor: colors.border }} />
 
-              {/* Saldo Sistem */}
               <Box
                 sx={{
                   display: "flex",
@@ -529,10 +612,15 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               </Box>
             </Box>
 
-            {/* ═══ INPUT UANG FISIK ═══ */}
-            <Box sx={{ mb: 2.5 }}>
+            {/* INPUT UANG FISIK */}
+            <Box sx={{ mb: spacing.xl }}>
               <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 0.5,
+                }}
               >
                 <WalletIcon sx={{ color: colors.warning, fontSize: 18 }} />
                 <Typography
@@ -549,18 +637,18 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 sx={{
                   fontSize: typography.caption,
                   color: colors.textSecondary,
-                  mb: 1.5,
+                  mb: spacing.md,
                 }}
               >
-                Hitung dan masukkan total uang tunai yang ada di laci kasir saat
-                ini.
+                Hitung dan masukkan total uang tunai yang ada di laci kasir
+                saat ini.
               </Typography>
 
               <TextField
                 fullWidth
                 value={uangFisikInput}
                 onChange={handleInputChange}
-                disabled={submitting || kasKecilLoading}
+                disabled={submitting || isLoading}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -587,7 +675,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: `${radii.sm}px`,
+                    borderRadius: radii.s,
                     bgcolor: colors.bgCard,
                     "& fieldset": { borderColor: colors.border },
                     "&:hover fieldset": { borderColor: colors.primary },
@@ -597,18 +685,20 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               />
             </Box>
 
-            {/* ═══ SELISIH ═══ */}
+            {/* SELISIH */}
             <Box
               sx={{
                 bgcolor:
                   selisih < 0 ? colors.dangerLight : colors.successLight,
-                p: 2,
-                borderRadius: `${radii.sm}px`,
-                border: `1px solid ${selisih < 0 ? "#FCA5A5" : "#86EFAC"}`,
+                p: spacing.lg,
+                borderRadius: radii.s,
+                border: `1px solid ${
+                  selisih < 0 ? colors.danger : colors.success
+                }40`,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                mb: 2,
+                mb: spacing.lg,
               }}
             >
               <Box>
@@ -631,7 +721,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                     fontWeight: typography.bold,
                     px: 1,
                     py: 0.3,
-                    borderRadius: `${radii.s}px`,
+                    borderRadius: radii.xs,
                     display: "inline-block",
                   }}
                 >
@@ -658,21 +748,20 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               </Typography>
             </Box>
 
-            {/* ERROR MESSAGE */}
             {error && (
               <Box
                 sx={{
-                  mb: 2,
+                  mb: spacing.lg,
                   p: 1.2,
-                  bgcolor: colors.dangerLight || "#FEE2E2",
-                  border: `1px solid ${colors.danger || "#DC2626"}`,
-                  borderRadius: `${radii.sm}px`,
+                  bgcolor: colors.dangerLight,
+                  border: `1px solid ${colors.danger}`,
+                  borderRadius: radii.s,
                 }}
               >
                 <Typography
                   sx={{
-                    fontSize: 12,
-                    color: colors.danger || "#DC2626",
+                    fontSize: typography.caption,
+                    color: colors.danger,
                     fontWeight: typography.semibold,
                   }}
                 >
@@ -687,9 +776,9 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 1,
-                  bgcolor: colors.surfaceHover,
-                  p: 1.5,
-                  borderRadius: `${radii.sm}px`,
+                  bgcolor: colors.bgMuted,
+                  p: spacing.md,
+                  borderRadius: radii.s,
                   border: `1px solid ${colors.border}`,
                 }}
               >
@@ -710,14 +799,14 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
             )}
           </Box>
 
-          {/* ═══ FOOTER ═══ */}
+          {/* FOOTER */}
           <Box
             sx={{
-              p: 2.5,
-              bgcolor: colors.surfacePink,
+              p: spacing.xl,
+              bgcolor: colors.primaryLight,
               borderTop: `1px solid ${colors.border}`,
               display: "flex",
-              gap: 1.5,
+              gap: spacing.md,
             }}
           >
             <Button
@@ -728,7 +817,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               sx={{
                 borderColor: colors.border,
                 color: colors.text,
-                borderRadius: `${radii.sm}px`,
+                borderRadius: radii.s,
                 textTransform: "none",
                 fontWeight: typography.semibold,
                 fontSize: typography.body,
@@ -747,7 +836,7 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               type="submit"
               fullWidth
               variant="contained"
-              disabled={submitting || kasKecilLoading}
+              disabled={submitting || isLoading}
               endIcon={
                 submitting ? (
                   <CircularProgress size={18} sx={{ color: "#FFF" }} />
@@ -757,13 +846,16 @@ const TutupShiftModal = ({ open, onClose, onConfirm, shiftData }) => {
               }
               sx={{
                 bgcolor: colors.primary,
-                borderRadius: `${radii.sm}px`,
+                borderRadius: radii.s,
                 textTransform: "none",
                 fontWeight: typography.bold,
                 fontSize: typography.body,
                 py: 1.2,
                 boxShadow: "none",
-                "&:hover": { bgcolor: colors.primaryHover, boxShadow: "none" },
+                "&:hover": {
+                  bgcolor: colors.primaryHover,
+                  boxShadow: "none",
+                },
                 "&.Mui-disabled": {
                   bgcolor: colors.primary,
                   opacity: 0.7,
